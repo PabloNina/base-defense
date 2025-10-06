@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://blcwfrcfughs2"]
+
+[ext_resource type="Texture2D" uid="uid://cs6d3crq271bq" path="res://assets/sprites/buildings/ammo_relay.png" id="1_7m13l"]
+
+[node name="AmmoRelay" type="Node2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_7m13l")

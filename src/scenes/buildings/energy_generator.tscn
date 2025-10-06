@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://cpoaqe645mbpq"]
+
+[ext_resource type="Texture2D" uid="uid://ip4hsht2n84x" path="res://assets/sprites/buildings/energy_generator.png" id="1_g1aqw"]
+[ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/building_hurt_box.tscn" id="2_gm03w"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_efbft"]
+size = Vector2(16, 16)
+
+[node name="EnergyGenerator" type="Node2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_g1aqw")
+
+[node name="BuildingHurtBox" parent="." instance=ExtResource("2_gm03w")]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BuildingHurtBox"]
+shape = SubResource("RectangleShape2D_efbft")

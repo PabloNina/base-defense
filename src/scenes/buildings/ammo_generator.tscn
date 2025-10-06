@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://c470fep8lycnc"]
+
+[ext_resource type="Texture2D" uid="uid://bs6ys1edjxkxp" path="res://assets/sprites/buildings/ammo_generator.png" id="1_3vlv6"]
+
+[node name="AmmoGenerator" type="Node2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_3vlv6")
