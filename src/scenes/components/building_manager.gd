@@ -92,8 +92,8 @@ func place_building() -> void:
 			buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, selected_building_id)
 		
 		# disable building mode and marker
-		building_mode = false
-		highlight_marker.update_marker(Vector2(16, 16), false)
+		#building_mode = false
+		#highlight_marker.update_marker(Vector2(16, 16), false)
 		
 
 		# Debug
@@ -102,11 +102,10 @@ func place_building() -> void:
 		print("Invalid Placement")
 
 func destroy_building() -> void:
-	#buildings_layer.set_cell(cell_position, 2, Vector2i.ZERO, -1)
-	#building_layer.erase_cell(cell_position)
+	#buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, -1)
+	#buildings_layer.erase_cell(tile_position)
 	#print("building destroyed")
 	pass
-
 
 func _on_highlight_marker_is_placeable(value: bool) -> void:
 	is_placeable = value
