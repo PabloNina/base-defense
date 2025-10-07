@@ -1,9 +1,14 @@
 class_name NetworkManager
 extends Node
 
+@export var energy_packet_scene: PackedScene
+#@export var energy_transfer_interval: float = 1.0
+@export var energy_packet_speed: float = 150.0
+#var _energy_timer := 0.0
+
+
 # All active relay nodes
 var relays: Array[Relay] = []
-
 # Each entry holds a connection dictionary: { "relay_a": Relay, "relay_b": Relay, "connection_line": Line2D }
 var connections: Array = []
 
@@ -11,6 +16,10 @@ var connections: Array = []
 func _ready():
 	add_to_group("network_manager")
 
+
+# -----------------------
+# Relay registration
+# -----------------------
 
 # Called by a Relay node when it spawns
 func register_relay(relay: Relay):
@@ -37,6 +46,9 @@ func unregister_relay(relay: Relay):
 
 	update_network()
 
+# -----------------------
+# Network construction
+# -----------------------
 
 func update_network():
 	# Remove all existing connection visuals
@@ -66,8 +78,14 @@ func update_network():
 				relay_b.connect_to(relay_a)
 				create_connection_line(relay_a, relay_b)
 	
-	# Once the network is rebuilt update power states
-	propagate_power_from_bases()
+	# Reset power states and start packet-driven propagation
+	#propagate_power_from_bases()
+	reset_power_states()
+	start_energy_propagation()
+
+# -----------------------
+# Line creation
+# -----------------------
 
 func create_connection_line(relay_a: Relay, relay_b: Relay):
 	var connection_line := Line2D.new()
@@ -82,26 +100,51 @@ func create_connection_line(relay_a: Relay, relay_b: Relay):
 		"connection_line": connection_line
 	})
 
-func propagate_power_from_bases():
-	# Set all relays as unpowered
+# -----------------------
+# Power propagation
+# -----------------------
+
+func reset_power_states():
 	for relay in relays:
 		relay.set_powered(false)
 
-	# Find base relays
-	var base_relays = relays.filter(func(r): return r.is_base)
+func start_energy_propagation():
+	for relay in relays:
+		if relay.is_base:
+			relay.set_powered(true)
+			for neighbor in relay.connected_relays:
+				if not neighbor.is_powered:
+					_spawn_energy_packet(relay.global_position, neighbor.global_position, neighbor)
 
-	# Traverse the network starting from all bases
-	var visited: Array = []
-	var queue: Array = base_relays.duplicate()
 
-	while not queue.is_empty():
-		var current_relay: Node2D = queue.pop_front()
-		if current_relay in visited:
-			continue
-		visited.append(current_relay)
+# -----------------------
+# Packet spawning
+# -----------------------
 
-		current_relay.set_powered(true)
+func _spawn_energy_packet(from_pos: Vector2, to_pos: Vector2, target_relay: Relay):
+	if not energy_packet_scene or target_relay == null:
+		return
 
-		for neighbor in current_relay.connected_relays:
-			if neighbor not in visited:
-				queue.append(neighbor)
+	var packet: Packet = energy_packet_scene.instantiate() as Packet
+	add_child(packet)
+
+	packet.start_pos = from_pos
+	packet.end_pos = to_pos
+	packet.global_position = from_pos
+	packet.speed = energy_packet_speed
+	packet.target = target_relay
+	
+	
+	packet.packet_arrived.connect(Callable(self, "_on_packet_arrived"))
+	#packet.packet_arrived.connect(_on_packet_arrived)
+
+# -----------------------
+# Packet arrival handler
+# -----------------------
+
+func _on_packet_arrived(target_relay: Relay):
+	if not target_relay.is_powered:
+		target_relay.set_powered(true)
+		for neighbor in target_relay.connected_relays:
+			if not neighbor.is_powered:
+				_spawn_energy_packet(target_relay.global_position, neighbor.global_position, neighbor)
