@@ -39,29 +39,3 @@ func _process(delta):
 		if current_index >= path.size() - 1:
 			packet_arrived.emit(path[-1])
 			queue_free()
-
-
-	# optional debug glow
-	#if sprite_2d:
-	#	var t = float(current_index) / float(path.size() - 1)  # 0 → 1 along the path
-	#	var start_color = Color(0.3, 1.0, 1.0)  # cyan
-	#	var end_color = Color(1.0, 1.0, 0.0)    # yellow
-	#	sprite_2d.modulate = start_color.lerp(end_color, t)
-
-		
-	#if current_index >= path.size() - 1:
-		#return
-#
-	#var next_relay = path[current_index + 1]
-	#var direction = (next_relay.global_position - global_position).normalized()
-	#global_position += direction * speed * delta
-#
-	## check if reached the next relay
-	#if global_position.distance_to(next_relay.global_position) <= speed * delta:
-		#global_position = next_relay.global_position
-		#current_index += 1
-#
-		## reached final relay → consume packet
-		#if current_index >= path.size() - 1:
-			#packet_arrived.emit(path[-1])
-			#queue_free()

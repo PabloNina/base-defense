@@ -14,7 +14,7 @@ extends Node2D
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 var is_powered: bool = false
-var pending_power: bool = false
+#var pending_power: bool = false
 var is_scheduled: bool = false  # relay has a packet already on the way
 var connected_relays: Array[Relay] = []
 var network_manager: NetworkManager
