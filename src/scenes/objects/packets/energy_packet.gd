@@ -4,7 +4,7 @@ extends Node2D
 # -------------------------------
 # --- Packet Configuration ------
 # -------------------------------
-var path: Array[Relay] = []         # full path: base → ... → target
+var path: Array[Relay] = [] # full path: base → ... → target
 var speed: float = 100.0
 var current_index: int = 0
 

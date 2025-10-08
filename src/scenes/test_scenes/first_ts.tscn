@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=4 uid="uid://dfstbgurxnd7l"]
+[gd_scene load_steps=7 format=4 uid="uid://dfstbgurxnd7l"]
 
 [ext_resource type="PackedScene" uid="uid://btaln064qhcx" path="res://src/scenes/components/building_manager.tscn" id="1_e8kqi"]
 [ext_resource type="PackedScene" uid="uid://cjr2r4qtmpky6" path="res://src/scenes/components/network_manager.tscn" id="2_1nbkg"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="2_a3jph"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="3_1nbkg"]
 [ext_resource type="PackedScene" uid="uid://cpthepy782l2x" path="res://src/scenes/objects/packets/energy_packet.tscn" id="3_4mpmm"]
+[ext_resource type="PackedScene" uid="uid://dosdc7ctbrr8g" path="res://src/scenes/ui/user_interface.tscn" id="6_4mpmm"]
 
 [node name="FirstTestScene" type="Node2D"]
 
@@ -25,3 +26,6 @@ tile_set = ExtResource("2_a3jph")
 tile_set = ExtResource("2_a3jph")
 
 [node name="Camera2D" parent="." instance=ExtResource("3_1nbkg")]
+
+[node name="UserInterface" parent="." node_paths=PackedStringArray("n_manager") instance=ExtResource("6_4mpmm")]
+n_manager = NodePath("../NetworkManager")

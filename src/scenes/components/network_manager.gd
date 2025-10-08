@@ -17,8 +17,8 @@ var connections: Array = []    # connection visuals {relay_a, relay_b, connectio
 # --- Base Packet Rate Control ---
 # -------------------------------
 var base_timers: Dictionary = {}  # base relay -> Timer
-var base_packet_rate: int = 2 # packets per second
-
+var base_packet_rate: int = 4 # packets per second
+signal update_energy (current_energy: int) # Ui update
 # -------------------------------
 # --- Engine Callbacks ----------
 # -------------------------------
@@ -49,7 +49,6 @@ func _process(_delta):
 			else:
 				line.default_color = Color(1.0, 0.2, 0.2)  # red = inactive
 
-
 # -------------------------------
 # --- Base Timer Setup ----------
 # -------------------------------
@@ -69,10 +68,19 @@ func _setup_base_timer(base: Relay):
 # --- Base Packet Spawn Timer ---
 # -------------------------------
 func _on_base_timeout(base: Relay):
-	# send packets along paths to all unpowered relays
-	_start_propagation_from_base(base)
-
-
+	if not base.is_base:
+		return
+	base.regen_energy()
+	# Check if base has enough energy to send a packet
+	if base.has_enough_energy():
+		#base.spend_energy()
+		_start_propagation_from_base(base)
+	else:
+		# Not enough energy — skip this cycle
+		return
+	#emit signal for ui update
+	update_energy.emit(base.energy)
+	#print("Base:", base.name, "Energy:", base.energy)
 # -------------------------------
 # --- Relay Registration -------
 # -------------------------------
@@ -112,7 +120,6 @@ func initialize_network():
 			base.set_powered(true)
 			_setup_base_timer(base)
 
-
 func rebuild_all_connections():
 	for connection_data in connections:
 		if is_instance_valid(connection_data.connection_line):
@@ -133,8 +140,6 @@ func rebuild_all_connections():
 				relay_a.connect_to(relay_b)
 				relay_b.connect_to(relay_a)
 				create_connection_line(relay_a, relay_b)
-
-
 
 func _update_connections_for(new_relay: Relay):
 	for relay in relays:
@@ -197,7 +202,7 @@ func _find_path(start: Relay, target: Relay) -> Array[Relay]:
 			var names: Array = []
 			for rel in path:
 				names.append(rel.name)
-				print("✅ Path found: ", names)
+				#print("✅ Path found: ", names)
 			return path
 
 		if current in visited:
@@ -241,7 +246,8 @@ func _start_propagation_from_base(base: Relay):
 		var target_data = unpowered_targets[0]
 		target_data.relay.is_scheduled = true
 		_spawn_packet_along_path(target_data.path)
-
+		# spend the energy cost
+		base.spend_energy()
 
 func _spawn_packet_along_path(path: Array[Relay]):
 	# spawn one packet that will move from base → relay → ... → target
