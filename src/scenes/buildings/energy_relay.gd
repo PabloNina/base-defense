@@ -22,10 +22,9 @@ var network_manager: NetworkManager
 # --- Base Energy System --------
 # -------------------------------
 @export var energy_capacity: int = 150
-@export var energy: int = 100
-@export var energy_regen_rate: int = 5   # per second
+@export var energy: int = 0
+@export var energy_regen_rate: int = 10   # per tick
 @export var packet_cost: int = 20
-
 
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -71,14 +70,11 @@ func has_enough_energy() -> bool:
 
 func spend_energy():
 	energy = max(0.0, energy - packet_cost)
+	#energy_demand += packet_cost
 	
 func regen_energy():
 	if energy < energy_capacity:
 		energy = min(energy_capacity, energy + energy_regen_rate)
-		
-#func regen_energy(delta: float):
-	#if energy < energy_capacity:
-		#energy = min(energy_capacity, energy + energy_regen_rate * delta)
 		
 # -------------------------------
 # --- Cleanup -------------------

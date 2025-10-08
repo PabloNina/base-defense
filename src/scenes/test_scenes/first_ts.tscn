@@ -27,5 +27,5 @@ tile_set = ExtResource("2_a3jph")
 
 [node name="Camera2D" parent="." instance=ExtResource("3_1nbkg")]
 
-[node name="UserInterface" parent="." node_paths=PackedStringArray("n_manager") instance=ExtResource("6_4mpmm")]
-n_manager = NodePath("../NetworkManager")
+[node name="UserInterface" parent="." node_paths=PackedStringArray("network_manager") instance=ExtResource("6_4mpmm")]
+network_manager = NodePath("../NetworkManager")

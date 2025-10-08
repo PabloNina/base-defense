@@ -1,11 +1,19 @@
 extends CanvasLayer
 
-@onready var energy_bar: ProgressBar = $MarginContainer/EnergyBar
-@export var n_manager: NetworkManager
+@export var network_manager: NetworkManager
+
+@onready var energy_stored_label: Label = $MarginContainer/VBoxContainer/EnergyStoredLabel
+@onready var energy_balance_bar: ProgressBar = $MarginContainer/VBoxContainer/EnergyBalanceBar
+
+#var demand: int = 0
+#var net_rate: int = 0
+var current_display_value: int = 0
 
 func _ready() -> void:
-	n_manager.update_energy.connect(on_update_energy)
+	network_manager.update_energy.connect(on_update_energy)
 
 
 func on_update_energy(current_energy: int) -> void:
-	energy_bar.value = current_energy
+	if current_display_value != current_energy:
+		energy_balance_bar.value = current_energy
+		energy_stored_label.text = "Energy Stored: %d / %d" % [current_energy, 150]

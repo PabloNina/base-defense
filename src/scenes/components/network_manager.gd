@@ -23,6 +23,7 @@ signal update_energy (current_energy: int) # Ui update
 # --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
+	# Relays use this group to find the manager and register into the network
 	add_to_group("network_manager")
 	initialize_network()
 	# initialize timers for existing bases
@@ -94,7 +95,6 @@ func register_relay(relay: Relay):
 		relay.set_powered(true)
 		_setup_base_timer(relay)
 
-
 func unregister_relay(relay: Relay):
 	if relay not in relays:
 		return
@@ -114,7 +114,7 @@ func unregister_relay(relay: Relay):
 func initialize_network():
 	rebuild_all_connections()
 
-	# power bases only, do not spawn packets manually
+	# power bases only
 	for base in relays:
 		if base.is_base:
 			base.set_powered(true)
@@ -180,8 +180,8 @@ func create_connection_line(relay_a: Relay, relay_b: Relay):
 # -------------------------------
 # --- Pathfinding --------------
 # -------------------------------
-# Type-safe BFS that only travels through powered relays and find shortest path(except the target)
 func _find_path(start: Relay, target: Relay) -> Array[Relay]:
+	# Type-safe BFS that only travels through powered relays and find shortest path(except the target)
 	var visited: Array[Relay] = []
 	var queue: Array = []  # can't type this as Array[Array[Relay]]
 
@@ -263,5 +263,5 @@ func _spawn_packet_along_path(path: Array[Relay]):
 func _on_packet_arrived(target_relay: Relay):
 	if target_relay.is_powered == false:
 		target_relay.set_powered(true)
-
+		
 	target_relay.is_scheduled = false

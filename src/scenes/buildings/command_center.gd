@@ -1,1 +1,2 @@
+class_name Command_Center
 extends Relay
