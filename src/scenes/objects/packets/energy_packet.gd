@@ -1,22 +1,67 @@
 class_name Packet
 extends Node2D
 
-var target: Relay
-var start_pos: Vector2
-var end_pos: Vector2
+# -------------------------------
+# --- Packet Configuration ------
+# -------------------------------
+var path: Array[Relay] = []         # full path: base → ... → target
 var speed: float = 100.0
+var current_index: int = 0
 
-signal packet_arrived(target)
+signal packet_arrived(target: Relay)
 
-func _process(delta):
-	if not is_instance_valid(self):
+# -------------------------------
+# --- Engine Callbacks ----------
+# -------------------------------
+func _ready():
+	if path.size() < 2:
 		return
+	global_position = path[0].global_position
+	current_index = 0
+
+# -------------------------------
+# --- Movement Logic -----------
+# -------------------------------
+func _process(delta):
+	if current_index >= path.size() - 1:
+		return
+
+	var next_relay = path[current_index + 1]
+	var direction = (next_relay.global_position - global_position).normalized()
+	global_position += direction * speed * delta
+
+	# check if reached the next relay
+	if global_position.distance_to(next_relay.global_position) <= speed * delta:
+		global_position = next_relay.global_position
+		current_index += 1
+
+		# reached final relay → consume packet
+		if current_index >= path.size() - 1:
+			packet_arrived.emit(path[-1])
+			queue_free()
+
+
+	# optional debug glow
+	#if sprite_2d:
+	#	var t = float(current_index) / float(path.size() - 1)  # 0 → 1 along the path
+	#	var start_color = Color(0.3, 1.0, 1.0)  # cyan
+	#	var end_color = Color(1.0, 1.0, 0.0)    # yellow
+	#	sprite_2d.modulate = start_color.lerp(end_color, t)
+
 		
-	var direction = (end_pos - start_pos).normalized()
-	position += direction * speed * delta
-	
-	# Check if packet has reached the destination
-	if start_pos.distance_to(position) >= start_pos.distance_to(end_pos):
-		#emit_signal("packet_arrived")
-		packet_arrived.emit(target)
-		queue_free()
+	#if current_index >= path.size() - 1:
+		#return
+#
+	#var next_relay = path[current_index + 1]
+	#var direction = (next_relay.global_position - global_position).normalized()
+	#global_position += direction * speed * delta
+#
+	## check if reached the next relay
+	#if global_position.distance_to(next_relay.global_position) <= speed * delta:
+		#global_position = next_relay.global_position
+		#current_index += 1
+#
+		## reached final relay → consume packet
+		#if current_index >= path.size() - 1:
+			#packet_arrived.emit(path[-1])
+			#queue_free()
