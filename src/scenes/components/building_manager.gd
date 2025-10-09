@@ -1,10 +1,10 @@
 class_name BuildingManager
 extends Node
 
+@export var network_manager: NetworkManager
 @export var ground_layer: TileMapLayer
 @export var buildings_layer: TileMapLayer
-#var energy_relay_scene = preload("res://src/scenes/buildings/energy_relay.tscn")
-#var energy_generator_scene = preload("res://src/scenes/buildings/energy_generator.tscn")
+
 
 @onready var highlight_marker: HighLightMarker = $HighlightMarker
 
@@ -18,11 +18,15 @@ var selected_building_id: int = 0
 var energy_relay_id: int = 5
 var energy_generator_id: int = 4
 var command_center_id: int = 3
+var plasma_cannor_id: int = 6
 
 var building_mode: bool = false
 var is_placeable : bool = true
 var is_command_center: bool = false
+var current_selected_building: Relay = null
 
+func _ready() -> void:
+	network_manager.building_selected.connect(on_building_selected)
 
 func _process(_delta: float) -> void:
 	# if true start building preview
@@ -58,7 +62,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		highlight_marker.update_marker(Vector2(16, 16), true)
 		#print("energy relay selected")
 	if event.is_action_pressed("key_2"):
-		selected_building_id = energy_generator_id
+		selected_building_id = plasma_cannor_id
 		building_mode = true
 		highlight_marker.update_marker(Vector2(16, 16), true)
 		#print("energy generator selected")
@@ -109,3 +113,20 @@ func destroy_building() -> void:
 
 func _on_highlight_marker_is_placeable(value: bool) -> void:
 	is_placeable = value
+
+
+
+
+
+func on_building_selected(clicked_building: Relay) -> void:
+	if current_selected_building == clicked_building:
+		# Deselect if clicked again
+		current_selected_building = null
+		
+	else:
+		# Select new building
+		print("building selected")
+		current_selected_building = clicked_building
+		
+		
+	

@@ -5,9 +5,10 @@ extends Node2D
 # --- Packet Configuration ------
 # -------------------------------
 var path: Array[Relay] = [] # full path: base → ... → target
-var speed: float = 100.0
+var speed: float = 1000.0
 var current_index: int = 0
 
+# Listener: 
 signal packet_arrived(target: Relay)
 
 # -------------------------------

@@ -10,14 +10,15 @@ extends Node
 # -------------------------------
 # --- Runtime Data -------------
 # -------------------------------
+# Listener: BuildingManager on ready
+signal building_selected (building: Relay)
 var relays: Array[Relay] = []  # all active relays
 var connections: Array = []    # connection visuals {relay_a, relay_b, connection_line}
-
 # -------------------------------
 # --- Base Packet Rate Control ---
 # -------------------------------
 var base_timers: Dictionary = {}  # base relay -> Timer
-var base_packet_rate: int = 4 # packets per second
+var base_packet_rate: int = 2 # packets spawned per tick
 signal update_energy (current_energy: int) # Ui update
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -26,11 +27,6 @@ func _ready():
 	# Relays use this group to find the manager and register into the network
 	add_to_group("network_manager")
 	initialize_network()
-	# initialize timers for existing bases
-	for base in relays:
-		if base.is_base:
-			_setup_base_timer(base)
-
 
 func _process(_delta):
 	# Update visual lines if relays move
@@ -53,7 +49,7 @@ func _process(_delta):
 # -------------------------------
 # --- Base Timer Setup ----------
 # -------------------------------
-func _setup_base_timer(base: Relay):
+func _setup_packet_spawn_tick_timer(base: Relay):
 	if base in base_timers:
 		return
 
@@ -61,14 +57,14 @@ func _setup_base_timer(base: Relay):
 	timer.wait_time = 1.0 / base_packet_rate
 	timer.one_shot = false
 	timer.autostart = true
-	timer.connect("timeout", Callable(self, "_on_base_timeout").bind(base))
+	timer.connect("timeout", Callable(self, "_on_packet_spawn_tick").bind(base))
 	add_child(timer)
 	base_timers[base] = timer
 
 # -------------------------------
 # --- Base Packet Spawn Timer ---
 # -------------------------------
-func _on_base_timeout(base: Relay):
+func _on_packet_spawn_tick(base: Relay):
 	if not base.is_base:
 		return
 	base.regen_energy()
@@ -88,12 +84,14 @@ func _on_base_timeout(base: Relay):
 func register_relay(relay: Relay):
 	if relay not in relays:
 		relays.append(relay)
+		# Connecting signal
+		relay.clicked.connect(on_relay_clicked)
 
 	_update_connections_for(relay)
 
 	if relay.is_base:
 		relay.set_powered(true)
-		_setup_base_timer(relay)
+		_setup_packet_spawn_tick_timer(relay)
 
 func unregister_relay(relay: Relay):
 	if relay not in relays:
@@ -113,12 +111,6 @@ func unregister_relay(relay: Relay):
 # -------------------------------
 func initialize_network():
 	rebuild_all_connections()
-
-	# power bases only
-	for base in relays:
-		if base.is_base:
-			base.set_powered(true)
-			_setup_base_timer(base)
 
 func rebuild_all_connections():
 	for connection_data in connections:
@@ -244,11 +236,16 @@ func _start_propagation_from_base(base: Relay):
 	# Spawn only one packet per timer tick
 	if unpowered_targets.size() > 0:
 		var target_data = unpowered_targets[0]
-		target_data.relay.is_scheduled = true
-		_spawn_packet_along_path(target_data.path)
-		# spend the energy cost
-		base.spend_energy()
-
+		
+		if target_data.relay.packets_on_the_way < target_data.relay.cost_to_build:
+			target_data.relay.packets_on_the_way += 1
+			_spawn_packet_along_path(target_data.path)
+			# spend the energy cost
+			base.spend_energy()
+			
+		if target_data.relay.packets_on_the_way == target_data.relay.cost_to_build:
+			target_data.relay.is_scheduled = true
+		
 func _spawn_packet_along_path(path: Array[Relay]):
 	# spawn one packet that will move from base → relay → ... → target
 	var packet = energy_packet_scene.instantiate()
@@ -262,6 +259,11 @@ func _spawn_packet_along_path(path: Array[Relay]):
 
 func _on_packet_arrived(target_relay: Relay):
 	if target_relay.is_powered == false:
-		target_relay.set_powered(true)
-		
-	target_relay.is_scheduled = false
+		# add a packet
+		target_relay.packets_received += 1
+		# if target relay received enough packets turn it on
+		if target_relay.cost_to_build == target_relay.packets_received:
+			target_relay.set_powered(true)
+
+func on_relay_clicked(relay: Relay) -> void:
+	building_selected.emit(relay)

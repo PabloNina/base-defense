@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=11 format=3 uid="uid://b30a01b7mh2pr"]
+[gd_resource type="TileSet" load_steps=12 format=3 uid="uid://b30a01b7mh2pr"]
 
 [ext_resource type="Texture2D" uid="uid://bm0v5guhdnv2j" path="res://assets/tilesets/ground.png" id="1_0g74o"]
 [ext_resource type="Texture2D" uid="uid://ctjkc8o75hcq5" path="res://assets/tilesets/wall.png" id="2_7thdy"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dx23kdocknrqt" path="res://src/scenes/buildings/command_center.tscn" id="5_or5ng"]
 [ext_resource type="PackedScene" uid="uid://cpoaqe645mbpq" path="res://src/scenes/buildings/energy_generator.tscn" id="6_0j62b"]
 [ext_resource type="PackedScene" uid="uid://73yv02e6ghqj" path="res://src/scenes/buildings/energy_relay.tscn" id="7_r5543"]
+[ext_resource type="PackedScene" uid="uid://bmwseob8yf20s" path="res://src/scenes/buildings/plasma_cannon.tscn" id="8_qcjc8"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_n308x"]
 texture = ExtResource("1_0g74o")
@@ -27,6 +28,7 @@ scenes/2/scene = ExtResource("4_qcjc8")
 scenes/3/scene = ExtResource("5_or5ng")
 scenes/4/scene = ExtResource("6_0j62b")
 scenes/5/scene = ExtResource("7_r5543")
+scenes/6/scene = ExtResource("8_qcjc8")
 
 [resource]
 physics_layer_0/collision_layer = 1

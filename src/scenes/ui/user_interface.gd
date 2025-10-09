@@ -2,8 +2,12 @@ extends CanvasLayer
 
 @export var network_manager: NetworkManager
 
-@onready var energy_stored_label: Label = $MarginContainer/VBoxContainer/EnergyStoredLabel
-@onready var energy_balance_bar: ProgressBar = $MarginContainer/VBoxContainer/EnergyBalanceBar
+
+
+@onready var energy_stored_label: Label = $EnergyStats/VBoxContainer/EnergyStoredLabel
+@onready var energy_balance_bar: ProgressBar = $EnergyStats/VBoxContainer/EnergyBalanceBar
+
+
 
 #var demand: int = 0
 #var net_rate: int = 0
