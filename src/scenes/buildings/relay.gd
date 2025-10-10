@@ -16,7 +16,7 @@ signal clicked(relay: Relay)
 # -------------------------------
 # --- Nodes / State -------------
 # -------------------------------
-
+var is_built: bool = false
 var packets_received: int = 0
 var packets_on_the_way: int = 0
 var is_powered: bool = false
@@ -67,9 +67,16 @@ func disconnect_from(other_relay: Relay):
 # -------------------------------
 
 func set_powered(state: bool):
+	if is_powered == state:
+		return
+	
 	is_powered = state
+	
+	if is_powered and not is_built:
+		is_built = true
+		
 	_update_power_visual()
-
+	
 func _update_power_visual():
 	#
 	pass
