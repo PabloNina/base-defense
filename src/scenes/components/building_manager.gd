@@ -1,7 +1,6 @@
 class_name BuildingManager
 extends Node
 
-@export var network_manager: NetworkManager
 @export var ground_layer: TileMapLayer
 @export var buildings_layer: TileMapLayer
 
@@ -23,10 +22,15 @@ var plasma_cannor_id: int = 6
 var building_mode: bool = false
 var is_placeable : bool = true
 var is_command_center: bool = false
+
 var current_selected_building: Relay = null
+var buildings: Array[Relay] = []  # all active buildings
+
+signal building_selected(building: Relay)
+signal building_deselected()
 
 func _ready() -> void:
-	network_manager.building_selected.connect(on_building_selected)
+	add_to_group("building_manager")
 
 func _process(_delta: float) -> void:
 	# if true start building preview
@@ -95,38 +99,42 @@ func place_building() -> void:
 			# place building in layer
 			buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, selected_building_id)
 		
-		# disable building mode and marker
-		#building_mode = false
-		#highlight_marker.update_marker(Vector2(16, 16), false)
-		
-
-		# Debug
 		#print("Building Constructed")
 	else:
 		print("Invalid Placement")
 
-func destroy_building() -> void:
-	#buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, -1)
-	#buildings_layer.erase_cell(tile_position)
-	#print("building destroyed")
-	pass
+
 
 func _on_highlight_marker_is_placeable(value: bool) -> void:
 	is_placeable = value
 
 
-
-
-
-func on_building_selected(clicked_building: Relay) -> void:
-	if current_selected_building == clicked_building:
-		# Deselect if clicked again
-		current_selected_building = null
-		
-	else:
-		# Select new building
-		print("building selected")
-		current_selected_building = clicked_building
-		
-		
+func register_building(new_building: Relay) -> void:
+	if new_building not in buildings:
+		buildings.append(new_building)
+		# Connecting signal
+		new_building.clicked.connect(on_building_clicked)
 	
+func unregister_building(destroyed_building: Relay) -> void:
+	if destroyed_building not in buildings:
+		return
+		
+	# Remove from buildings list
+	buildings.erase(destroyed_building)
+	# Erase Tilemap BuildingsLayer tile so we can build there again
+	var tile_coords = buildings_layer.local_to_map(destroyed_building.global_position)
+	buildings_layer.erase_cell(tile_coords)
+
+func on_building_clicked(clicked_building: Relay) -> void:
+	if building_mode == false:
+		if current_selected_building == clicked_building:
+			# Deselect if clicked again
+			building_deselected.emit()
+			print("building deselected")
+			current_selected_building = null
+		
+		else:
+			# Select new building
+			building_selected.emit(clicked_building)
+			print("building selected")
+			current_selected_building = clicked_building

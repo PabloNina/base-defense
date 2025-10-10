@@ -10,8 +10,6 @@ extends Node
 # -------------------------------
 # --- Runtime Data -------------
 # -------------------------------
-# Listener: BuildingManager on ready
-signal building_selected (building: Relay)
 var relays: Array[Relay] = []  # all active relays
 var connections: Array = []    # connection visuals {relay_a, relay_b, connection_line}
 # -------------------------------
@@ -85,7 +83,7 @@ func register_relay(relay: Relay):
 	if relay not in relays:
 		relays.append(relay)
 		# Connecting signal
-		relay.clicked.connect(on_relay_clicked)
+		#relay.clicked.connect(on_relay_clicked)
 
 	_update_connections_for(relay)
 
@@ -96,15 +94,22 @@ func register_relay(relay: Relay):
 func unregister_relay(relay: Relay):
 	if relay not in relays:
 		return
-
+		
+	# Remove from main relay list
 	relays.erase(relay)
 
+	# Remove all connection lines involving this relay
 	for connection_data in connections:
 		if connection_data.relay_a == relay or connection_data.relay_b == relay:
 			if is_instance_valid(connection_data.connection_line):
 				connection_data.connection_line.queue_free()
 
 	connections = connections.filter(func(c): return c.relay_a != relay and c.relay_b != relay)
+
+	# Remove this relay from all other relays connected_relays lists
+	for other in relays:
+		if relay in other.connected_relays:
+			other.connected_relays.erase(relay)
 
 # -------------------------------
 # --- Network Construction -----
@@ -204,6 +209,10 @@ func _find_path(start: Relay, target: Relay) -> Array[Relay]:
 
 		# Only expand neighbors that are powered — except for the target
 		for neighbor in current.connected_relays:
+			# prevents dangling references from breaking pathfinding even if something slips through
+			if not is_instance_valid(neighbor):
+				continue
+				
 			if neighbor == target or neighbor.is_powered:
 				if neighbor not in visited:
 					var new_path: Array[Relay] = path.duplicate()
@@ -211,8 +220,10 @@ func _find_path(start: Relay, target: Relay) -> Array[Relay]:
 					queue.append(new_path)
 
 	# no valid path found
-	#print("⚠️ No path found from", start.name, "to", target.name)
+	#print("No path found from", start.name, "to", target.name)
 	return []
+
+
 # -------------------------------
 # --- Energy Propagation -------
 # -------------------------------
@@ -264,6 +275,3 @@ func _on_packet_arrived(target_relay: Relay):
 		# if target relay received enough packets turn it on
 		if target_relay.cost_to_build == target_relay.packets_received:
 			target_relay.set_powered(true)
-
-func on_relay_clicked(relay: Relay) -> void:
-	building_selected.emit(relay)
