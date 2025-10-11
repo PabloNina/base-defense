@@ -25,14 +25,16 @@ layout_mode = 2
 [node name="EnergyStoredLabel" type="Label" parent="EnergyStats/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
-text = "0"
+text = "Energy Stored: "
 
 [node name="EnergyBalanceBar" type="ProgressBar" parent="EnergyStats/VBoxContainer"]
 modulate = Color(0, 0.75271684, 0.142034, 1)
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 size_flags_vertical = 8
+min_value = -150.0
 max_value = 150.0
+step = 1.0
 show_percentage = false
 
 [node name="BuildingActionsPanel" type="MarginContainer" parent="."]

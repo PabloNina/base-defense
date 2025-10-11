@@ -1,77 +1,100 @@
 class_name NetworkManager
 extends Node
 
-# -------------------------------
-# --- Editor Exports -----------
-# -------------------------------
+# -----------------------------------------
+# --- Editor Exports ----------------------
+# -----------------------------------------
 @export var energy_packet_scene: PackedScene
 @export var energy_packet_speed: float = 150.0
+@export var base_packet_rate: int = 4
 
-# -------------------------------
-# --- Runtime Data -------------
-# -------------------------------
-var relays: Array[Relay] = []              # All active relays
-var connections: Array = []                # Connection visuals: {relay_a, relay_b, connection_line}
-var base_timers: Dictionary = {}           # Base relay -> Timer
-var base_packet_rate: int = 2              # Packets per second
-signal update_energy(current_energy: int)  # UI update
+# -----------------------------------------
+# --- Runtime Data ------------------------
+# -----------------------------------------
+var relays: Array[Relay] = []               # All active relays in the network
+var connections: Array = []                 # Connection visuals between relays
+var base_timers: Dictionary = {}            # { base_relay: Timer } handles packet spawning timers
 
-# -------------------------------
-# --- Engine Callbacks ----------
-# -------------------------------
+# -----------------------------------------
+# --- Cached Data for Optimization --------
+# -----------------------------------------
+var path_cache: Dictionary = {}             # { "aID_bID": [Relay path] } cached relay paths
+var distance_cache: Dictionary = {}         # { "aID_bID": float } cached relay distances
+var reachable_cache: Dictionary = {}        # { base: [reachable_relays] } which relays a base can reach
+var last_target_index: Dictionary = {}      # { base: int } tracks incremental target selection
+# -----------------------------------------
+# --- Energy Tracking ---------------------
+# -----------------------------------------
+# Listener: User_interface
+signal ui_update_energy(current_energy: int, net_balance: int)   # Emitted when a base relay spends or gains energy
+
+var stored_energy: int = 0  # total energy stored
+var max_stored_energy: int = 150
+
+# -----------------------------------------
+# --- Engine Callbacks --------------------
+# -----------------------------------------
 func _ready():
 	add_to_group("network_manager")
 	initialize_network()
 
-func _process(_delta):
-	_update_connection_lines()
-
-# -------------------------------
-# --- Relay Registration -------
-# -------------------------------
+# -----------------------------------------
+# --- Relay Registration ------------------
+# -----------------------------------------
+# Registers a new relay into the network and updates all caches & visuals
 func register_relay(relay: Relay):
 	if relay in relays:
 		return
+
 	relays.append(relay)
 	_update_connections_for(relay)
 
+	# Power setup for base relays
 	if relay.is_base:
 		relay.set_powered(true)
 		_setup_packet_timer(relay)
 
-	_refresh_network()
+	# Refresh network topology and power visuals
+	_refresh_network_caches()
+	refresh_power_states()
 
 	if relay.is_built:
 		relay.set_powered(true)
 		relay._update_power_visual()
 
+# Removes a relay from network and updates visuals and caches
 func unregister_relay(relay: Relay):
 	if relay not in relays:
 		return
+
 	relays.erase(relay)
 	_clear_connections_for(relay)
 
+	# Remove relay from others’ connections
 	for other in relays:
 		other.connected_relays.erase(relay)
 
+	# Clear any timers associated with this relay
 	if base_timers.has(relay):
-		base_timers[relay].queue_free()
+		var t = base_timers[relay]
+		t.queue_free()
 		base_timers.erase(relay)
 
-	_refresh_network()
-
-# -------------------------------
-# --- Network Construction -----
-# -------------------------------
-func initialize_network():
-	_refresh_network()
-
-func _refresh_network():
-	rebuild_all_connections()
+	# Rebuild cache and power state
+	_refresh_network_caches()
 	refresh_power_states()
 
+# -----------------------------------------
+# --- Network Construction ----------------
+# -----------------------------------------
+# Initializes the relay network at game start
+func initialize_network():
+	rebuild_all_connections()
+
+# Rebuilds all relay-to-relay connections and refreshes caches
 func rebuild_all_connections():
 	_clear_all_connections()
+
 	for relay in relays:
 		relay.connected_relays.clear()
 
@@ -82,6 +105,9 @@ func rebuild_all_connections():
 			if _are_relays_in_range(a, b):
 				_connect_relays(a, b)
 
+	_refresh_network_caches()
+
+# Creates connection lines for a newly registered relay
 func _update_connections_for(new_relay: Relay):
 	for relay in relays:
 		if relay == new_relay:
@@ -89,24 +115,31 @@ func _update_connections_for(new_relay: Relay):
 		if _are_relays_in_range(relay, new_relay):
 			_connect_relays(relay, new_relay)
 
-# -------------------------------
-# --- Connection Helpers -------
-# -------------------------------
+# Determines if two relays are close enough to connect (uses distance cache)
 func _are_relays_in_range(a: Relay, b: Relay) -> bool:
-	return a.global_position.distance_to(b.global_position) <= min(a.connection_range, b.connection_range)
+	var key = str(a.get_instance_id()) + "_" + str(b.get_instance_id())
+	if distance_cache.has(key):
+		return distance_cache[key] <= min(a.connection_range, b.connection_range)
 
+	var dist = a.global_position.distance_to(b.global_position)
+	distance_cache[key] = dist
+	return dist <= min(a.connection_range, b.connection_range)
+
+# Connects two relays bidirectionally and creates a visual line if needed
 func _connect_relays(a: Relay, b: Relay):
 	a.connect_to(b)
 	b.connect_to(a)
 	if not _connection_exists(a, b):
-		create_connection_line(a, b)
+		_create_connection_line(a, b)
 
+# Checks if a visual connection line already exists between two relays
 func _connection_exists(a: Relay, b: Relay) -> bool:
 	for c in connections:
 		if (c.relay_a == a and c.relay_b == b) or (c.relay_a == b and c.relay_b == a):
 			return true
 	return false
 
+# Removes all connections involving a specific relay
 func _clear_connections_for(relay: Relay):
 	for c in connections:
 		if c.relay_a == relay or c.relay_b == relay:
@@ -114,16 +147,15 @@ func _clear_connections_for(relay: Relay):
 				c.connection_line.queue_free()
 	connections = connections.filter(func(c): return c.relay_a != relay and c.relay_b != relay)
 
+# Removes all connection visuals from the scene
 func _clear_all_connections():
 	for c in connections:
 		if is_instance_valid(c.connection_line):
 			c.connection_line.queue_free()
 	connections.clear()
 
-# -------------------------------
-# --- Connection Lines / Visuals -
-# -------------------------------
-func create_connection_line(a: Relay, b: Relay):
+# Creates the visible connection line between two relays
+func _create_connection_line(a: Relay, b: Relay):
 	var line := Line2D.new()
 	line.width = 1
 	line.default_color = Color(0.3, 0.9, 1.0)
@@ -131,24 +163,41 @@ func create_connection_line(a: Relay, b: Relay):
 	add_child(line)
 	connections.append({"relay_a": a, "relay_b": b, "connection_line": line})
 
-func _update_connection_lines():
-	for c in connections:
-		if not is_instance_valid(c.connection_line):
-			continue
-		var a = c.relay_a
-		var b = c.relay_b
-		var line = c.connection_line
-		line.points = [a.global_position, b.global_position]
+# -----------------------------------------
+# --- Network Cache -----------------------
+# -----------------------------------------
+# Refreshes all cached pathfinding and reachability data
+func _refresh_network_caches():
+	path_cache.clear()
+	distance_cache.clear()
+	reachable_cache.clear()
+	last_target_index.clear()
 
-		if a.is_powered and b.is_powered:
-			line.default_color = Color(0.1, 1.0, 0.3, 1.0)
-			line.default_color.a = 0.7 + 0.3 * sin(Time.get_ticks_msec() / 200.0)
-		else:
-			line.default_color = Color(1.0, 0.2, 0.2)
+	# Compute reachable relays for each base
+	for base in relays:
+		if base.is_base:
+			reachable_cache[base] = _get_reachable_relays(base)
+			last_target_index[base] = 0
 
-# -------------------------------
-# --- Power Propagation ---------
-# -------------------------------
+# BFS that finds all reachable relays from a given base and stores shortest paths
+func _get_reachable_relays(base: Relay) -> Array:
+	var visited: Array = [base]
+	var queue: Array = [base]
+
+	while queue.size() > 0:
+		var current: Relay = queue.pop_front()
+		for neighbor in current.connected_relays:
+			if is_instance_valid(neighbor) and neighbor not in visited:
+				visited.append(neighbor)
+				queue.append(neighbor)
+				var key = str(base.get_instance_id()) + "_" + str(neighbor.get_instance_id())
+				path_cache[key] = _find_path(base, neighbor)
+	return visited
+
+# -----------------------------------------
+# --- Power Propagation -------------------
+# -----------------------------------------
+# Resets and re-applies power states from all bases
 func refresh_power_states():
 	for relay in relays:
 		if not relay.is_base:
@@ -158,6 +207,7 @@ func refresh_power_states():
 		if base.is_base:
 			_propagate_power_from(base)
 
+# DFS-like power propagation across connected powered relays
 func _propagate_power_from(source: Relay):
 	var visited: Array = []
 	var stack: Array = [source]
@@ -168,56 +218,109 @@ func _propagate_power_from(source: Relay):
 			continue
 		visited.append(current)
 
-		if current.is_base or current.is_built:
+		if current.is_built or current.is_base:
 			current.set_powered(true)
-			for neighbor in current.connected_relays:
-				if is_instance_valid(neighbor) and (neighbor.is_base or neighbor.is_built):
-					stack.append(neighbor)
 
-# -------------------------------
-# --- Timer / Packet Spawn -----
-# -------------------------------
+		for neighbor in current.connected_relays:
+			if is_instance_valid(neighbor) and (neighbor.is_built or neighbor.is_base):
+				stack.append(neighbor)
+
+# -----------------------------------------
+# --- Timer / Packet System ---------------
+# -----------------------------------------
+# Sets up periodic packet emission for each base
 func _setup_packet_timer(base: Relay):
 	if base in base_timers:
 		return
+
 	var timer = Timer.new()
 	timer.wait_time = 1.0 / base_packet_rate
-	timer.one_shot = false
 	timer.autostart = true
-	timer.connect("timeout", Callable(self, "_on_packet_spawn_tick").bind(base))
+	timer.one_shot = false
+	timer.connect("timeout", Callable(self, "_on_packet_tick").bind(base))
 	add_child(timer)
 	base_timers[base] = timer
 
-func _on_packet_spawn_tick(base: Relay):
+
+# Triggered each tick to propagate packets from bases with enough energy
+func _on_packet_tick(base: Relay):
 	if not base.is_base:
 		return
-	base.regen_energy()
+
+	# --- Track Energy Production ---
+	var prev_energy: int = base.stored_energy
+	base.regen_energy()          # Command Center regenerates internally
+	var produced: int = base.stored_energy - prev_energy    # Actual energy gained this tick
+
+	# --- Track Energy Demand ---
+	var packets_sent: int = 0
 	if base.has_enough_energy():
-		_start_propagation_from_base(base)
-	update_energy.emit(base.energy)
+		packets_sent = _start_propagation_from_base(base)  # Returns number of packets sent
+	var spent: int = packets_sent * base.packet_cost
 
-# -------------------------------
-# --- Packet Propagation -------
-# -------------------------------
-func _start_propagation_from_base(base: Relay):
-	var unpowered_targets: Array = []
-	for relay in relays:
+	# --- Update Stored Energy (allowing negatives) ---
+	stored_energy += produced - spent
+	stored_energy = clamp(stored_energy, -max_stored_energy, max_stored_energy)
+
+	# --- Compute Net Balance for UI ---
+	var net_balance: int = produced - spent  # + means surplus, - means deficit
+
+	# --- Emit UI Updates ---
+	ui_update_energy.emit(base.stored_energy, net_balance)
+	print("Net balance: ", net_balance)
+
+
+
+# -----------------------------------------
+# --- Incremental Packet Propagation ------
+# -----------------------------------------
+# Gradually sends packets to unpowered relays, cycling through targets
+func _start_propagation_from_base(base: Relay) -> int:
+	var packets_sent = 0
+
+	if not reachable_cache.has(base):
+		return packets_sent
+
+	var targets = reachable_cache[base]
+	if targets.size() == 0:
+		return packets_sent
+
+	var start_index = last_target_index[base]
+	var found = false
+
+	for i in range(targets.size()):
+		var idx = (start_index + i) % targets.size()
+		var relay = targets[idx]
+
 		if not relay.is_powered and not relay.is_scheduled:
-			var path = _find_path(base, relay)
-			if path.size() > 1:
-				unpowered_targets.append({"relay": relay, "path": path})
+			var key = str(base.get_instance_id()) + "_" + str(relay.get_instance_id())
+			var path = path_cache.get(key, [])
 
-	unpowered_targets.sort_custom(func(a, b): return a.path.size() < b.path.size())
+			if path.size() <= 1:
+				continue
 
-	if unpowered_targets.size() > 0:
-		var target_data = unpowered_targets[0]
-		if target_data.relay.packets_on_the_way < target_data.relay.cost_to_build:
-			target_data.relay.packets_on_the_way += 1
-			_spawn_packet_along_path(target_data.path)
-			base.spend_energy()
-		if target_data.relay.packets_on_the_way == target_data.relay.cost_to_build:
-			target_data.relay.is_scheduled = true
+			if relay.packets_on_the_way < relay.cost_to_build:
+				relay.packets_on_the_way += 1
+				_spawn_packet_along_path(path)
+				base.spend_energy()
+				packets_sent += 1   # <-- count this packet as energy spent
 
+				if relay.packets_on_the_way == relay.cost_to_build:
+					relay.is_scheduled = true
+
+				last_target_index[base] = (idx + 1) % targets.size()
+				found = true
+				break
+
+	if not found:
+		last_target_index[base] = (start_index + 1) % targets.size()
+
+	return packets_sent
+
+# -----------------------------------------
+# --- Packet Logic ------------------------
+# -----------------------------------------
+# Spawns an energy packet that travels along a path of relays
 func _spawn_packet_along_path(path: Array[Relay]):
 	var packet = energy_packet_scene.instantiate()
 	add_child(packet)
@@ -226,42 +329,41 @@ func _spawn_packet_along_path(path: Array[Relay]):
 	packet.global_position = path[0].global_position
 	packet.packet_arrived.connect(_on_packet_arrived)
 
+# Called when a packet reaches its target relay
 func _on_packet_arrived(target_relay: Relay):
 	if not target_relay.is_built:
-		target_relay.packets_received += 1
+		#target_relay.packets_received += 1
+		target_relay._receive_packet()
 		if target_relay.packets_received >= target_relay.cost_to_build:
 			target_relay.is_built = true
 			target_relay.set_powered(true)
 			target_relay._update_power_visual()
 
-# -------------------------------
-# --- Pathfinding --------------
-# -------------------------------
-func _find_path(start: Relay, target: Relay) -> Array[Relay]:
-	var visited: Array = []
-	var queue: Array = [start]
-	var parent_map: Dictionary = {}
-	
-	visited.append(start)
-	parent_map[start] = null
+# -----------------------------------------
+# --- Pathfinding -------------------------
+# -----------------------------------------
+# BFS shortest path search between two relays with typed return
+func _find_path(start: Relay, goal: Relay) -> Array[Relay]:
+	var queue: Array = [[start]]
+	var visited: Array[Relay] = [start]
 
 	while queue.size() > 0:
-		var current: Relay = queue.pop_front()
+		var path: Array = queue.pop_front()
+		var current: Relay = path[-1]
 
-		if current == target:
-			var path: Array[Relay] = []
-			var node: Relay = target
-			while node != null:
-				path.insert(0, node)
-				node = parent_map.get(node)
-			return path
+		if current == goal:
+			# Return a properly typed copy of the path
+			var typed_path: Array[Relay] = []
+			for node in path:
+				typed_path.append(node as Relay)
+			return typed_path
 
 		for neighbor in current.connected_relays:
-			if not is_instance_valid(neighbor):
-				continue
-			if (neighbor.is_powered or neighbor == target) and neighbor not in visited:
+			if is_instance_valid(neighbor) and neighbor not in visited:
 				visited.append(neighbor)
-				queue.append(neighbor)
-				parent_map[neighbor] = current
+				var new_path = path.duplicate()
+				new_path.append(neighbor)
+				queue.append(new_path)
 
+	# Return an empty typed array if no path found
 	return []
