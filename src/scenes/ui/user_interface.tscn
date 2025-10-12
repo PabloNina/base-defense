@@ -32,8 +32,6 @@ modulate = Color(0, 0.75271684, 0.142034, 1)
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 size_flags_vertical = 8
-min_value = -150.0
-max_value = 150.0
 step = 1.0
 show_percentage = false
 

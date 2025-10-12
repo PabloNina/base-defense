@@ -1,10 +1,11 @@
+class_name EnergyRelay
 extends Relay
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
 func _update_power_visual():
 	# Color the sprite based on whether the relay is built
-	# and optionally change alpha/brightness if unpowered
+	# maybe change something if unpowered
 	if is_built:
 		# Built relay: full color
 		sprite_2d.modulate = Color(1, 1, 1, 1)

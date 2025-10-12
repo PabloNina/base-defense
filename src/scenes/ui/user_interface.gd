@@ -18,7 +18,7 @@ extends CanvasLayer
 # --- Runtime State -----------------------
 # -----------------------------------------
 var current_building_selected: Relay
-var max_balance_value: int = 50  # Maximum production/demand displayed on bar
+var max_balance_value: float = 150.0  # Maximum production/demand displayed on bar
 
 # -----------------------------------------
 # --- Initialization ---------------------
@@ -48,7 +48,8 @@ func _ready() -> void:
 func on_update_energy(current_energy: int, net_balance: int) -> void:
 	energy_stored_label.text = "Energy Stored: %d / %d" % [current_energy, 150]
 	update_energy_balance_bar(net_balance)
-
+	#print("Net balance: ", net_balance)
+	
 # Update the balance bar based on net production/demand
 func update_energy_balance_bar(net_rate: int) -> void:
 

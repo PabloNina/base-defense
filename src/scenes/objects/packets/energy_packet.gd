@@ -8,7 +8,7 @@ var path: Array[Relay] = [] # full path: base → ... → target
 var speed: float = 1000.0
 var current_index: int = 0
 
-# Listener: 
+# Listener: NetworkManager when spawning packets -> on _spawn_packet_along_path(path: Array[Relay]):
 signal packet_arrived(target: Relay)
 
 # -------------------------------

@@ -30,7 +30,7 @@ signal ui_update_energy(current_energy: int, net_balance: int)   # Emitted when 
 
 var stored_energy: int = 0  # total energy stored
 var max_stored_energy: int = 150
-
+var net_balance: int = 0
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
@@ -263,12 +263,10 @@ func _on_packet_tick(base: Relay):
 	stored_energy = clamp(stored_energy, -max_stored_energy, max_stored_energy)
 
 	# --- Compute Net Balance for UI ---
-	var net_balance: int = produced - spent  # + means surplus, - means deficit
+	net_balance += produced - spent  # + means surplus, - means deficit
 
 	# --- Emit UI Updates ---
 	ui_update_energy.emit(base.stored_energy, net_balance)
-	print("Net balance: ", net_balance)
-
 
 
 # -----------------------------------------
@@ -316,6 +314,7 @@ func _start_propagation_from_base(base: Relay) -> int:
 		last_target_index[base] = (start_index + 1) % targets.size()
 
 	return packets_sent
+
 
 # -----------------------------------------
 # --- Packet Logic ------------------------
