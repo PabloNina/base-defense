@@ -13,13 +13,16 @@ extends CanvasLayer
 @onready var energy_stored_label: Label = $EnergyStats/VBoxContainer/EnergyStoredLabel
 @onready var energy_balance_bar: ProgressBar = $EnergyStats/VBoxContainer/EnergyBalanceBar
 @onready var building_actions_panel: MarginContainer = $BuildingActionsPanel
+@onready var energy_spent_label: Label = $EnergyStats/VBoxContainer/HBoxContainer/EnergyDemandLabel
+@onready var energy_produced_label: Label = $EnergyStats/VBoxContainer/HBoxContainer/EnergyProducedLabel
+@onready var energy_balance_label: Label = $EnergyStats/VBoxContainer/HBoxContainer/EnergyBalanceLabel
 
 # -----------------------------------------
 # --- Runtime State -----------------------
 # -----------------------------------------
 var current_building_selected: Relay
-var max_balance_value: float = 150.0  # Maximum production/demand displayed on bar
-
+var max_balance_value: int = 150 # Maximum production/demand displayed on bar
+var net_balance: int = 0
 # -----------------------------------------
 # --- Initialization ---------------------
 # -----------------------------------------
@@ -45,18 +48,18 @@ func _ready() -> void:
 # --- Energy Display ----------------------
 # -----------------------------------------
 # Update the stored energy label
-func on_update_energy(current_energy: int, net_balance: int) -> void:
+func on_update_energy(current_energy: int, energy_produced: int, energy_spent: int) -> void:
 	energy_stored_label.text = "Energy Stored: %d / %d" % [current_energy, 150]
-	update_energy_balance_bar(net_balance)
-	#print("Net balance: ", net_balance)
+	update_energy_balance(energy_produced, energy_spent)
 	
 # Update the balance bar based on net production/demand
-func update_energy_balance_bar(net_rate: int) -> void:
-
-	# Clamp to bar range
-	var clamped = clamp(net_rate, energy_balance_bar.min_value, energy_balance_bar.max_value)
-	energy_balance_bar.value = clamped
-
+func update_energy_balance(energy_produced: int, energy_spent: int) -> void:
+	energy_produced_label.text = "+ %d" % [energy_produced]
+	energy_spent_label.text = "- %d" % [energy_spent]
+	
+	net_balance = energy_produced - energy_spent
+	energy_balance_bar.value = net_balance
+	energy_balance_label.text = "%d" % [net_balance]
 
 # -----------------------------------------
 # --- Building Actions Panel --------------

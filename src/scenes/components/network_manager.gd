@@ -6,7 +6,7 @@ extends Node
 # -----------------------------------------
 @export var energy_packet_scene: PackedScene
 @export var energy_packet_speed: float = 150.0
-@export var base_packet_rate: int = 4
+@export var packets_per_tick: int = 4
 
 # -----------------------------------------
 # --- Runtime Data ------------------------
@@ -26,11 +26,14 @@ var last_target_index: Dictionary = {}      # { base: int } tracks incremental t
 # --- Energy Tracking ---------------------
 # -----------------------------------------
 # Listener: User_interface
-signal ui_update_energy(current_energy: int, net_balance: int)   # Emitted when a base relay spends or gains energy
+# Emitted when a base relay spends or gains energy -> on tick
+signal ui_update_energy(current_energy: int, current_produced: int, current_spent: int)
 
-var stored_energy: int = 0  # total energy stored
+var global_energy_pool: int = 100  # total energy stored
 var max_stored_energy: int = 150
-var net_balance: int = 0
+
+var net_balance: float = 0.0
+var rolling_factor := 0.1  # for smoothing net balance over time
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
@@ -234,7 +237,7 @@ func _setup_packet_timer(base: Relay):
 		return
 
 	var timer = Timer.new()
-	timer.wait_time = 1.0 / base_packet_rate
+	timer.wait_time = 1.0 / packets_per_tick
 	timer.autostart = true
 	timer.one_shot = false
 	timer.connect("timeout", Callable(self, "_on_packet_tick").bind(base))
@@ -247,96 +250,162 @@ func _on_packet_tick(base: Relay):
 	if not base.is_base:
 		return
 
-	# --- Track Energy Production ---
-	var prev_energy: int = base.stored_energy
-	base.regen_energy()          # Command Center regenerates internally
-	var produced: int = base.stored_energy - prev_energy    # Actual energy gained this tick
+	var energy_produced := 0
+	var energy_spent := 0
 
-	# --- Track Energy Demand ---
-	var packets_sent: int = 0
-	if base.has_enough_energy():
-		packets_sent = _start_propagation_from_base(base)  # Returns number of packets sent
-	var spent: int = packets_sent * base.packet_cost
+	# --- Stage 1: Energy Production ---
+	if base is Command_Center:
+		var cc := base as Command_Center
+		energy_produced = cc.produce_energy()
 
-	# --- Update Stored Energy (allowing negatives) ---
-	stored_energy += produced - spent
-	stored_energy = clamp(stored_energy, -max_stored_energy, max_stored_energy)
+	# --- Stage 2: Building Propagation ---
+	if base.has_method("has_enough_energy") and base.has_enough_energy():
+		var build_packets_sent := _start_building_propagation(base)
+		var cost: int = build_packets_sent * base.packet_cost
+		if cost > 0 and base.has_method("spend_energy"):
+			base.spend_energy()
+		energy_spent += cost
 
-	# --- Compute Net Balance for UI ---
-	net_balance += produced - spent  # + means surplus, - means deficit
+	# --- Stage 3: Supply Propagation ---
+	var supply_packets_sent := _start_supply_propagation(base)
+	if supply_packets_sent > 0:
+		var cost: int = supply_packets_sent * base.packet_cost
+		if base.has_method("spend_energy"):
+			base.spend_energy()
+		energy_spent += cost
 
-	# --- Emit UI Updates ---
-	ui_update_energy.emit(base.stored_energy, net_balance)
+	# --- Rolling Average Net Balance ---
+	var delta := float(energy_produced - energy_spent)
+	net_balance = lerp(net_balance, delta, rolling_factor)
+
+	# --- Emit Aggregated UI Data ---
+	var global_energy := get_global_energy_pool()
+	ui_update_energy.emit(global_energy, energy_produced, energy_spent)
+	
+#func _on_packet_tick(base: Relay):
+	#if not base.is_base:
+		#return
+#
+	#var energy_produced: int = 0
+	#var energy_spent: int = 0
+#
+	## --- Stage 1: Energy Production ---
+	#if base is Command_Center:
+		#var command_center := base as Command_Center
+		#energy_produced = command_center.produce_energy()
+		#global_energy_pool = command_center.stored_energy  # keep global and internal in sync
+		#global_energy_pool = clamp(global_energy_pool, 0, max_stored_energy)
+#
+	## --- Stage 2: Supply Propagation (continuous) ---
+	## Supply packets do not stop when low on energy; they just slow down naturally
+	#var supply_packets_sent = _start_supply_propagation(base)
+	#if supply_packets_sent > 0:
+		#var cost = supply_packets_sent * base.packet_cost
+		#global_energy_pool = max(global_energy_pool - cost, 0)
+		#energy_spent += cost
+#
+	## --- Stage 3: Building Propagation (only if enough energy available) ---
+	#if global_energy_pool >= base.packet_cost:
+		#var construction_packets_sent = _start_building_propagation(base)
+		#var cost = construction_packets_sent * base.packet_cost
+		#global_energy_pool = max(global_energy_pool - cost, 0)
+		#energy_spent += cost
+#
+	## --- Emit UI Updates ---
+	#ui_update_energy.emit(global_energy_pool, energy_produced, energy_spent)
+
+			
 
 
 # -----------------------------------------
 # --- Incremental Packet Propagation ------
 # -----------------------------------------
 # Gradually sends packets to unpowered relays, cycling through targets
-func _start_propagation_from_base(base: Relay) -> int:
+func _start_building_propagation(base: Relay) -> int:
 	var packets_sent = 0
 
 	if not reachable_cache.has(base):
-		return packets_sent
+		return 0
 
 	var targets = reachable_cache[base]
-	if targets.size() == 0:
-		return packets_sent
+	if targets.is_empty():
+		return 0
 
 	var start_index = last_target_index[base]
-	var found = false
 
 	for i in range(targets.size()):
 		var idx = (start_index + i) % targets.size()
 		var relay = targets[idx]
 
-		if not relay.is_powered and not relay.is_scheduled:
-			var key = str(base.get_instance_id()) + "_" + str(relay.get_instance_id())
-			var path = path_cache.get(key, [])
+		if relay.is_powered or relay.is_scheduled:
+			continue
 
-			if path.size() <= 1:
-				continue
+		var key = str(base.get_instance_id()) + "_" + str(relay.get_instance_id())
+		var path = path_cache.get(key, [])
+		if path.size() <= 1:
+			continue
 
-			if relay.packets_on_the_way < relay.cost_to_build:
-				relay.packets_on_the_way += 1
-				_spawn_packet_along_path(path)
-				base.spend_energy()
-				packets_sent += 1   # <-- count this packet as energy spent
+		if relay.packets_on_the_way < relay.cost_to_build:
+			relay.packets_on_the_way += 1
+			_spawn_packet_along_path(path, DataTypes.PACKETS.BUILDING)
+			packets_sent += 1
 
-				if relay.packets_on_the_way == relay.cost_to_build:
-					relay.is_scheduled = true
+			if relay.packets_on_the_way == relay.cost_to_build:
+				relay.is_scheduled = true
 
-				last_target_index[base] = (idx + 1) % targets.size()
-				found = true
-				break
-
-	if not found:
-		last_target_index[base] = (start_index + 1) % targets.size()
+			last_target_index[base] = (idx + 1) % targets.size()
+			break
 
 	return packets_sent
+
+
+# --- Continuous Supply Packets ---
+# Gradually sends packets from a base to powered relays to simulate ongoing energy supply
+func _start_supply_propagation(base: Relay) -> int:
+	var packets_sent = 0
+	if not reachable_cache.has(base):
+		return 0
+
+	for relay in reachable_cache[base]:
+		if relay == base:
+			continue
+
+		if relay.is_built and relay.is_powered and relay.cost_to_supply > 0:
+			if relay.packets_on_the_way < relay.cost_to_supply:
+				var key = str(base.get_instance_id()) + "_" + str(relay.get_instance_id())
+				if not path_cache.has(key):
+					continue
+
+				var path = path_cache[key]
+				if path.size() <= 1:
+					continue
+
+				relay.packets_on_the_way += 1
+				_spawn_packet_along_path(path, DataTypes.PACKETS.ENERGY)
+				packets_sent += 1
+
+	return packets_sent
+
 
 
 # -----------------------------------------
 # --- Packet Logic ------------------------
 # -----------------------------------------
 # Spawns an energy packet that travels along a path of relays
-func _spawn_packet_along_path(path: Array[Relay]):
+func _spawn_packet_along_path(path: Array[Relay], packet_type: DataTypes.PACKETS):
 	var packet = energy_packet_scene.instantiate()
 	add_child(packet)
 	packet.path = path
+	packet.packet_type = packet_type
 	packet.speed = energy_packet_speed
 	packet.global_position = path[0].global_position
 	packet.packet_arrived.connect(_on_packet_arrived)
 
 # Called when a packet reaches its target relay
-func _on_packet_arrived(target_relay: Relay):
-	if not target_relay.is_built:
-		#target_relay.packets_received += 1
-		target_relay._receive_packet()
-		if target_relay.packets_received >= target_relay.cost_to_build:
-			target_relay.is_built = true
-			target_relay.set_powered(true)
-			target_relay._update_power_visual()
+func _on_packet_arrived(target_relay: Relay, packet_type: DataTypes.PACKETS):
+	if is_instance_valid(target_relay):
+		target_relay.receive_packet(packet_type)
+
 
 # -----------------------------------------
 # --- Pathfinding -------------------------
@@ -366,3 +435,15 @@ func _find_path(start: Relay, goal: Relay) -> Array[Relay]:
 
 	# Return an empty typed array if no path found
 	return []
+
+# -----------------------------------------
+# --- Energy Tracking ---------------------
+# -----------------------------------------
+
+# Derived from all command centers
+func get_global_energy_pool() -> int:
+	var total := 0
+	for relay in relays:
+		if relay is Command_Center:
+			total += relay.stored_energy
+	return total

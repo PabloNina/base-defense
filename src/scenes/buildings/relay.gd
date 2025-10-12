@@ -4,6 +4,7 @@ extends Node2D
 # -------------------------------
 # --- Signals -------------------
 # -------------------------------
+# Listener BuildingManager -> on register_building
 signal clicked(relay: Relay)
 
 # -------------------------------
@@ -11,6 +12,7 @@ signal clicked(relay: Relay)
 # -------------------------------
 @export var connection_range: float = 200.0
 @export var cost_to_build: int = 1        # packets needed to build
+@export var cost_to_supply: int = 1  # packets needed to maintain supply
 @export var is_base: bool = false
 
 # -------------------------------
@@ -75,18 +77,38 @@ func set_powered(state: bool):
 	is_powered = state
 	_update_power_visual()
 
-func _receive_packet():
-	# Called by NetworkManager when a packet arrives
-	if is_built:
-		return
 
-	packets_received += 1
+# ------------------------------------------
+# --- Packet Reception ---------------------
+# ------------------------------------------
+func receive_packet(packet_type: DataTypes.PACKETS):
+	match packet_type:
+		DataTypes.PACKETS.BUILDING:
+			if is_built:
+				return
+			packets_received += 1
+			if packets_received >= cost_to_build:
+				is_built = true
+				set_powered(true)
+				_update_power_visual()
+				packets_on_the_way = 0
 
-	# check if enough packets have arrived to build
-	if packets_received >= cost_to_build:
-		is_built = true
-		set_powered(true)
-		_update_power_visual()
+		DataTypes.PACKETS.ENERGY:
+			if is_built and is_powered:
+				packets_on_the_way = max(0, packets_on_the_way - 1)
+
+		DataTypes.PACKETS.AMMO:
+			if has_method("receive_ammo_packet"):
+				pass#receive_ammo_packet()
+
+		DataTypes.PACKETS.ORE:
+			if has_method("receive_ore_packet"):
+				pass#receive_ore_packet()
+
+		DataTypes.PACKETS.TECH:
+			if has_method("receive_tech_packet"):
+				pass#receive_tech_packet()
+				
 
 func _update_power_visual():
 	# TODO: implement visual feedback (color, glow, etc)

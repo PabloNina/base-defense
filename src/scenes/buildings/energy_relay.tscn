@@ -13,6 +13,7 @@ size = Vector2(16, 16)
 [node name="EnergyRelay" type="Node2D"]
 script = ExtResource("1_mk7m4")
 connection_range = 150.0
+cost_to_supply = 0
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = SubResource("AtlasTexture_2cyx4")

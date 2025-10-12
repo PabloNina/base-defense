@@ -1,15 +1,18 @@
 class_name Packet
 extends Node2D
 
+
 # -------------------------------
 # --- Packet Configuration ------
 # -------------------------------
 var path: Array[Relay] = [] # full path: base → ... → target
 var speed: float = 1000.0
 var current_index: int = 0
+@export var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
+
 
 # Listener: NetworkManager when spawning packets -> on _spawn_packet_along_path(path: Array[Relay]):
-signal packet_arrived(target: Relay)
+signal packet_arrived(target: Relay, packet_type: DataTypes.PACKETS)
 
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -38,5 +41,5 @@ func _process(delta):
 
 		# reached final relay → consume packet
 		if current_index >= path.size() - 1:
-			packet_arrived.emit(path[-1])
+			packet_arrived.emit(path[-1],packet_type)
 			queue_free()
