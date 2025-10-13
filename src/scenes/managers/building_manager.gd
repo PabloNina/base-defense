@@ -71,6 +71,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		highlight_marker.update_marker(Vector2(16, 16), true)
 		#print("energy generator selected")
 	if event.is_action_pressed("key_3"):
+		selected_building_id = energy_generator_id
+		building_mode = true
+		highlight_marker.update_marker(Vector2(16, 16), true)
+	if event.is_action_pressed("key_4"):
 		selected_building_id = command_center_id
 		building_mode = true
 		highlight_marker.update_marker(Vector2(48, 48), true)

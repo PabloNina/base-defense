@@ -3,7 +3,7 @@ extends Relay
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
-func _update_power_visual():
+func _updates_visuals():
 	# Color the sprite based on whether the relay is built
 	# maybe change something if unpowered
 	if is_built:
