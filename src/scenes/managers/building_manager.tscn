@@ -1,21 +1,23 @@
 [gd_scene load_steps=4 format=3 uid="uid://btaln064qhcx"]
 
 [ext_resource type="Script" uid="uid://cymhc3rmgng4k" path="res://src/scenes/managers/building_manager.gd" id="1_4wbys"]
-[ext_resource type="Script" uid="uid://b3iflobeptxti" path="res://src/scenes/managers/highlight_marker.gd" id="2_13xf3"]
+[ext_resource type="Script" uid="uid://b3iflobeptxti" path="res://src/scenes/managers/building_ghost_preview.gd" id="2_13xf3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_13xf3"]
 
 [node name="BuildingManager" type="Node"]
 script = ExtResource("1_4wbys")
 
-[node name="HighlightMarker" type="Area2D" parent="."]
+[node name="BuildingGhostPreview" type="Area2D" parent="."]
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("2_13xf3")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HighlightMarker"]
+[node name="GhostSprite" type="Sprite2D" parent="BuildingGhostPreview"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BuildingGhostPreview"]
 shape = SubResource("RectangleShape2D_13xf3")
 
-[connection signal="area_entered" from="HighlightMarker" to="HighlightMarker" method="_on_area_entered"]
-[connection signal="area_exited" from="HighlightMarker" to="HighlightMarker" method="_on_area_exited"]
-[connection signal="is_placeable" from="HighlightMarker" to="." method="_on_highlight_marker_is_placeable"]
+[connection signal="area_entered" from="BuildingGhostPreview" to="BuildingGhostPreview" method="_on_area_entered"]
+[connection signal="area_exited" from="BuildingGhostPreview" to="BuildingGhostPreview" method="_on_area_exited"]
+[connection signal="is_placeable" from="BuildingGhostPreview" to="." method="_on_building_ghost_preview_is_placeable"]

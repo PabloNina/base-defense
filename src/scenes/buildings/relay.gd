@@ -16,11 +16,10 @@ signal clicked(relay: Relay)
 # --- Editor Settings ----------- 
 # -------------------------------
 @export var connection_range: float = 200.0
-@export var cost_to_build: int = 1              # packets needed to complete construction
-@export var cost_to_supply: int = 0             # packets needed to maintain supply
-@export var is_base: bool = false
-# Network-only tag to prevent connections between generators/weapons
-@export var network_only: bool = false
+@export var cost_to_build: int = 1   # packets needed to complete construction
+@export var cost_to_supply: int = 0  # packets needed to maintain supply
+@export var consumer_only: bool = false # consumer-only tag to prevent connections between generators/weapons
+@export var energy_consumption_rate: float = 0.0  # Energy consumed per tick
 # -------------------------------
 # --- Node References -----------
 # -------------------------------
@@ -41,9 +40,6 @@ var connected_relays: Array[Relay] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
 
-# Add these variables
-@export var energy_consumption_rate := 0.0  # Energy consumed per tick
-var last_energy_tick_time := 0.0
 
 # -------------------------------
 # --- Engine Lifecycle ----------

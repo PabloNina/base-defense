@@ -1,10 +1,10 @@
 class_name Command_Center
 extends Relay
 
-@export var max_energy_capacity: int = 200
-@export var stored_energy: int = 100
-@export var base_regen_rate: int = 4       # intrinsic regen
-var generators_regen_rate: int = 0         # accumulated generator bonus each tick
+@export var max_energy_capacity: float = 200.0
+@export var stored_energy: float = 100.0
+@export var base_regen_rate: float = 4.0       # intrinsic regen
+var generators_regen_rate: float = 0.0        # accumulated generator bonus each tick
 
 # --- Per-packet energy cost table ---
 var packet_costs := {
@@ -16,7 +16,7 @@ var packet_costs := {
 }
 
 # --- Energy Production ---
-func produce_energy() -> int:
+func produce_energy() -> float:
 	# Total energy produced this tick = base + generators
 	var total_generated := base_regen_rate + generators_regen_rate
 	stored_energy = min(max_energy_capacity, stored_energy + total_generated)
@@ -39,7 +39,7 @@ func spend_energy(packet_type: int, packet_cout: int) -> void:
 
 # --- Ratio (used for throttling) ---
 func available_ratio() -> float:
-	if max_energy_capacity <= 0:
+	if max_energy_capacity <= 0.0:
 		return 0.0
 	# Use base + generator contribution to compute ratio
 	var effective_energy := stored_energy + generators_regen_rate

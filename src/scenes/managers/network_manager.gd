@@ -10,9 +10,7 @@ extends Node
 @export var building_packet_scene: PackedScene
 @export var energy_packet_scene: PackedScene
 @export var ammo_packet_scene: PackedScene
-
-@export var energy_packet_speed: float = 150.0
-@export var packets_per_tick: int = 4
+@export var current_packet_speed: int = 150
 
 # -----------------------------------------
 # --- Runtime Data ------------------------
@@ -34,9 +32,12 @@ var last_target_index: Dictionary = {}      # { base: int } tracks incremental t
 # -----------------------------------------
 signal ui_update_energy(current_energy: float, produced: float, consumed: float, net_balance: float)
 
-var global_energy_pool: int = 100           # total energy stored
-var max_stored_energy: int = 200
 var net_balance: float = 0.0  # Raw net balance
+
+const MIN_PACKETS_PER_TICK := 1
+const MAX_PACKETS_PER_TICK := 8
+const ENERGY_CRITICAL_THRESHOLD := 0.2  # 20% energy
+const BASE_TICK_RATE := 0.25  # 4 ticks per second
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -54,7 +55,7 @@ func register_relay(relay: Relay):
 	relays.append(relay)
 	_update_connections_for(relay)
 
-	if relay.is_base:
+	if relay is Command_Center:
 		relay.set_powered(true)
 		_setup_packet_timer(relay)
 
@@ -120,7 +121,7 @@ func _update_connections_for(new_relay: Relay):
 			_connect_relays(relay, new_relay)
 
 func _are_relays_in_range(a: Relay, b: Relay) -> bool:
-	if a.network_only and b.network_only:
+	if a.consumer_only and b.consumer_only:
 		return false
 
 	var key = str(a.get_instance_id()) + "_" + str(b.get_instance_id())
@@ -174,7 +175,7 @@ func _refresh_network_caches():
 	last_target_index.clear()
 
 	for base in relays:
-		if base.is_base:
+		if base is Command_Center:
 			reachable_cache[base] = _get_reachable_relays(base)
 			last_target_index[base] = 0
 
@@ -274,13 +275,13 @@ func adjust_network_speed(multiplier: float):
 # --- Packet Tick -------------------------
 # -----------------------------------------
 func _on_packet_tick(base: Relay):
-	if not base.is_base:
+	if not base is Command_Center:
 		return
 
 	var energy_produced: float = 0.0
 	var energy_spent: float = 0.0
 	var energy_consumed: float = 0.0
-	var packets_allowed: int = packets_per_tick  # Declare with type
+	var packets_allowed: int = MIN_PACKETS_PER_TICK  # amout of packet to be spawned
 	
 	# --- Stage 0: Building energy consumption ---
 	for relay in relays:
@@ -298,7 +299,7 @@ func _on_packet_tick(base: Relay):
 		energy_produced = cc.produce_energy()
 		packets_allowed = _compute_send_quota(cc)
 
-	var quota: int = packets_allowed  # Declare with type
+	var send_quota: int = packets_allowed  # Declare with type
 
 	# --- Stage 3: Generic packet propagation ---
 	var packet_types := [
@@ -310,14 +311,14 @@ func _on_packet_tick(base: Relay):
 	]
 
 	for pkt_type in packet_types:
-		if quota <= 0:
+		if send_quota <= 0:
 			break
-		var sent := _start_packet_propagation(base, quota, pkt_type)
+		var sent := _start_packet_propagation(base, send_quota, pkt_type)
 		if sent > 0 and base is Command_Center:
 			var cc := base as Command_Center
 			cc.spend_energy(pkt_type, sent)
 			energy_spent += sent * cc.get_packet_cost(pkt_type)
-			quota -= sent
+			send_quota -= sent
 
 	# --- Update raw net balance ---
 	# Calculate total consumption (packets spent + building consumption)
@@ -333,12 +334,6 @@ func _on_packet_tick(base: Relay):
 		total_consumption,                # total consumed
 		net_balance                       # net balance
 	)
-
-
-const MIN_PACKETS_PER_TICK := 1
-const MAX_PACKETS_PER_TICK := 8
-const ENERGY_CRITICAL_THRESHOLD := 0.2  # 20% energy
-const BASE_TICK_RATE := 0.25  # 4 ticks per second
 
 
 # -----------------------------------------
@@ -414,7 +409,7 @@ func _start_packet_propagation(base: Relay, quota: int, packet_type: DataTypes.P
 		var relay = targets[index % n]
 		index += 1
 
-		# Skip again if target became invalid or has now enough in-flight (race-safe)
+		# Skip again if target became invalid or has now enough in-flight packets (race-safe)
 		if not is_instance_valid(relay):
 			continue
 		match packet_type:
@@ -485,7 +480,7 @@ func _spawn_packet_along_path(path: Array[Relay], packet_type: DataTypes.PACKETS
 	# Instance and setup the packet
 	var packet: Packet = packet_scene.instantiate()
 	packet.path = path.duplicate()
-	packet.speed = energy_packet_speed
+	packet.speed = current_packet_speed
 	packet.packet_type = packet_type
 	packet.global_position = path[0].global_position  # ensure world position
 	packet.packet_arrived.connect(_on_packet_arrived)
@@ -529,7 +524,7 @@ func _find_path(start: Relay, goal: Relay) -> Array[Relay]:
 # -----------------------------------------
 # --- Energy Tracking ---------------------
 # -----------------------------------------
-func get_global_energy_pool() -> int:
+func get_global_energy_pool() -> float:
 	var total := 0
 	for relay in relays:
 		if relay is Command_Center:

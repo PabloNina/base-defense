@@ -8,7 +8,7 @@ extends Node2D
 # --- Packet Configuration ------
 # -------------------------------
 var path: Array[Relay] = []               # full path: base → ... → target
-var speed: float = 1000.0
+var speed: int = 0
 var current_index: int = 0
 
 @export var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
