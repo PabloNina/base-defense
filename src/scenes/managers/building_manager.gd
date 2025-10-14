@@ -7,18 +7,23 @@ extends Node
 
 @onready var highlight_marker: HighLightMarker = $HighlightMarker
 
+# Mouse traking
 var mouse_position: Vector2
 var tile_position: Vector2i
 var tile_source_id: int
 var local_tile_position: Vector2
 var highlighted_tile_position: Vector2i
 
+# TileSet SceneCollection id is 2 
+# and invididual objects inside have an alternate id stored here
+# we need the alternate id to set objects as tiles on tilemap
 var selected_building_id: int = 0
 var energy_relay_id: int = 5
 var energy_generator_id: int = 4
 var command_center_id: int = 3
 var plasma_cannor_id: int = 6
 
+# States
 var building_mode: bool = false
 var is_placeable : bool = true
 var is_command_center: bool = false
@@ -26,9 +31,11 @@ var is_command_center: bool = false
 var current_selected_building: Relay = null
 var buildings: Array[Relay] = []  # all active buildings
 
+# Signals
 signal building_selected(building: Relay)
 signal building_deselected()
 
+# Engine callbacks
 func _ready() -> void:
 	add_to_group("building_manager")
 

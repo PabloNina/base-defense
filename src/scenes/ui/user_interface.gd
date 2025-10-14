@@ -11,7 +11,7 @@ extends CanvasLayer
 # --- Nodes ------------------------------
 # -----------------------------------------
 @onready var energy_stored_label: Label = $EnergyStats/VBoxContainer/EnergyStoredLabel
-@onready var energy_balance_bar: ProgressBar = $EnergyStats/VBoxContainer/EnergyBalanceBar
+@onready var energy_stored_bar: ProgressBar = $EnergyStats/VBoxContainer/EnergyStoredBar
 @onready var building_actions_panel: MarginContainer = $BuildingActionsPanel
 @onready var energy_spent_label: Label = $EnergyStats/VBoxContainer/HBoxContainer/EnergyDemandLabel
 @onready var energy_produced_label: Label = $EnergyStats/VBoxContainer/HBoxContainer/EnergyProducedLabel
@@ -22,7 +22,6 @@ extends CanvasLayer
 # -----------------------------------------
 var current_building_selected: Relay
 var max_balance_value: int = 200 # Maximum production/demand displayed on bar
-var net_balance: int = 0
 # -----------------------------------------
 # --- Initialization ---------------------
 # -----------------------------------------
@@ -40,26 +39,28 @@ func _ready() -> void:
 	hide_building_actions_panel()
 
 	# Initialize balance bar range
-	energy_balance_bar.min_value = -max_balance_value
-	energy_balance_bar.max_value = max_balance_value
-	energy_balance_bar.value = 0
+	energy_stored_bar.min_value = 0
+	energy_stored_bar.max_value = max_balance_value
+	energy_stored_bar.value = 0
 
 # -----------------------------------------
 # --- Energy Display ----------------------
 # -----------------------------------------
-# Update the stored energy label
-func on_update_energy(current_energy: int, energy_produced: int, energy_spent: int) -> void:
-	energy_stored_label.text = "Energy Stored: %d / %d" % [current_energy, 200]
-	update_energy_balance(energy_produced, energy_spent)
+# Update energy stats
+func on_update_energy(current_energy: float, produced: float, consumed: float, net_balance: float) -> void:
+	# Update stored energy label and bar
+	energy_stored_label.text = "Energy Stored: %.1f / %.1f" % [current_energy, 200.0]
+	energy_stored_bar.value = current_energy
 	
-# Update the balance bar based on net production/demand
-func update_energy_balance(energy_produced: int, energy_spent: int) -> void:
-	energy_produced_label.text = "+ %d" % [energy_produced]
-	energy_spent_label.text = "- %d" % [energy_spent]
+	# Update production/consumption values
+	energy_produced_label.text = "+ %.1f" % [produced]
+	energy_spent_label.text = "- %.1f" % [consumed]
 	
-	net_balance = energy_produced - energy_spent
-	energy_balance_bar.value = net_balance
-	energy_balance_label.text = "%d" % [net_balance]
+	# Update balance label
+	# Color code the balance label based on value
+	var balance_color := Color.GREEN if net_balance > 0 else Color.RED if net_balance < 0 else Color.WHITE
+	energy_balance_label.add_theme_color_override("font_color", balance_color)
+	energy_balance_label.text = "%.1f" % [net_balance]
 
 # -----------------------------------------
 # --- Building Actions Panel --------------

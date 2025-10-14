@@ -6,14 +6,15 @@
 [ext_resource type="Texture2D" uid="uid://xff7wxw325w3" path="res://assets/sprites/buildings/cannon_turret.png" id="2_phct1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3m2l5"]
-size = Vector2(16, 16)
+size = Vector2(14, 14)
 
 [node name="PlasmaCannon" type="Node2D"]
 script = ExtResource("1_phct1")
 connection_range = 100.0
 cost_to_build = 3
-cost_to_supply = 0
+cost_to_supply = 1
 network_only = true
+energy_consumption_rate = 1.0
 
 [node name="BaseSprite" type="Sprite2D" parent="."]
 texture = ExtResource("1_ru4ws")

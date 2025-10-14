@@ -3,6 +3,8 @@ extends Relay
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
+
+
 func _updates_visuals():
 	# Color the sprite based on whether the relay is built
 	# maybe change something if unpowered

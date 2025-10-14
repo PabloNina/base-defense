@@ -12,7 +12,6 @@ script = ExtResource("1_oaft0")
 stored_energy = 0
 connection_range = 150.0
 cost_to_build = 0
-cost_to_supply = 0
 is_base = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

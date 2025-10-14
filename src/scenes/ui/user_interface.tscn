@@ -27,7 +27,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 text = "Energy Stored: "
 
-[node name="EnergyBalanceBar" type="ProgressBar" parent="EnergyStats/VBoxContainer"]
+[node name="EnergyStoredBar" type="ProgressBar" parent="EnergyStats/VBoxContainer"]
 modulate = Color(0, 0.75271684, 0.142034, 1)
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2

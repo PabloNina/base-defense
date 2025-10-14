@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://b412gqhwl2dff"]
+
+[ext_resource type="Script" uid="uid://b48qx3e2s5dqn" path="res://src/scenes/objects/packets/ammo_packet.gd" id="1_5c5dv"]
+[ext_resource type="Texture2D" uid="uid://dumwgtbqb3ci8" path="res://assets/sprites/objects/ammo_packet.png" id="2_5c5dv"]
+
+[node name="AmmoPacket" type="Node2D"]
+script = ExtResource("1_5c5dv")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_5c5dv")

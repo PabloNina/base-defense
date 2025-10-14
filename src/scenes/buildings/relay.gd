@@ -41,6 +41,10 @@ var connected_relays: Array[Relay] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
 
+# Add these variables
+@export var energy_consumption_rate := 0.0  # Energy consumed per tick
+var last_energy_tick_time := 0.0
+
 # -------------------------------
 # --- Engine Lifecycle ----------
 # -------------------------------
@@ -185,3 +189,8 @@ func destroy():
 	connected_relays.clear()
 
 	queue_free()
+
+func consume_energy() -> float:
+	if not is_built or not is_powered:
+		return 0.0
+	return energy_consumption_rate
