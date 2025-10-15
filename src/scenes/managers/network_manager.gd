@@ -90,15 +90,15 @@ func unregister_relay(relay: Relay):
 
 	# Update network state (order is important)
 	_refresh_network_caches()
-	rebuild_all_connections()  # This will now handle both connections and power states
+	_rebuild_all_connections()  # This will now handle both connections and power states
 
 # -----------------------------------------
 # --- Network Construction ----------------
 # -----------------------------------------
 func initialize_network():
-	rebuild_all_connections()
+	_rebuild_all_connections()
 
-func rebuild_all_connections():
+func _rebuild_all_connections():
 	_clear_all_connections()
 	for relay in relays:
 		relay.connected_relays.clear()
@@ -265,7 +265,7 @@ func _setup_packet_timer(base: Relay):
 	add_child(timer)
 	base_timers[base] = timer
 
-# Add this method to adjust tick rate dynamically
+# Adjust tick rate dynamically
 func adjust_network_speed(multiplier: float):
 	tick_rate_multiplier = clampf(multiplier, 0.5, 2.0)
 	for timer in base_timers.values():
@@ -283,10 +283,10 @@ func _on_packet_tick(base: Relay):
 	var energy_consumed: float = 0.0
 	var packets_allowed: int = MIN_PACKETS_PER_TICK  # amout of packet to be spawned
 	
-	# --- Stage 0: Building energy consumption ---
-	for relay in relays:
-		if relay.is_powered and relay.is_built:
-			energy_consumed += relay.consume_energy()
+	# --- Stage 0: Add buildings energy consumption ---
+	for building in relays:
+		if building.is_powered and building.is_built:
+			energy_consumed += building.consume_energy()
 	
 	# --- Stage 1: Generator bonuses ---
 	for generator in relays:
@@ -297,11 +297,15 @@ func _on_packet_tick(base: Relay):
 	if base is Command_Center:
 		var cc := base as Command_Center
 		energy_produced = cc.produce_energy()
-		packets_allowed = _compute_send_quota(cc)
+		
+		# --- Stage 2.5: Command Center consumes energy ---
+		cc.spend_energy_on_buildings(energy_consumed)
+		# Compute packet quota with updated Command_Center stored energy
+		packets_allowed = _compute_packet_quota(cc)
 
-	var send_quota: int = packets_allowed  # Declare with type
+	var packet_quota: int = packets_allowed
 
-	# --- Stage 3: Generic packet propagation ---
+	# --- Stage 3: Command Center starts packet propagation ---
 	var packet_types := [
 		DataTypes.PACKETS.BUILDING,
 		DataTypes.PACKETS.ENERGY,
@@ -311,20 +315,20 @@ func _on_packet_tick(base: Relay):
 	]
 
 	for pkt_type in packet_types:
-		if send_quota <= 0:
+		if packet_quota <= 0:
 			break
-		var sent := _start_packet_propagation(base, send_quota, pkt_type)
+		var sent := _start_packet_propagation(base, packet_quota, pkt_type)
 		if sent > 0 and base is Command_Center:
 			var cc := base as Command_Center
-			cc.spend_energy(pkt_type, sent)
+			cc.spend_energy_on_packets(pkt_type, sent)
 			energy_spent += sent * cc.get_packet_cost(pkt_type)
-			send_quota -= sent
+			packet_quota -= sent
 
-	# --- Update raw net balance ---
+	# --- Stage 4: Update energy values and Ui ---
 	# Calculate total consumption (packets spent + building consumption)
 	var total_consumption: float = energy_spent + energy_consumed
 	
-	# Update net balance
+	# Update raw net balance
 	net_balance = energy_produced - total_consumption
 
 	# Update UI with proper values
@@ -339,7 +343,7 @@ func _on_packet_tick(base: Relay):
 # -----------------------------------------
 # Determines how many packets a base can send this tick
 # -----------------------------------------
-func _compute_send_quota(cc: Command_Center) -> int:
+func _compute_packet_quota(cc: Command_Center) -> int:
 	var energy_ratio := cc.available_ratio()
 
 	# More aggressive throttling at low energy

@@ -19,15 +19,30 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="VBoxContainer" type="VBoxContainer" parent="EnergyStats"]
+[node name="Panel" type="Panel" parent="EnergyStats"]
 layout_mode = 2
 
-[node name="EnergyStoredLabel" type="Label" parent="EnergyStats/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="EnergyStats/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EnergyStats/Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="EnergyStoredLabel" type="Label" parent="EnergyStats/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Energy Stored: "
 
-[node name="EnergyStoredBar" type="ProgressBar" parent="EnergyStats/VBoxContainer"]
+[node name="EnergyStoredBar" type="ProgressBar" parent="EnergyStats/Panel/MarginContainer/VBoxContainer"]
 modulate = Color(0, 0.75271684, 0.142034, 1)
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
@@ -35,64 +50,109 @@ size_flags_vertical = 8
 step = 1.0
 show_percentage = false
 
-[node name="HBoxContainer" type="HBoxContainer" parent="EnergyStats/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="EnergyStats/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="EnergyDemandLabel" type="Label" parent="EnergyStats/VBoxContainer/HBoxContainer"]
+[node name="EnergyDemandLabel" type="Label" parent="EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_colors/font_color = Color(0.89634144, 0.32915595, 0.34746018, 1)
 text = "- 0"
 
-[node name="EnergyBalanceLabel" type="Label" parent="EnergyStats/VBoxContainer/HBoxContainer"]
+[node name="EnergyBalanceLabel" type="Label" parent="EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 10
 text = "0"
 
-[node name="EnergyProducedLabel" type="Label" parent="EnergyStats/VBoxContainer/HBoxContainer"]
+[node name="EnergyProducedLabel" type="Label" parent="EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 10
 theme_override_colors/font_color = Color(0.22777551, 0.7011378, 0.56959236, 1)
 text = "+ 0"
 
-[node name="BuildingActionsPanel" type="MarginContainer" parent="."]
-anchors_preset = 2
+[node name="BuildingsPanel" type="MarginContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
-offset_top = -40.0
-offset_right = 40.0
+offset_left = -216.5
+offset_top = -132.0
+offset_right = 216.5
+grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="Panel" type="Panel" parent="BuildingActionsPanel"]
-custom_minimum_size = Vector2(141, 100)
+[node name="HBoxContainer" type="HBoxContainer" parent="BuildingsPanel"]
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="BuildingActionsPanel/Panel"]
+[node name="Panel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
+custom_minimum_size = Vector2(137, 100)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+
+[node name="BuildingActionsPanel" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/Panel"]
 layout_mode = 0
 offset_right = 137.0
 offset_bottom = 4.0
-theme_override_constants/margin_left = 2
-theme_override_constants/margin_top = 2
-theme_override_constants/margin_right = 2
-theme_override_constants/margin_bottom = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 
-[node name="VBoxContainer" type="VBoxContainer" parent="BuildingActionsPanel/Panel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="BuildingActionsPanel/Panel/MarginContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
 layout_mode = 2
-text = "Buildings Actions:"
+text = "Building Actions:"
 
-[node name="DestroyButton" type="Button" parent="BuildingActionsPanel/Panel/MarginContainer/VBoxContainer"]
+[node name="DestroyButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
 layout_mode = 2
 text = "Destroy"
 
-[node name="MoveButton" type="Button" parent="BuildingActionsPanel/Panel/MarginContainer/VBoxContainer"]
+[node name="MoveButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
 layout_mode = 2
 text = "Move"
 
-[connection signal="pressed" from="BuildingActionsPanel/Panel/MarginContainer/VBoxContainer/DestroyButton" to="." method="_on_destroy_button_pressed"]
+[node name="BuildingSelectionPanel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
+custom_minimum_size = Vector2(260, 100)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="RelayButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Relay"
+
+[node name="TurretButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Turret"
+
+[node name="GeneratorButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Generator"
+
+[node name="BaseButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Base"
+
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/DestroyButton" to="." method="_on_destroy_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/RelayButton" to="." method="_on_relay_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/TurretButton" to="." method="_on_turret_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/GeneratorButton" to="." method="_on_generator_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/BaseButton" to="." method="_on_base_button_pressed"]

@@ -11,6 +11,7 @@ extends Node
 # -----------------------------------------
 @export var ground_layer: TileMapLayer
 @export var buildings_layer: TileMapLayer
+@export var user_interface: UserInterface
 
 # -----------------------------------------
 # --- Onready References ------------------
@@ -61,6 +62,10 @@ signal building_deselected()
 # -----------------------------------------
 func _ready() -> void:
 	add_to_group("building_manager")
+	
+	# Subscribe to Ui signals1
+	user_interface.building_button_pressed.connect(on_ui_building_button_pressed)
+
 
 func _process(_delta: float) -> void:
 	# If building mode is active update building ghost position
@@ -84,34 +89,25 @@ func update_ghost_tile_position(new_position: Vector2i) -> void:
 	ghost_tile_position = new_position
 	building_ghost_preview.position = local_tile_position
 
-# -----------------------------------------
-# --- Input Handling ----------------------
-# -----------------------------------------
-func _unhandled_input(event: InputEvent) -> void:
-	# --- Placement ---
-	if event.is_action_pressed("left_mouse") and building_mode and is_placeable:
-		place_building()
 
-	# --- Selection: Building Hotkeys ---
-	if event.is_action_pressed("key_1"):
-		building_to_build_id = energy_relay_id
-		_enable_building_mode(Vector2(16, 16))
-	elif event.is_action_pressed("key_2"):
-		building_to_build_id = gun_turret_id
-		_enable_building_mode(Vector2(16, 16))
-	elif event.is_action_pressed("key_3"):
-		building_to_build_id = energy_generator_id
-		_enable_building_mode(Vector2(16, 16))
-	elif event.is_action_pressed("key_4"):
-		building_to_build_id = command_center_id
-		_enable_building_mode(Vector2(48, 48))
+# -----------------------------------------
+# --- Building Registration ---------------
+# -----------------------------------------
+func register_building(new_building: Relay) -> void:
+	if new_building not in buildings:
+		buildings.append(new_building)
+		new_building.clicked.connect(on_building_clicked)
 
-	# --- Cancel Building Mode or Building selection---
-	elif event.is_action_pressed("right_mouse"):
-		if building_mode == true:
-			_disable_building_mode()
-		else:
-			_deselect_building()
+func unregister_building(destroyed_building: Relay) -> void:
+	if destroyed_building not in buildings:
+		return
+	
+	# Erase from buildings list
+	buildings.erase(destroyed_building)
+	# Remove tile from map so it can be used again
+	var tile_coords = buildings_layer.local_to_map(destroyed_building.global_position)
+	buildings_layer.erase_cell(tile_coords)
+
 
 # -----------------------------------------
 # --- Building Placement ------------------
@@ -139,44 +135,28 @@ func place_building() -> void:
 # -----------------------------------------
 # --- Building Mode Helpers ---------------
 # -----------------------------------------
-func _enable_building_mode(marker_size: Vector2) -> void:
+
+func _select_building_to_build(building: DataTypes.BUILDING_TYPE) -> void:
 	building_mode = true
-	building_ghost_preview.update_ghost(marker_size, true)
-	# print("Building mode activated")
+	building_ghost_preview.set_building_type(building)
+	building_to_build_id = DataTypes.get_tilemap_id(building)
 
-func _disable_building_mode() -> void:
+func _deselect_building_to_build() -> void:
 	building_mode = false
+	building_ghost_preview.clear_preview()
 	building_to_build_id = 0
-	building_ghost_preview.update_ghost(Vector2(16, 16), false)
-	# print("Building mode deactivated")
 
-# -----------------------------------------
-# --- BuildingGhostPreview Feedback -------
-# -----------------------------------------
+# ---------------------------------------------------
+# ------- BuildingGhost Collision Feedback ----------
+# ---------------------------------------------------
 func _on_building_ghost_preview_is_placeable(value: bool) -> void:
 	is_placeable = value
-	
-# -----------------------------------------
-# --- Building Registration ---------------
-# -----------------------------------------
-func register_building(new_building: Relay) -> void:
-	if new_building not in buildings:
-		buildings.append(new_building)
-		new_building.clicked.connect(on_building_clicked)
-
-func unregister_building(destroyed_building: Relay) -> void:
-	if destroyed_building not in buildings:
-		return
-	
-	# Erase from buildings list
-	buildings.erase(destroyed_building)
-	# Remove tile from map so it can be used again
-	var tile_coords = buildings_layer.local_to_map(destroyed_building.global_position)
-	buildings_layer.erase_cell(tile_coords)
 
 # -----------------------------------------
-# --- Building Selection ------------------
+# --- Building Clicked in GameWorld -------
 # -----------------------------------------
+# Called when a building is clicked in the game world 
+# by connecting signal clicked on register_building
 func on_building_clicked(clicked_building: Relay) -> void:
 	# if building_mode is on dont select buildings
 	if building_mode == true:
@@ -184,17 +164,50 @@ func on_building_clicked(clicked_building: Relay) -> void:
 
 	if current_selected_building == clicked_building:
 		# Deselect if clicked again
-		_deselect_building()
+		_deselect_clicked_building()
 	else:
 		# Select new building
-		_select_building(clicked_building)
+		_select_clicked_building(clicked_building)
 
-func _select_building(building: Relay) -> void:
+func _select_clicked_building(building: Relay) -> void:
 	building_selected.emit(building)
 	current_selected_building = building
-	print("Building selected")
+	#print("Building selected")
 
-func _deselect_building() -> void:
+func _deselect_clicked_building() -> void:
 	building_deselected.emit()
 	current_selected_building = null
-	print("Building deselected")
+	#print("Building deselected")
+
+# -----------------------------------------
+# --- Mouse and Keyboard Input Handling ---
+# -----------------------------------------
+func _unhandled_input(event: InputEvent) -> void:
+	# --- Placement ---
+	if event.is_action_pressed("left_mouse") and building_mode and is_placeable:
+		place_building()
+
+	# --- Selection: Building Hotkeys ---
+	if event.is_action_pressed("key_1"):
+		_select_building_to_build(DataTypes.BUILDING_TYPE.RELAY)
+	elif event.is_action_pressed("key_2"):
+		_select_building_to_build(DataTypes.BUILDING_TYPE.GUN_TURRET)
+	elif event.is_action_pressed("key_3"):
+		_select_building_to_build(DataTypes.BUILDING_TYPE.GENERATOR)
+	elif event.is_action_pressed("key_4"):
+		_select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
+
+	# --- Cancel Building Mode or Building selection---
+	elif event.is_action_pressed("right_mouse"):
+		if building_mode == true:
+			_deselect_building_to_build()
+
+		else:
+			# if building_mode == false:
+			_deselect_clicked_building()
+
+# -----------------------------------------
+# --- User Interface Input Handling ------
+# -----------------------------------------
+func on_ui_building_button_pressed(building: DataTypes.BUILDING_TYPE) -> void:
+	_select_building_to_build(building)

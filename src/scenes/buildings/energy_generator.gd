@@ -32,7 +32,7 @@ func provide_energy_bonus():
 	for relay in nm.relays:
 		if relay is Command_Center and nm.are_connected(relay, self):
 			var cc := relay as Command_Center
-			cc.generators_regen_rate += energy_bonus # Boost regen rate temporarily for this tick
+			cc.generators_regen_bonus += energy_bonus # Boost regen rate temporarily for this tick
 			return  # Only one CC per network, so we can stop here
 
 

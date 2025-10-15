@@ -21,13 +21,13 @@ func _ready():
 
 # Example attack function
 func attack(target: Node2D):
-	if not is_powered or not is_built:
+	if not is_powered or not is_built or not is_supplied:
 		return
 	print("Firing at target ", target.name)
 
 func _updates_visuals():
 	# Color the sprite based on whether the relay is built
-	# and optionally change alpha/brightness if unpowered
+	# TO DO: change something if unpowered or unsupplied
 	if is_built:
 		# Built relay: full color
 		base_sprite.modulate = Color(1, 1, 1, 1)

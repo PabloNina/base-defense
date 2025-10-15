@@ -2,9 +2,10 @@ class_name Command_Center
 extends Relay
 
 @export var max_energy_capacity: float = 200.0
-@export var stored_energy: float = 100.0
+@export var stored_energy: float = 0.0
 @export var base_regen_rate: float = 4.0       # intrinsic regen
-var generators_regen_rate: float = 0.0        # accumulated generator bonus each tick
+
+var generators_regen_bonus: float = 0.0        # accumulated generator bonus each tick
 
 # --- Per-packet energy cost table ---
 var packet_costs := {
@@ -17,12 +18,12 @@ var packet_costs := {
 
 # --- Energy Production ---
 func produce_energy() -> float:
-	# Total energy produced this tick = base + generators
-	var total_generated := base_regen_rate + generators_regen_rate
+	# Total energy produced this tick = base + generators 
+	var total_generated := base_regen_rate + generators_regen_bonus
 	stored_energy = min(max_energy_capacity, stored_energy + total_generated)
 
 	# Reset generator contribution after applying
-	generators_regen_rate = 0
+	generators_regen_bonus = 0
 
 	return total_generated
 
@@ -33,14 +34,17 @@ func get_packet_cost(packet_type: int) -> int:
 func has_enough_energy(packet_type: int) -> bool:
 	return stored_energy >= get_packet_cost(packet_type)
 
-func spend_energy(packet_type: int, packet_cout: int) -> void:
+func spend_energy_on_packets(packet_type: int, packet_cout: int) -> void:
 	var total_cost = get_packet_cost(packet_type) * packet_cout
 	stored_energy = max(0, stored_energy - total_cost)
+
+func spend_energy_on_buildings(buildings_consumption: float) -> void:
+	stored_energy = max(0, stored_energy - buildings_consumption)
 
 # --- Ratio (used for throttling) ---
 func available_ratio() -> float:
 	if max_energy_capacity <= 0.0:
 		return 0.0
 	# Use base + generator contribution to compute ratio
-	var effective_energy := stored_energy + generators_regen_rate
+	var effective_energy := stored_energy + generators_regen_bonus
 	return float(effective_energy) / float(max_energy_capacity)

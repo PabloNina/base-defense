@@ -2,7 +2,7 @@
 # --------- Relay.gd ------------
 # -------------------------------
 # Base relay class for all buildings and network nodes.
-# Other types (CommandCenter, Turret, Mine, etc.) extend this.
+# Other types (CommandCenter, Turret, Generator, etc.) extend this.
 
 class_name Relay
 extends Node2D
@@ -166,7 +166,6 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 
 		_:
 			return false
-
 
 
 # -------------------------------
