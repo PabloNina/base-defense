@@ -26,8 +26,10 @@ var building_manager: BuildingManager
 # -----------------------------------------
 # --- Signals ------------------------------
 # -----------------------------------------
-
-signal building_button_pressed(building: DataTypes.BUILDING_TYPE)
+# Listener: BuildingManager
+signal building_button_pressed(building_to_build: DataTypes.BUILDING_TYPE)
+signal destroy_button_pressed(building_to_destroy: Building)
+signal move_button_pressed(building_to_move: MovableBuilding)
 
 # -----------------------------------------
 # --- Initialization ---------------------
@@ -86,9 +88,15 @@ func hide_building_actions_panel() -> void:
 
 func _on_destroy_button_pressed() -> void:
 	if current_building_selected:
-		current_building_selected.destroy()
+		# Emit signal to BuildingManager
+		destroy_button_pressed.emit(current_building_selected)
 		hide_building_actions_panel()
 
+func _on_move_button_pressed() -> void:
+	if current_building_selected and current_building_selected is MovableBuilding:
+		# Emit signal to BuildingManager
+		move_button_pressed.emit(current_building_selected)
+		hide_building_actions_panel()
 
 # -----------------------------------------
 # --- Building Selection Panel --------------

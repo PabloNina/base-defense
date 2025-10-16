@@ -16,15 +16,14 @@ func provide_energy_bonus():
 	if not is_powered or not is_built:
 		return
 
-	var nm := get_tree().get_first_node_in_group("network_manager")
-	if nm == null:
+	if network_manager == null:
 		print("No network_manager found")
 		return
 
 	# Find any Command Center reachable from this generator
-	for relay in nm.relays:
-		if relay is Command_Center and nm.are_connected(relay, self):
-			var cc := relay as Command_Center
+	for building in network_manager.registered_buildings:
+		if building is Command_Center and network_manager.are_connected(building, self):
+			var cc := building as Command_Center
 			cc.generators_regen_bonus += energy_bonus # Boost regen rate temporarily for this tick
 			return  # if Only one CC per network we can stop here
 

@@ -15,16 +15,16 @@ extends Node
 # -----------------------------------------
 # --- Runtime Data ------------------------
 # -----------------------------------------
-var relays: Array[Building] = []               # All active relays in the network
-var connections: Array = []                 # Connection visuals between relays
+var registered_buildings: Array[Building] = [] # All active buildings in the network
+var connections: Array = []                 # Connection visuals between buildings
 var base_timers: Dictionary = {}            # { base_relay: Timer } handles packet spawning timers
 
 # -----------------------------------------
 # --- Cached Data for Optimization --------
 # -----------------------------------------
-var path_cache: Dictionary = {}             # { "aID_bID": [Relay path] } cached relay paths
-var distance_cache: Dictionary = {}         # { "aID_bID": float } cached relay distances
-var reachable_cache: Dictionary = {}        # { base: [reachable_relays] } which relays a base can reach
+var path_cache: Dictionary = {}             # { "aID_bID": [Relay path] } cached buildings paths
+var distance_cache: Dictionary = {}         # { "aID_bID": float } cached buildings distances
+var reachable_cache: Dictionary = {}        # { base: [reachable_relays] } which buildings a base can reach
 var last_target_index: Dictionary = {}      # { base: int } tracks incremental target selection
 
 # -----------------------------------------
@@ -49,44 +49,44 @@ func _ready():
 # -----------------------------------------
 # --- Relay Registration ------------------
 # -----------------------------------------
-func register_relay(relay: Building):
-	if relay in relays:
+func register_relay(new_building: Building):
+	if new_building in registered_buildings:
 		return
-	relays.append(relay)
-	_update_connections_for(relay)
+	registered_buildings.append(new_building)
+	_update_connections_for(new_building)
 
-	if relay is Command_Center:
-		relay.set_powered(true)
-		_setup_packet_timer(relay)
+	if new_building is Command_Center:
+		new_building.set_powered(true)
+		_setup_packet_timer(new_building)
 
 	_refresh_network_caches()
 	_update_network_integrity()
 
-	if relay.is_built:
-		relay.set_powered(true)
-		relay._update_power_visual()
+	if new_building.is_built:
+		new_building.set_powered(true)
+		new_building._updates_visuals()
 
-func unregister_relay(relay: Building):
-	if relay not in relays:
+func unregister_relay(building: Building):
+	if building not in registered_buildings:
 		return
 
 	# Remove all packets referencing this relay
 	for packet in get_tree().get_nodes_in_group("packets"):
-		if packet is Packet and relay in packet.path:
+		if packet is Packet and building in packet.path:
 			packet.queue_free()
 
 	# Remove relay from network
-	relays.erase(relay)
+	registered_buildings.erase(building)
 	
 	# Clear connections first
-	_clear_connections_for(relay)
-	for other in relays:
-		other.connected_relays.erase(relay)
+	_clear_connections_for(building)
+	for other in registered_buildings:
+		other.connected_relays.erase(building)
 
 	# Remove timers
-	if base_timers.has(relay):
-		base_timers[relay].queue_free()
-		base_timers.erase(relay)
+	if base_timers.has(building):
+		base_timers[building].queue_free()
+		base_timers.erase(building)
 
 	# Update network state (order is important)
 	_refresh_network_caches()
@@ -100,25 +100,25 @@ func initialize_network():
 
 func _rebuild_all_connections():
 	_clear_all_connections()
-	for relay in relays:
-		relay.connected_relays.clear()
+	for building in registered_buildings:
+		building.connected_relays.clear()
 	# Build physical connections
-	for i in range(relays.size()):
-		for j in range(i + 1, relays.size()):
-			var a = relays[i]
-			var b = relays[j]
+	for i in range(registered_buildings.size()):
+		for j in range(i + 1, registered_buildings.size()):
+			var a = registered_buildings[i]
+			var b = registered_buildings[j]
 			if _are_relays_in_range(a, b):
 				_connect_relays(a, b)
 	# Update caches and power states
 	_refresh_network_caches()
 	_update_network_integrity()  # Add this line to update power states after rebuilding
 
-func _update_connections_for(new_relay: Building):
-	for relay in relays:
-		if relay == new_relay:
+func _update_connections_for(new_building: Building):
+	for building in registered_buildings:
+		if building == new_building:
 			continue
-		if _are_relays_in_range(relay, new_relay):
-			_connect_relays(relay, new_relay)
+		if _are_relays_in_range(building, new_building):
+			_connect_relays(building, new_building)
 
 func _are_relays_in_range(a: Building, b: Building) -> bool:
 	if a.consumer_only and b.consumer_only:
@@ -144,12 +144,12 @@ func _connection_exists(a: Building, b: Building) -> bool:
 			return true
 	return false
 
-func _clear_connections_for(relay: Building):
+func _clear_connections_for(building: Building):
 	for c in connections:
-		if c.relay_a == relay or c.relay_b == relay:
+		if c.relay_a == building or c.relay_b == building:
 			if is_instance_valid(c.connection_line):
 				c.connection_line.queue_free()
-	connections = connections.filter(func(c): return c.relay_a != relay and c.relay_b != relay)
+	connections = connections.filter(func(c): return c.relay_a != building and c.relay_b != building)
 
 func _clear_all_connections():
 	for c in connections:
@@ -174,7 +174,7 @@ func _refresh_network_caches():
 	reachable_cache.clear()
 	last_target_index.clear()
 
-	for base in relays:
+	for base in registered_buildings:
 		if base is Command_Center:
 			reachable_cache[base] = _get_reachable_relays(base)
 			last_target_index[base] = 0
@@ -205,12 +205,12 @@ func _update_network_integrity():
 	var visited := {}
 	var powered_map := {}
 
-	for relay in relays:
-		if relay in visited:
+	for building in registered_buildings:
+		if building in visited:
 			continue
 
 		var cluster := []
-		var queue := [relay]
+		var queue := [building]
 		var cluster_has_cc := false
 
 		while queue.size() > 0:
@@ -243,10 +243,10 @@ func _update_network_integrity():
 		c.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered and b_powered) else Color(1, 0.3, 0.3)
 
 func _reset_isolated_construction(cluster: Array):
-	for relay in cluster:
-		if not relay.is_built:
-			relay.packets_on_the_way = 0
-			relay.is_scheduled_to_build = false
+	for building in cluster:
+		if not building.is_built:
+			building.packets_on_the_way = 0
+			building.is_scheduled_to_build = false
 
 # -----------------------------------------
 # --- Timer / Packet System ---------------
@@ -284,12 +284,12 @@ func _on_packet_tick(base: Building):
 	var packets_allowed: int = MIN_PACKETS_PER_TICK  # amout of packet to be spawned
 	
 	# --- Stage 0: Add buildings energy consumption ---
-	for building in relays:
+	for building in registered_buildings:
 		if building.is_powered and building.is_built:
 			energy_consumed += building.consume_energy()
 	
 	# --- Stage 1: Generator bonuses ---
-	for generator in relays:
+	for generator in registered_buildings:
 		if generator is EnergyGenerator and generator.is_powered and generator.is_built:
 			generator.provide_energy_bonus()
 
@@ -350,7 +350,7 @@ func _compute_packet_quota(cc: Command_Center) -> int:
 	var throttle_ratio := pow(energy_ratio, 1.5) if energy_ratio > ENERGY_CRITICAL_THRESHOLD else 0.5 * energy_ratio
 
 	# Dynamic packet limit based on network size
-	var network_size_factor := sqrt(float(relays.size()) / 10.0)  # Adjust divisor as needed
+	var network_size_factor := sqrt(float(registered_buildings.size()) / 10.0)  # Adjust divisor as needed
 	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
 
 	var max_affordable := int(floor(float(cc.stored_energy) / float(cc.get_packet_cost(DataTypes.PACKETS.ENERGY))))
@@ -374,30 +374,30 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 		return 0
 
 	var targets := []
-	for relay in reachable_cache[base]:
-		if relay == base or not is_instance_valid(relay):
+	for building in reachable_cache[base]:
+		if building == base or not is_instance_valid(building):
 			continue
 
-		# Use relay's built-in needs_packet check
-		if not relay.needs_packet(packet_type):
+		# Use building's built-in needs_packet check
+		if not building.needs_packet(packet_type):
 			continue
 
-		# Prevent over-queuing: skip relays that already have enough packets on the way
+		# Prevent over-queuing: skip building that already have enough packets on the way
 		# (use the correct target limit depending on packet type)
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
-				if relay.packets_on_the_way >= relay.cost_to_build:
+				if building.packets_on_the_way >= building.cost_to_build:
 					continue
 			DataTypes.PACKETS.ENERGY:
-				if relay.packets_on_the_way >= relay.cost_to_supply:
+				if building.packets_on_the_way >= building.cost_to_supply:
 					continue
 			# for other packet types you may add custom checks here
 			_:
 				# Default conservative check: avoid oversending if packets_on_the_way >= 1
-				if relay.packets_on_the_way >= relay.cost_to_build and relay.cost_to_build > 0:
+				if building.packets_on_the_way >= building.cost_to_build and building.cost_to_build > 0:
 					continue
 
-		targets.append(relay)
+		targets.append(building)
 
 	if targets.is_empty():
 		return 0
@@ -410,21 +410,21 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 		if packets_sent >= quota:
 			break
 
-		var relay = targets[index % n]
+		var building = targets[index % n]
 		index += 1
 
 		# Skip again if target became invalid or has now enough in-flight packets (race-safe)
-		if not is_instance_valid(relay):
+		if not is_instance_valid(building):
 			continue
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
-				if relay.packets_on_the_way >= relay.cost_to_build:
+				if building.packets_on_the_way >= building.cost_to_build:
 					continue
 			DataTypes.PACKETS.ENERGY:
-				if relay.packets_on_the_way >= relay.cost_to_supply:
+				if building.packets_on_the_way >= building.cost_to_supply:
 					continue
 
-		var key = str(base.get_instance_id()) + "_" + str(relay.get_instance_id())
+		var key = str(base.get_instance_id()) + "_" + str(building.get_instance_id())
 		if not path_cache.has(key):
 			continue
 
@@ -439,14 +439,14 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 		var delay_accum := 0.0
 		# Increment in-flight AFTER the final checks and BEFORE spawning the packet.
 		# This ensures other bases/ticks see the incremented value immediately.
-		relay.packets_on_the_way += 1
+		building.packets_on_the_way += 1
 		_spawn_packet_along_path(path, packet_type, delay_accum)
 		delay_accum += spawn_delay_step
 		packets_sent += 1
 
 		# Mark scheduled state for building packets specifically
-		if packet_type == DataTypes.PACKETS.BUILDING and relay.packets_on_the_way >= relay.cost_to_build:
-			relay.is_scheduled_to_build = true
+		if packet_type == DataTypes.PACKETS.BUILDING and building.packets_on_the_way >= building.cost_to_build:
+			building.is_scheduled_to_build = true
 
 	last_target_index[base] = index % n
 	return packets_sent
@@ -492,14 +492,14 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	packet.add_to_group("packets")
 
 
-func _on_packet_arrived(target_relay: Building, packet_type: DataTypes.PACKETS):
-	# Safety check: ensure relay is still valid
-	if not is_instance_valid(target_relay):
+func _on_packet_arrived(target_building: Building, packet_type: DataTypes.PACKETS):
+	# Safety check: ensure building is still valid
+	if not is_instance_valid(target_building):
 		return
 	# Decrement in-flight packet count safely
-	target_relay.packets_on_the_way = max(0, target_relay.packets_on_the_way - 1)
+	target_building.packets_on_the_way = max(0, target_building.packets_on_the_way - 1)
 	# Relay processes the packet
-	target_relay.receive_packet(packet_type)
+	target_building.receive_packet(packet_type)
 
 # -----------------------------------------
 # --- Pathfinding -------------------------
@@ -530,7 +530,7 @@ func _find_path(start: Building, goal: Building) -> Array[Building]:
 # -----------------------------------------
 func get_global_energy_pool() -> float:
 	var total := 0
-	for relay in relays:
-		if relay is Command_Center:
-			total += relay.stored_energy
+	for building in registered_buildings:
+		if building is Command_Center:
+			total += building.stored_energy
 	return total

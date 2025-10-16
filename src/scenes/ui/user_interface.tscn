@@ -152,6 +152,7 @@ layout_mode = 2
 text = "Base"
 
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/DestroyButton" to="." method="_on_destroy_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/MoveButton" to="." method="_on_move_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/RelayButton" to="." method="_on_relay_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/TurretButton" to="." method="_on_turret_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/GeneratorButton" to="." method="_on_generator_button_pressed"]

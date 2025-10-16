@@ -1,5 +1,4 @@
-class_name Command_Center
-extends Building
+class_name Command_Center extends Building
 
 @export var max_energy_capacity: float = 200.0
 @export var stored_energy: float = 0.0

@@ -48,9 +48,9 @@ var buildings: Array[Building] = []  # All active buildings
 # ---------------------------------------
 # --- Move State -----------------------
 # ---------------------------------------
-var building_to_move: MovableBuilding = null
+var current_building_to_move: MovableBuilding = null
 var is_move_state: bool = false
-
+var position_to_move: Vector2 = Vector2.ZERO
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -64,11 +64,12 @@ func _ready() -> void:
 	add_to_group("building_manager")
 	# Subscribe to Ui signals
 	user_interface.building_button_pressed.connect(on_ui_building_button_pressed)
-
+	user_interface.destroy_button_pressed.connect(on_ui_destroy_button_pressed)
+	user_interface.move_button_pressed.connect(on_ui_move_button_pressed)
 
 func _process(_delta: float) -> void:
 	# If building mode is active update building ghost position
-	if is_construction_state == true:
+	if is_construction_state == true or is_move_state == true:
 		get_cell_under_mouse()
 		update_ghost_tile_position(tile_position)
 
@@ -102,7 +103,7 @@ func unregister_building(destroyed_building: Building) -> void:
 
 
 # -----------------------------------------
-# --- Building Mode Placement ------------------
+# --- Construction State Placement --------
 # -----------------------------------------
 func place_building() -> void:
 	# Only build on valid ground tiles
@@ -125,7 +126,7 @@ func place_building() -> void:
 		print("Invalid Placement State")
 
 # -----------------------------------------
-# --- Building Mode Helpers ---------------
+# --- Construction State Helpers ---------------
 # -----------------------------------------
 
 func _select_building_to_build(new_building: DataTypes.BUILDING_TYPE) -> void:
@@ -139,7 +140,7 @@ func _deselect_building_to_build() -> void:
 	building_to_build_id = 0
 
 # -----------------------------------------
-# ------ Building Mode Ghost Feedback -----
+# ------ Construction State Ghost Feedback -----
 # -----------------------------------------
 func update_ghost_tile_position(new_position: Vector2i) -> void:
 	if ghost_tile_position == new_position:
@@ -184,6 +185,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	# --- Placement ---
 	if event.is_action_pressed("left_mouse") and is_construction_state and is_building_placeable:
 		place_building()
+	elif event.is_action_pressed("left_mouse") and is_move_state and is_building_placeable:
+		move_building(current_building_to_move)
 
 	# --- Selection: Building Hotkeys ---
 	if event.is_action_pressed("key_1"):
@@ -201,11 +204,41 @@ func _unhandled_input(event: InputEvent) -> void:
 			_deselect_building_to_build()
 
 		else:
-			# if building_mode == false:
+			# if is_construction_state == false:
 			_deselect_clicked_building()
+			# deselect moving state
+			current_building_to_move = null
+			is_move_state = false
 
 # -----------------------------------------
 # --- User Interface Input Handling ------
 # -----------------------------------------
 func on_ui_building_button_pressed(building: DataTypes.BUILDING_TYPE) -> void:
 	_select_building_to_build(building)
+	
+func on_ui_destroy_button_pressed(building_to_destroy: Building) -> void:
+	building_to_destroy.destroy()
+
+func on_ui_move_button_pressed(building_to_move: MovableBuilding) -> void:
+	is_move_state = true
+	current_building_to_move = building_to_move
+	building_ghost_preview.set_building_type(current_building_to_move.building_type)
+
+# -----------------------------------------
+# --- Moving State Placement ------------
+# -----------------------------------------
+func move_building(btm: MovableBuilding) -> void:
+	btm.start_move(local_tile_position)
+	is_move_state = false
+	current_building_to_move = null
+	building_ghost_preview.clear_preview()
+	_deselect_clicked_building()
+
+func rebuild_moved_building(_moved_building: MovableBuilding) -> void:
+	#var tile_coords = buildings_layer.local_to_map(moved_building.global_position)
+	#var building_id = DataTypes.get_tilemap_id(moved_building.building_type)
+	#moved_building.destroy()
+	#buildings_layer.set_cell(tile_coords, 2, Vector2i.ZERO, building_id)
+	#is_move_state = false
+	#current_building_to_move = null
+	pass
