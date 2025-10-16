@@ -14,7 +14,7 @@ class_name UserInterface extends CanvasLayer
 # -----------------------------------------
 # --- ???????????? -----------------------
 # -----------------------------------------
-var current_building_selected: Relay
+var current_building_selected: Building
 var max_balance_value: int = 200 # Maximum production/demand displayed on bar
 
 # -----------------------------------------
@@ -75,7 +75,7 @@ func on_update_energy(current_energy: float, produced: float, consumed: float, n
 # -----------------------------------------
 # --- Building Actions Panel --------------
 # -----------------------------------------
-func show_building_actions_panel(selected_building: Relay) -> void:
+func show_building_actions_panel(selected_building: Building) -> void:
 	current_building_selected = selected_building
 	building_actions_label.text = DataTypes.get_display_name(selected_building.building_type)
 	building_actions_panel.visible = true

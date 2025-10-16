@@ -15,7 +15,7 @@ extends Node
 # -----------------------------------------
 # --- Runtime Data ------------------------
 # -----------------------------------------
-var relays: Array[Relay] = []               # All active relays in the network
+var relays: Array[Building] = []               # All active relays in the network
 var connections: Array = []                 # Connection visuals between relays
 var base_timers: Dictionary = {}            # { base_relay: Timer } handles packet spawning timers
 
@@ -49,7 +49,7 @@ func _ready():
 # -----------------------------------------
 # --- Relay Registration ------------------
 # -----------------------------------------
-func register_relay(relay: Relay):
+func register_relay(relay: Building):
 	if relay in relays:
 		return
 	relays.append(relay)
@@ -66,7 +66,7 @@ func register_relay(relay: Relay):
 		relay.set_powered(true)
 		relay._update_power_visual()
 
-func unregister_relay(relay: Relay):
+func unregister_relay(relay: Building):
 	if relay not in relays:
 		return
 
@@ -113,14 +113,14 @@ func _rebuild_all_connections():
 	_refresh_network_caches()
 	_update_network_integrity()  # Add this line to update power states after rebuilding
 
-func _update_connections_for(new_relay: Relay):
+func _update_connections_for(new_relay: Building):
 	for relay in relays:
 		if relay == new_relay:
 			continue
 		if _are_relays_in_range(relay, new_relay):
 			_connect_relays(relay, new_relay)
 
-func _are_relays_in_range(a: Relay, b: Relay) -> bool:
+func _are_relays_in_range(a: Building, b: Building) -> bool:
 	if a.consumer_only and b.consumer_only:
 		return false
 
@@ -132,19 +132,19 @@ func _are_relays_in_range(a: Relay, b: Relay) -> bool:
 	distance_cache[key] = dist
 	return dist <= min(a.connection_range, b.connection_range)
 
-func _connect_relays(a: Relay, b: Relay):
+func _connect_relays(a: Building, b: Building):
 	a.connect_to(b)
 	b.connect_to(a)
 	if not _connection_exists(a, b):
 		_create_connection_line(a, b)
 
-func _connection_exists(a: Relay, b: Relay) -> bool:
+func _connection_exists(a: Building, b: Building) -> bool:
 	for c in connections:
 		if (c.relay_a == a and c.relay_b == b) or (c.relay_a == b and c.relay_b == a):
 			return true
 	return false
 
-func _clear_connections_for(relay: Relay):
+func _clear_connections_for(relay: Building):
 	for c in connections:
 		if c.relay_a == relay or c.relay_b == relay:
 			if is_instance_valid(c.connection_line):
@@ -157,7 +157,7 @@ func _clear_all_connections():
 			c.connection_line.queue_free()
 	connections.clear()
 
-func _create_connection_line(a: Relay, b: Relay):
+func _create_connection_line(a: Building, b: Building):
 	var line := Line2D.new()
 	line.width = 1
 	line.default_color = Color(0.3, 0.9, 1.0)
@@ -179,12 +179,12 @@ func _refresh_network_caches():
 			reachable_cache[base] = _get_reachable_relays(base)
 			last_target_index[base] = 0
 
-func _get_reachable_relays(base: Relay) -> Array:
+func _get_reachable_relays(base: Building) -> Array:
 	var visited: Array = [base]
 	var queue: Array = [base]
 
 	while queue.size() > 0:
-		var current: Relay = queue.pop_front()
+		var current: Building = queue.pop_front()
 		for neighbor in current.connected_relays:
 			if is_instance_valid(neighbor) and neighbor not in visited:
 				visited.append(neighbor)
@@ -193,7 +193,7 @@ func _get_reachable_relays(base: Relay) -> Array:
 				path_cache[key] = _find_path(base, neighbor)
 	return visited
 
-func are_connected(a: Relay, b: Relay) -> bool:
+func are_connected(a: Building, b: Building) -> bool:
 	if not reachable_cache.has(a):
 		return false
 	return b in reachable_cache[a]
@@ -254,7 +254,7 @@ func _reset_isolated_construction(cluster: Array):
 var base_tick_rate := BASE_TICK_RATE
 var tick_rate_multiplier := 1.0
 
-func _setup_packet_timer(base: Relay):
+func _setup_packet_timer(base: Building):
 	if base in base_timers:
 		return
 	var timer = Timer.new()
@@ -274,7 +274,7 @@ func adjust_network_speed(multiplier: float):
 # -----------------------------------------
 # --- Packet Tick -------------------------
 # -----------------------------------------
-func _on_packet_tick(base: Relay):
+func _on_packet_tick(base: Building):
 	if not base is Command_Center:
 		return
 
@@ -368,7 +368,7 @@ func _compute_packet_quota(cc: Command_Center) -> int:
 # -----------------------------------------
 # Generic propagation for any packet type
 # -----------------------------------------
-func _start_packet_propagation(base: Relay, quota: int, packet_type: DataTypes.PACKETS) -> int:
+func _start_packet_propagation(base: Building, quota: int, packet_type: DataTypes.PACKETS) -> int:
 	var packets_sent := 0
 	if quota <= 0 or not reachable_cache.has(base):
 		return 0
@@ -456,7 +456,7 @@ func _start_packet_propagation(base: Relay, quota: int, packet_type: DataTypes.P
 # -----------------------------------------
 # --- Packet spawning ---------------------
 # -----------------------------------------
-func _spawn_packet_along_path(path: Array[Relay], packet_type: DataTypes.PACKETS, delay_offset :float = 0.0) -> void:
+func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACKETS, delay_offset :float = 0.0) -> void:
 	# Safety checks
 	if path.size() < 2:
 		return
@@ -492,7 +492,7 @@ func _spawn_packet_along_path(path: Array[Relay], packet_type: DataTypes.PACKETS
 	packet.add_to_group("packets")
 
 
-func _on_packet_arrived(target_relay: Relay, packet_type: DataTypes.PACKETS):
+func _on_packet_arrived(target_relay: Building, packet_type: DataTypes.PACKETS):
 	# Safety check: ensure relay is still valid
 	if not is_instance_valid(target_relay):
 		return
@@ -504,17 +504,17 @@ func _on_packet_arrived(target_relay: Relay, packet_type: DataTypes.PACKETS):
 # -----------------------------------------
 # --- Pathfinding -------------------------
 # -----------------------------------------
-func _find_path(start: Relay, goal: Relay) -> Array[Relay]:
+func _find_path(start: Building, goal: Building) -> Array[Building]:
 	var queue: Array = [[start]]
-	var visited: Array[Relay] = [start]
+	var visited: Array[Building] = [start]
 
 	while queue.size() > 0:
 		var path: Array = queue.pop_front()
-		var current: Relay = path[-1]
+		var current: Building = path[-1]
 		if current == goal:
-			var typed_path: Array[Relay] = []
+			var typed_path: Array[Building] = []
 			for node in path:
-				typed_path.append(node as Relay)
+				typed_path.append(node as Building)
 			return typed_path
 		for neighbor in current.connected_relays:
 			if is_instance_valid(neighbor) and neighbor not in visited:

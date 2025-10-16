@@ -29,16 +29,12 @@ var local_tile_position: Vector2
 # -----------------------------------------
 # TileSet SceneCollection ID is 2
 # Each building inside has an alternate ID used for placement
-#var energy_relay_id: int = 5
-#var energy_generator_id: int = 4
 var command_center_id: int = 3
-#var gun_turret_id: int = 6
-
 # -----------------------------------------
-# --- Building State ----------------------
+# --- Construction State ----------------------
 # -----------------------------------------
-var is_building_mode: bool = false
-var is_placeable: bool = true
+var is_construction_state: bool = false
+var is_building_placeable: bool = true
 var is_command_center: bool = false
 var building_to_build_id: int = 0
 var ghost_tile_position: Vector2i
@@ -46,19 +42,19 @@ var ghost_tile_position: Vector2i
 # -----------------------------------------
 # --- Select State ----------------------
 # -----------------------------------------
-var current_selected_building: Relay = null
-var buildings: Array[Relay] = []  # All active buildings
+var current_clicked_building: Building = null
+var buildings: Array[Building] = []  # All active buildings
 
 # ---------------------------------------
 # --- Move State -----------------------
 # ---------------------------------------
-var selected_building_to_move: MovableBuilding = null
-var is_moving_mode: bool = false
+var building_to_move: MovableBuilding = null
+var is_move_state: bool = false
 
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
-signal building_selected(building: Relay)
+signal building_selected(building: Building)
 signal building_deselected()
 
 # -----------------------------------------
@@ -72,7 +68,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# If building mode is active update building ghost position
-	if is_building_mode == true:
+	if is_construction_state == true:
 		get_cell_under_mouse()
 		update_ghost_tile_position(tile_position)
 
@@ -86,22 +82,15 @@ func get_cell_under_mouse() -> void:
 	local_tile_position = ground_layer.map_to_local(tile_position)
 	# print("Mouse:", mouse_position, "Tile:", tile_position, "Source ID:", tile_source_id)
 
-func update_ghost_tile_position(new_position: Vector2i) -> void:
-	if ghost_tile_position == new_position:
-		return
-	ghost_tile_position = new_position
-	building_ghost_preview.position = local_tile_position
-
-
 # -----------------------------------------
 # --- Building Registration ---------------
 # -----------------------------------------
-func register_building(new_building: Relay) -> void:
+func register_building(new_building: Building) -> void:
 	if new_building not in buildings:
 		buildings.append(new_building)
 		new_building.clicked.connect(on_building_clicked)
 
-func unregister_building(destroyed_building: Relay) -> void:
+func unregister_building(destroyed_building: Building) -> void:
 	if destroyed_building not in buildings:
 		return
 	
@@ -113,7 +102,7 @@ func unregister_building(destroyed_building: Relay) -> void:
 
 
 # -----------------------------------------
-# --- Building Placement ------------------
+# --- Building Mode Placement ------------------
 # -----------------------------------------
 func place_building() -> void:
 	# Only build on valid ground tiles
@@ -140,46 +129,52 @@ func place_building() -> void:
 # -----------------------------------------
 
 func _select_building_to_build(new_building: DataTypes.BUILDING_TYPE) -> void:
-	is_building_mode = true
+	is_construction_state = true
 	building_ghost_preview.set_building_type(new_building)
 	building_to_build_id = DataTypes.get_tilemap_id(new_building)
 
 func _deselect_building_to_build() -> void:
-	is_building_mode = false
+	is_construction_state = false
 	building_ghost_preview.clear_preview()
 	building_to_build_id = 0
 
-# ---------------------------------------------------
-# ------- BuildingGhost Collision Feedback ----------
-# ---------------------------------------------------
+# -----------------------------------------
+# ------ Building Mode Ghost Feedback -----
+# -----------------------------------------
+func update_ghost_tile_position(new_position: Vector2i) -> void:
+	if ghost_tile_position == new_position:
+		return
+	ghost_tile_position = new_position
+	building_ghost_preview.position = local_tile_position
+
 func _on_building_ghost_preview_is_placeable(value: bool) -> void:
-	is_placeable = value
+	is_building_placeable = value
 
 # -----------------------------------------
 # --- Building Clicked in GameWorld -------
 # -----------------------------------------
 # Called when a building is clicked in the game world 
 # by connecting signal clicked on register_building
-func on_building_clicked(clicked_building: Relay) -> void:
+func on_building_clicked(clicked_building: Building) -> void:
 	# if building_mode is on dont select buildings
-	if is_building_mode == true:
+	if is_construction_state == true:
 		return
 
-	if current_selected_building == clicked_building:
+	if current_clicked_building == clicked_building:
 		# Deselect if clicked again
 		_deselect_clicked_building()
 	else:
 		# Select new building
 		_select_clicked_building(clicked_building)
 
-func _select_clicked_building(building: Relay) -> void:
+func _select_clicked_building(building: Building) -> void:
 	building_selected.emit(building)
-	current_selected_building = building
+	current_clicked_building = building
 	#print("Building selected")
 
 func _deselect_clicked_building() -> void:
 	building_deselected.emit()
-	current_selected_building = null
+	current_clicked_building = null
 	#print("Building deselected")
 
 # -----------------------------------------
@@ -187,7 +182,7 @@ func _deselect_clicked_building() -> void:
 # -----------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
 	# --- Placement ---
-	if event.is_action_pressed("left_mouse") and is_building_mode and is_placeable:
+	if event.is_action_pressed("left_mouse") and is_construction_state and is_building_placeable:
 		place_building()
 
 	# --- Selection: Building Hotkeys ---
@@ -202,7 +197,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# --- Cancel Building Mode or Building selection---
 	elif event.is_action_pressed("right_mouse"):
-		if is_building_mode == true:
+		if is_construction_state == true:
 			_deselect_building_to_build()
 
 		else:

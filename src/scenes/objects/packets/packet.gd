@@ -7,13 +7,13 @@ extends Node2D
 # -------------------------------
 # --- Packet Configuration ------
 # -------------------------------
-var path: Array[Relay] = []               # full path: base → ... → target
+var path: Array[Building] = []               # full path: base → ... → target
 var speed: int = 0
 var current_index: int = 0
 
 @export var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
 
-signal packet_arrived(target: Relay, packet_type: DataTypes.PACKETS)  # Listener: NetworkManager
+signal packet_arrived(target: Building, packet_type: DataTypes.PACKETS)  # Listener: NetworkManager
 
 # -------------------------------
 # --- Engine Callbacks ----------

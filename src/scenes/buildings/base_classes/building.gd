@@ -1,16 +1,15 @@
 # -------------------------------
-# --------- Relay.gd ------------
+# --------- Building.gd ---------
 # -------------------------------
-# Base relay class for all buildings and network nodes.
+# Base building class for all player structures, weapons and network nodes.
 # Other types (CommandCenter, relays, Generator, etc.) extend this.
-
-class_name Relay
+class_name Building
 extends Node2D
 
 # -------------------------------
 # --- Signals -------------------
 # -------------------------------
-signal clicked(relay: Relay)
+signal clicked(relay: Building)
 
 # -------------------------------
 # --- Editor Settings ----------- 
@@ -37,13 +36,13 @@ var packets_received: int = 0
 var packets_on_the_way: int = 0
 var build_progress: int = 0
 var supply_level: int = 0
-var connected_relays: Array[Relay] = []
+var connected_relays: Array[Building] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
 
 
 # -------------------------------
-# --- Engine Lifecycle ----------
+# --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
 	# --- Setup Click Detection ---
@@ -70,11 +69,11 @@ func on_hurtbox_clicked() -> void:
 # -------------------------------
 # --- Network Linking -----------
 # -------------------------------
-func connect_to(other_relay: Relay):
+func connect_to(other_relay: Building):
 	if not connected_relays.has(other_relay):
 		connected_relays.append(other_relay)
 
-func disconnect_from(other_relay: Relay):
+func disconnect_from(other_relay: Building):
 	connected_relays.erase(other_relay)
 
 # -------------------------------
@@ -86,7 +85,10 @@ func set_powered(state: bool):
 
 	is_powered = state
 	_updates_visuals()
-
+	
+# -------------------------------
+# --- Visuals Updating ----------
+# -------------------------------
 func _updates_visuals():
 	# Implemented by child classes (e.g., change color or glow)
 	pass
@@ -186,6 +188,11 @@ func destroy():
 
 	queue_free()
 
+
+# -------------------------------
+# ------ Energy Consumption -----
+# -------------------------------
+# Called by networkmanager on tick
 func consume_energy() -> float:
 	if not is_built or not is_powered:
 		return 0.0

@@ -12,7 +12,7 @@ size = Vector2(14, 14)
 
 [node name="EnergyRelay" type="Node2D"]
 script = ExtResource("1_mk7m4")
-connection_range = 100.0
+connection_range = 125.0
 energy_consumption_rate = 0.5
 building_type = 2
 

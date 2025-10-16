@@ -4,3 +4,4 @@
 
 [node name="NetworkManager" type="Node"]
 script = ExtResource("1_houfk")
+current_packet_speed = null

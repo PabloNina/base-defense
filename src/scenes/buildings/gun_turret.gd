@@ -1,4 +1,4 @@
-class_name GunTurret extends MovableBuilding
+class_name MovableWeapon extends MovableBuilding
 
 @onready var base_sprite: Sprite2D = $BaseSprite
 @onready var turret_sprite: Sprite2D = $TurretSprite

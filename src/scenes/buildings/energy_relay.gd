@@ -1,4 +1,4 @@
-class_name EnergyRelay extends Relay
+class_name EnergyRelay extends Building
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
