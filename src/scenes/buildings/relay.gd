@@ -2,7 +2,7 @@
 # --------- Relay.gd ------------
 # -------------------------------
 # Base relay class for all buildings and network nodes.
-# Other types (CommandCenter, Turret, Generator, etc.) extend this.
+# Other types (CommandCenter, relays, Generator, etc.) extend this.
 
 class_name Relay
 extends Node2D
@@ -20,6 +20,7 @@ signal clicked(relay: Relay)
 @export var cost_to_supply: int = 0  # packets needed to maintain supply
 @export var consumer_only: bool = false # consumer-only tag to prevent connections between generators/weapons
 @export var energy_consumption_rate: float = 0.0  # Energy consumed per tick
+@export var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
 # -------------------------------
 # --- Node References -----------
 # -------------------------------

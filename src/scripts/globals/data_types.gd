@@ -33,7 +33,7 @@ enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, GENERATOR, GUN_TURRET}
 # - display_name: for UI labels
 # - cost: for resource logic
 
-const BUILDINGS: Dictionary = {
+const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		#"scene_path": "res://Scenes/Buildings/CommandCenter.tscn",
 		"ghost_texture": preload("res://assets/sprites/buildings/command_center.png"),
@@ -69,16 +69,20 @@ const BUILDINGS: Dictionary = {
 # --- Utility Accessors ----------------------
 # --------------------------------------------
 static func get_building_data(building_type: int) -> Dictionary:
-	return BUILDINGS.get(building_type, {})
+	return BUILDINGS_DATA.get(building_type, {})
 
 static func get_ghost_texture(building_type: int) -> Texture2D:
 	var data = get_building_data(building_type)
 	return data.get("ghost_texture", null)
 
-static func get_scene_path(building_type: int) -> String:
-	var data = get_building_data(building_type)
-	return data.get("scene_path", "")
-
 static func get_tilemap_id(building_type: DataTypes.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
 	return data.get("tilemap_id", -1)
+
+static func get_display_name(building_type: int) -> String:
+	var data = get_building_data(building_type)
+	return data.get("display_name", "")
+
+#static func get_scene_path(building_type: int) -> String:
+	#var data = get_building_data(building_type)
+	#return data.get("scene_path", "")

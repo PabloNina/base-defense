@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dx23kdocknrqt" path="res://src/scenes/buildings/command_center.tscn" id="5_or5ng"]
 [ext_resource type="PackedScene" uid="uid://cpoaqe645mbpq" path="res://src/scenes/buildings/energy_generator.tscn" id="6_0j62b"]
 [ext_resource type="PackedScene" uid="uid://73yv02e6ghqj" path="res://src/scenes/buildings/energy_relay.tscn" id="7_r5543"]
-[ext_resource type="PackedScene" uid="uid://bmwseob8yf20s" path="res://src/scenes/buildings/plasma_cannon.tscn" id="8_qcjc8"]
+[ext_resource type="PackedScene" uid="uid://bmwseob8yf20s" path="res://src/scenes/buildings/gun_turret.tscn" id="8_qcjc8"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_n308x"]
 texture = ExtResource("1_0g74o")

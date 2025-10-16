@@ -11,6 +11,7 @@ size = Vector2(48, 48)
 script = ExtResource("1_oaft0")
 connection_range = 100.0
 cost_to_build = 0
+building_type = 1
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_6q2hw")

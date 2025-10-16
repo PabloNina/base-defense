@@ -1,10 +1,8 @@
 # =========================================
 # BuildingManager.gd
 # =========================================
-# Handles Mouse tracking and Building placement/selection
-
-class_name BuildingManager
-extends Node
+# Handles Mouse tracking and Building placement/selection/movement
+class_name BuildingManager extends Node
 
 # -----------------------------------------
 # --- Editor Exports ----------------------
@@ -31,15 +29,15 @@ var local_tile_position: Vector2
 # -----------------------------------------
 # TileSet SceneCollection ID is 2
 # Each building inside has an alternate ID used for placement
-var energy_relay_id: int = 5
-var energy_generator_id: int = 4
+#var energy_relay_id: int = 5
+#var energy_generator_id: int = 4
 var command_center_id: int = 3
-var gun_turret_id: int = 6
+#var gun_turret_id: int = 6
 
 # -----------------------------------------
 # --- Building State ----------------------
 # -----------------------------------------
-var building_mode: bool = false
+var is_building_mode: bool = false
 var is_placeable: bool = true
 var is_command_center: bool = false
 var building_to_build_id: int = 0
@@ -50,6 +48,12 @@ var ghost_tile_position: Vector2i
 # -----------------------------------------
 var current_selected_building: Relay = null
 var buildings: Array[Relay] = []  # All active buildings
+
+# ---------------------------------------
+# --- Move State -----------------------
+# ---------------------------------------
+var selected_building_to_move: MovableBuilding = null
+var is_moving_mode: bool = false
 
 # -----------------------------------------
 # --- Signals -----------------------------
@@ -62,14 +66,13 @@ signal building_deselected()
 # -----------------------------------------
 func _ready() -> void:
 	add_to_group("building_manager")
-	
-	# Subscribe to Ui signals1
+	# Subscribe to Ui signals
 	user_interface.building_button_pressed.connect(on_ui_building_button_pressed)
 
 
 func _process(_delta: float) -> void:
 	# If building mode is active update building ghost position
-	if building_mode == true:
+	if is_building_mode == true:
 		get_cell_under_mouse()
 		update_ghost_tile_position(tile_position)
 
@@ -136,13 +139,13 @@ func place_building() -> void:
 # --- Building Mode Helpers ---------------
 # -----------------------------------------
 
-func _select_building_to_build(building: DataTypes.BUILDING_TYPE) -> void:
-	building_mode = true
-	building_ghost_preview.set_building_type(building)
-	building_to_build_id = DataTypes.get_tilemap_id(building)
+func _select_building_to_build(new_building: DataTypes.BUILDING_TYPE) -> void:
+	is_building_mode = true
+	building_ghost_preview.set_building_type(new_building)
+	building_to_build_id = DataTypes.get_tilemap_id(new_building)
 
 func _deselect_building_to_build() -> void:
-	building_mode = false
+	is_building_mode = false
 	building_ghost_preview.clear_preview()
 	building_to_build_id = 0
 
@@ -159,7 +162,7 @@ func _on_building_ghost_preview_is_placeable(value: bool) -> void:
 # by connecting signal clicked on register_building
 func on_building_clicked(clicked_building: Relay) -> void:
 	# if building_mode is on dont select buildings
-	if building_mode == true:
+	if is_building_mode == true:
 		return
 
 	if current_selected_building == clicked_building:
@@ -184,7 +187,7 @@ func _deselect_clicked_building() -> void:
 # -----------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
 	# --- Placement ---
-	if event.is_action_pressed("left_mouse") and building_mode and is_placeable:
+	if event.is_action_pressed("left_mouse") and is_building_mode and is_placeable:
 		place_building()
 
 	# --- Selection: Building Hotkeys ---
@@ -199,7 +202,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# --- Cancel Building Mode or Building selection---
 	elif event.is_action_pressed("right_mouse"):
-		if building_mode == true:
+		if is_building_mode == true:
 			_deselect_building_to_build()
 
 		else:

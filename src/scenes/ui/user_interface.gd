@@ -1,6 +1,4 @@
-class_name UserInterface
-extends CanvasLayer
-
+class_name UserInterface extends CanvasLayer
 
 # -----------------------------------------
 # --- Nodes ------------------------------
@@ -11,6 +9,7 @@ extends CanvasLayer
 @onready var energy_spent_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/EnergyDemandLabel
 @onready var energy_produced_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/EnergyProducedLabel
 @onready var energy_balance_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/EnergyBalanceLabel
+@onready var building_actions_label: Label = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/BuildingActionsLabel
 
 # -----------------------------------------
 # --- ???????????? -----------------------
@@ -78,6 +77,7 @@ func on_update_energy(current_energy: float, produced: float, consumed: float, n
 # -----------------------------------------
 func show_building_actions_panel(selected_building: Relay) -> void:
 	current_building_selected = selected_building
+	building_actions_label.text = DataTypes.get_display_name(selected_building.building_type)
 	building_actions_panel.visible = true
 
 func hide_building_actions_panel() -> void:
