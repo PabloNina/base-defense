@@ -1,26 +1,27 @@
 # -------------------------------
-# MovableWeapon.gd
+# MovableBuilding.gd
 # -------------------------------
 # Base class for movable buildings connected to the network.
 # Extends building for network integration.
 class_name MovableBuilding extends Building
 
-
 # -----------------------------------------
-# ------------ Move Mode ------------------
+# -------- Move State Variables -----------
 # -----------------------------------------
 var is_moving: bool = false
 var move_target_position: Vector2 = Vector2.ZERO
 var move_speed: float = 100.0
 
-
-
-
+# -----------------------------------------
+# ------------ Engine Callbacks -----------
+# -----------------------------------------
 func _physics_process(delta: float) -> void:
 	if is_moving:
 		_move_towards_target(delta)
 
-
+# -----------------------------------------
+# -------- Move State Methods -------------
+# -----------------------------------------
 func start_move(target_pos: Vector2) -> void:
 	if not is_built:
 		return
@@ -33,8 +34,8 @@ func start_move(target_pos: Vector2) -> void:
 	is_moving = true
 	_updates_visuals()
 
+	# Unregister for clearing connections and energy demand/production during move 
 	network_manager.unregister_relay(self)
-	#building_manager.unregister_building(self)
 
 
 func _move_towards_target(delta: float) -> void:

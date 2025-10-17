@@ -1,11 +1,11 @@
 # =========================================
-# BuildingGhostPreview.gd
+# GhostBuilding.gd
 # =========================================
 # Displays a semi-transparent ghost of the selected building.
 # Handles placement validity (via Area2D overlap) and visual tinting.
 # Communicates with BuildingManager to confirm whether placement is valid.
 
-class_name BuildingGhostPreview
+class_name GhostBuilding
 extends Area2D
 
 # -----------------------------------------
@@ -15,6 +15,7 @@ extends Area2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 # Reference to the ghost_sprite used for building preview
 @onready var ghost_sprite: Sprite2D = $GhostSprite
+@onready var ghost_lines_container: Node2D = $GhostLines
 
 # --------------------------------------------
 # --- Signals --------------------------------
@@ -37,6 +38,18 @@ var overlapping_areas: Array[Area2D] = []
 const VALID_COLOR: Color = Color(1.0, 1.0, 0.0, 0.6)  # (placeable)
 const INVALID_COLOR: Color = Color(1.0, 0.0, 0.0, 0.6)  # (blocked)
 
+# Line visuals for potential network connections
+const GHOST_LINE_WIDTH: float = 1.0
+const GHOST_LINE_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)
+const GHOST_LINE_INVALID_COLOR: Color = Color(1.0, 0.2, 0.2, 0.6)
+
+# Internal state for connection ghosting
+var _network_manager: Node = null
+var _ghost_lines: Array[Line2D] = []
+var _last_global_position: Vector2 = Vector2.INF
+var _last_building_type: int = DataTypes.BUILDING_TYPE.NULL
+
+
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
 # --------------------------------------------
@@ -46,12 +59,12 @@ func _ready() -> void:
 	ghost_sprite.modulate = VALID_COLOR  # Default color
 
 # --------------------------------------------
-# --- Public API -----------------------------
+# --- Public Methods -------------------------
 # --------------------------------------------
 
 func set_building_type(new_type: DataTypes.BUILDING_TYPE) -> void:
-	# Updates the ghost appearance based on selected building type.
-	# Pulls ghost texture from DataTypes.
+	# Updates the ghost appearance and connections based on selected building type.
+	# Pulls ghost texture and connection range from DataTypes.
 	if current_building_type == new_type:
 		return  # No need to reapply the same texture
 
@@ -67,13 +80,24 @@ func set_building_type(new_type: DataTypes.BUILDING_TYPE) -> void:
 	collision_shape_size = ghost_sprite.texture.get_size() * ghost_sprite.scale
 	collision_shape_2d.shape.size = collision_shape_size
 
+	# Ensure we have a reference to the network manager
+	if not _network_manager:
+		_network_manager = get_tree().get_first_node_in_group("network_manager")
+
+	# Force connection ghost recalculation
+	_update_connection_ghosts()
+
 
 func clear_preview() -> void:
-	# Hides and resets the ghost completely
+	# Hides and resets the ghost building completely
 	current_building_type = DataTypes.BUILDING_TYPE.NULL
 	ghost_sprite.texture = null
 	ghost_sprite.visible = false
 	overlapping_areas.clear()
+
+	# Clear ghost connection lines
+	_clear_ghost_lines()
+
 
 # --------------------------------------------
 # --- Overlap Handling -----------------------
@@ -84,6 +108,8 @@ func _on_area_entered(area: Area2D) -> void:
 	overlapping_areas.append(area)
 	_set_valid_color(false)
 	is_placeable.emit(false)
+	# Update visuals (invalid connection color won't affect lines, but keep for parity)
+	_update_connection_ghosts()
 
 
 func _on_area_exited(area: Area2D) -> void:
@@ -94,9 +120,86 @@ func _on_area_exited(area: Area2D) -> void:
 		_set_valid_color(true)
 		is_placeable.emit(true)
 
+	# Update ghosts when an overlap changes
+	_update_connection_ghosts()
+
+
 # --------------------------------------------
 # --- Visual Feedback ------------------------
 # --------------------------------------------
 func _set_valid_color(valid: bool) -> void:
 	# Updates ghost tint based on placement validity
 	ghost_sprite.modulate = VALID_COLOR if valid else INVALID_COLOR
+
+
+func _process(_delta: float) -> void:
+	# Only recalc when visible and a building type is selected
+	if not ghost_sprite.visible:
+		return
+
+	# Recompute when either global position or building type changes
+	if global_position != _last_global_position or current_building_type != _last_building_type:
+		_last_global_position = global_position
+		_last_building_type = current_building_type
+		_update_connection_ghosts()
+
+
+
+func _update_connection_ghosts() -> void:
+	# Safety
+	if current_building_type == DataTypes.BUILDING_TYPE.NULL or not ghost_sprite.visible:
+		_clear_ghost_lines()
+		return
+
+	# Need network manager to query existing buildings
+	if not _network_manager:
+		_network_manager = get_tree().get_first_node_in_group("network_manager")
+		if not _network_manager:
+			return
+
+	# For each registered building, check if it would connect to the ghost using the same logic as NetworkManager
+	var targets: Array = []
+	for other in _network_manager.registered_buildings:
+		if not is_instance_valid(other):
+			continue
+		# Use the public static helper for connection logic
+		if _network_manager.can_buildings_connect(
+			current_building_type,
+			global_position,
+			DataTypes.get_is_relay(current_building_type), # ghost is always is_relay (or could be settable if needed)
+			other.building_type if other.has_method("get") else DataTypes.BUILDING_TYPE.NULL,
+			other.global_position,
+			other.is_relay if other.has_method("get") else false
+		):
+			targets.append(other)
+
+	# Reuse existing Line2D nodes, create more if needed
+	while _ghost_lines.size() < targets.size():
+		var line := Line2D.new()
+		line.width = GHOST_LINE_WIDTH
+		line.default_color = GHOST_LINE_COLOR
+		if ghost_lines_container:
+			ghost_lines_container.add_child(line)
+		else:
+			add_child(line)
+		_ghost_lines.append(line)
+
+	# Update or hide extra lines
+	for i in range(_ghost_lines.size()):
+		if i < targets.size():
+			var t = targets[i]
+			var l: Line2D = _ghost_lines[i]
+			l.points = [global_position, t.global_position]
+			l.global_position = Vector2.ZERO  # Ensures points are in world space
+			# Color indicates whether placement is valid (no overlaps)
+			l.default_color = GHOST_LINE_COLOR if overlapping_areas.is_empty() else GHOST_LINE_INVALID_COLOR
+			l.visible = true
+		else:
+			_ghost_lines[i].visible = false
+
+
+func _clear_ghost_lines() -> void:
+	for l in _ghost_lines:
+		if is_instance_valid(l):
+			l.queue_free()
+	_ghost_lines.clear()

@@ -36,8 +36,8 @@ var net_balance: float = 0.0  # Raw net balance
 
 const MIN_PACKETS_PER_TICK := 1
 const MAX_PACKETS_PER_TICK := 8
-const ENERGY_CRITICAL_THRESHOLD := 0.2  # 20% energy
-const BASE_TICK_RATE := 0.25  # 4 ticks per second
+const ENERGY_CRITICAL_THRESHOLD := 0.1  # 10% energy
+const BASE_TICK_RATE := 0.5  # 2 ticks per second
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -89,8 +89,8 @@ func unregister_relay(building: Building):
 		base_timers.erase(building)
 
 	# Update network state (order is important)
-	_refresh_network_caches()
-	_rebuild_all_connections()  # This will now handle both connections and power states
+	_refresh_network_caches() # clears all cashed data Dictionaries
+	_rebuild_all_connections() # handles both connections and power states 
 
 # -----------------------------------------
 # --- Network Construction ----------------
@@ -109,10 +109,11 @@ func _rebuild_all_connections():
 			var b = registered_buildings[j]
 			if _are_relays_in_range(a, b):
 				_connect_relays(a, b)
-	# Update caches and power states
+	# Update caches and power states after rebuilding
 	_refresh_network_caches()
-	_update_network_integrity()  # Add this line to update power states after rebuilding
+	_update_network_integrity() 
 
+# used only in register
 func _update_connections_for(new_building: Building):
 	for building in registered_buildings:
 		if building == new_building:
@@ -121,7 +122,7 @@ func _update_connections_for(new_building: Building):
 			_connect_relays(building, new_building)
 
 func _are_relays_in_range(a: Building, b: Building) -> bool:
-	if a.consumer_only and b.consumer_only:
+	if not a.is_relay and not b.is_relay:
 		return false
 
 	var key = str(a.get_instance_id()) + "_" + str(b.get_instance_id())
@@ -131,6 +132,16 @@ func _are_relays_in_range(a: Building, b: Building) -> bool:
 	var dist = a.global_position.distance_to(b.global_position)
 	distance_cache[key] = dist
 	return dist <= min(a.connection_range, b.connection_range)
+
+
+# Public static-like helper for ghost preview: checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
+static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
+	if not is_relay_a and not is_relay_b:
+		return false
+	var range_a = DataTypes.get_connection_range(type_a)
+	var range_b = DataTypes.get_connection_range(type_b)
+	var dist = pos_a.distance_to(pos_b)
+	return dist <= min(range_a, range_b)
 
 func _connect_relays(a: Building, b: Building):
 	a.connect_to(b)
@@ -144,6 +155,7 @@ func _connection_exists(a: Building, b: Building) -> bool:
 			return true
 	return false
 
+# used only in unregister
 func _clear_connections_for(building: Building):
 	for c in connections:
 		if c.relay_a == building or c.relay_b == building:
@@ -257,11 +269,12 @@ var tick_rate_multiplier := 1.0
 func _setup_packet_timer(base: Building):
 	if base in base_timers:
 		return
-	var timer = Timer.new()
+	var timer: Timer = Timer.new()
 	timer.wait_time = base_tick_rate / tick_rate_multiplier
 	timer.autostart = true
 	timer.one_shot = false
-	timer.connect("timeout", Callable(self, "_on_packet_tick").bind(base))
+	#timer.connect("timeout", Callable(self, "_on_packet_tick").bind(base))
+	timer.timeout.connect(_on_packet_tick.bind(base))
 	add_child(timer)
 	base_timers[base] = timer
 
@@ -274,8 +287,8 @@ func adjust_network_speed(multiplier: float):
 # -----------------------------------------
 # --- Packet Tick -------------------------
 # -----------------------------------------
-func _on_packet_tick(base: Building):
-	if not base is Command_Center:
+func _on_packet_tick(command_center: Building):
+	if not command_center is Command_Center:
 		return
 
 	var energy_produced: float = 0.0
@@ -283,19 +296,19 @@ func _on_packet_tick(base: Building):
 	var energy_consumed: float = 0.0
 	var packets_allowed: int = MIN_PACKETS_PER_TICK  # amout of packet to be spawned
 	
-	# --- Stage 0: Add buildings energy consumption ---
+	# --- Stage 0: Add all active buildings energy consumption ---
 	for building in registered_buildings:
 		if building.is_powered and building.is_built:
 			energy_consumed += building.consume_energy()
 	
-	# --- Stage 1: Generator bonuses ---
+	# --- Stage 1: Add Generator bonuses ---
 	for generator in registered_buildings:
 		if generator is EnergyGenerator and generator.is_powered and generator.is_built:
 			generator.provide_energy_bonus()
 
 	# --- Stage 2: Command Center produces energy ---
-	if base is Command_Center:
-		var cc := base as Command_Center
+	if command_center is Command_Center:
+		var cc := command_center as Command_Center
 		energy_produced = cc.produce_energy()
 		
 		# --- Stage 2.5: Command Center consumes energy ---
@@ -317,9 +330,9 @@ func _on_packet_tick(base: Building):
 	for pkt_type in packet_types:
 		if packet_quota <= 0:
 			break
-		var sent := _start_packet_propagation(base, packet_quota, pkt_type)
-		if sent > 0 and base is Command_Center:
-			var cc := base as Command_Center
+		var sent := _start_packet_propagation(command_center, packet_quota, pkt_type)
+		if sent > 0 and command_center is Command_Center:
+			var cc := command_center as Command_Center
 			cc.spend_energy_on_packets(pkt_type, sent)
 			energy_spent += sent * cc.get_packet_cost(pkt_type)
 			packet_quota -= sent
@@ -333,18 +346,17 @@ func _on_packet_tick(base: Building):
 
 	# Update UI with proper values
 	ui_update_energy.emit(
-		float(get_global_energy_pool()),  # current energy
-		energy_produced,                  # total produced
-		total_consumption,                # total consumed
-		net_balance                       # net balance
+		get_global_energy_pool(),  # current energy
+		energy_produced,           # total produced
+		total_consumption,         # total consumed
+		net_balance                # net balance
 	)
-
 
 # -----------------------------------------
 # Determines how many packets a base can send this tick
 # -----------------------------------------
-func _compute_packet_quota(cc: Command_Center) -> int:
-	var energy_ratio := cc.available_ratio()
+func _compute_packet_quota(command_center: Command_Center) -> int:
+	var energy_ratio := command_center.available_ratio()
 
 	# More aggressive throttling at low energy
 	var throttle_ratio := pow(energy_ratio, 1.5) if energy_ratio > ENERGY_CRITICAL_THRESHOLD else 0.5 * energy_ratio
@@ -353,14 +365,13 @@ func _compute_packet_quota(cc: Command_Center) -> int:
 	var network_size_factor := sqrt(float(registered_buildings.size()) / 10.0)  # Adjust divisor as needed
 	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
 
-	var max_affordable := int(floor(float(cc.stored_energy) / float(cc.get_packet_cost(DataTypes.PACKETS.ENERGY))))
+	var max_affordable := int(floor(float(command_center.stored_energy) / float(command_center.get_packet_cost(DataTypes.PACKETS.ENERGY))))
 	var desired_packets := int(floor(dynamic_packet_limit * throttle_ratio))
 
 	# DON'T force a minimum of 1 here. Allow zero when energy is too low or max_affordable == 0.
 	var result: int = min(desired_packets, max_affordable)
 	# Clamp to the allowed range but allow 0.
-	return clamp(result, 0, MAX_PACKETS_PER_TICK)
-
+	return clamp(result, MIN_PACKETS_PER_TICK, MAX_PACKETS_PER_TICK)
 
 # -----------------------------------------
 # --- Packet Propagation ------------------
@@ -368,14 +379,14 @@ func _compute_packet_quota(cc: Command_Center) -> int:
 # -----------------------------------------
 # Generic propagation for any packet type
 # -----------------------------------------
-func _start_packet_propagation(base: Building, quota: int, packet_type: DataTypes.PACKETS) -> int:
+func _start_packet_propagation(command_center: Command_Center, quota: int, packet_type: DataTypes.PACKETS) -> int:
 	var packets_sent := 0
-	if quota <= 0 or not reachable_cache.has(base):
+	if quota <= 0 or not reachable_cache.has(command_center):
 		return 0
 
 	var targets := []
-	for building in reachable_cache[base]:
-		if building == base or not is_instance_valid(building):
+	for building in reachable_cache[command_center]:
+		if building == command_center or not is_instance_valid(building):
 			continue
 
 		# Use building's built-in needs_packet check
@@ -403,7 +414,7 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 		return 0
 
 	# Round-robin selection over the filtered targets
-	var index = last_target_index.get(base, 0)
+	var index = last_target_index.get(command_center, 0)
 	var n = targets.size()
 
 	for i in range(n):
@@ -424,7 +435,7 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 				if building.packets_on_the_way >= building.cost_to_supply:
 					continue
 
-		var key = str(base.get_instance_id()) + "_" + str(building.get_instance_id())
+		var key = str(command_center.get_instance_id()) + "_" + str(building.get_instance_id())
 		if not path_cache.has(key):
 			continue
 
@@ -435,8 +446,8 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 		if not are_connected(path[0], path[-1]):
 			continue
 
-		var spawn_delay_step := 0.1  # seconds between packets
-		var delay_accum := 0.0
+		var spawn_delay_step: float = 0.1  # seconds between packets
+		var delay_accum: float = 0.0
 		# Increment in-flight AFTER the final checks and BEFORE spawning the packet.
 		# This ensures other bases/ticks see the incremented value immediately.
 		building.packets_on_the_way += 1
@@ -448,10 +459,8 @@ func _start_packet_propagation(base: Building, quota: int, packet_type: DataType
 		if packet_type == DataTypes.PACKETS.BUILDING and building.packets_on_the_way >= building.cost_to_build:
 			building.is_scheduled_to_build = true
 
-	last_target_index[base] = index % n
+	last_target_index[command_center] = index % n
 	return packets_sent
-
-
 
 # -----------------------------------------
 # --- Packet spawning ---------------------

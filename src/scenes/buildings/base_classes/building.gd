@@ -17,7 +17,7 @@ signal clicked(relay: Building)
 @export var connection_range: float = 200.0
 @export var cost_to_build: int = 1   # packets needed to complete construction
 @export var cost_to_supply: int = 0  # packets needed to maintain supply
-@export var consumer_only: bool = false # consumer-only tag to prevent connections between generators/weapons
+@export var is_relay: bool = false # is_relay tag to prevent connections between generators/weapons
 @export var energy_consumption_rate: float = 0.0  # Energy consumed per tick
 @export var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
 # -------------------------------
@@ -150,7 +150,7 @@ func _handle_energy_packet() -> void:
 func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 	match packet_type:
 		DataTypes.PACKETS.BUILDING:
-			# Needs building packets if not yet built and not fully scheduled
+			# Needs building packets if not yet built and not fully scheduled to build
 			return not is_built and not is_scheduled_to_build
 
 		DataTypes.PACKETS.ENERGY:
@@ -158,7 +158,7 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 			return is_built and is_powered and (supply_level < cost_to_supply)
 
 		DataTypes.PACKETS.AMMO:
-			# Optional: later for turrets etc.
+			# Needs ammo if 
 			return has_method("needs_ammo_packet") and call("needs_ammo_packet")
 
 		DataTypes.PACKETS.ORE:

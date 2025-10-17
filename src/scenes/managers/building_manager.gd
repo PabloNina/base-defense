@@ -14,7 +14,7 @@ class_name BuildingManager extends Node
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
-@onready var building_ghost_preview: BuildingGhostPreview = $BuildingGhostPreview
+@onready var ghost_building: GhostBuilding = $GhostBuilding
 
 # -----------------------------------------
 # --- Mouse Tracking ----------------------
@@ -67,21 +67,21 @@ func _ready() -> void:
 	user_interface.destroy_button_pressed.connect(on_ui_destroy_button_pressed)
 	user_interface.move_button_pressed.connect(on_ui_move_button_pressed)
 
+
 func _process(_delta: float) -> void:
 	# If building mode is active update building ghost position
 	if is_construction_state == true or is_move_state == true:
-		get_cell_under_mouse()
-		update_ghost_tile_position(tile_position)
+		_get_cell_under_mouse()
+		_update_ghost_tile_position(tile_position)
 
 # -----------------------------------------
 # --- Mouse Tile Tracking -----------------
 # -----------------------------------------
-func get_cell_under_mouse() -> void:
+func _get_cell_under_mouse() -> void:
 	mouse_position = ground_layer.get_local_mouse_position()
 	tile_position = ground_layer.local_to_map(mouse_position)
 	tile_source_id = ground_layer.get_cell_source_id(tile_position)
 	local_tile_position = ground_layer.map_to_local(tile_position)
-	# print("Mouse:", mouse_position, "Tile:", tile_position, "Source ID:", tile_source_id)
 
 # -----------------------------------------
 # --- Building Registration ---------------
@@ -90,6 +90,7 @@ func register_building(new_building: Building) -> void:
 	if new_building not in buildings:
 		buildings.append(new_building)
 		new_building.clicked.connect(on_building_clicked)
+
 
 func unregister_building(destroyed_building: Building) -> void:
 	if destroyed_building not in buildings:
@@ -100,7 +101,6 @@ func unregister_building(destroyed_building: Building) -> void:
 	# Remove tile from map so it can be used again
 	var tile_coords = buildings_layer.local_to_map(destroyed_building.global_position)
 	buildings_layer.erase_cell(tile_coords)
-
 
 # -----------------------------------------
 # --- Construction State Placement --------
@@ -131,33 +131,36 @@ func place_building() -> void:
 
 func _select_building_to_build(new_building: DataTypes.BUILDING_TYPE) -> void:
 	is_construction_state = true
-	building_ghost_preview.set_building_type(new_building)
+	ghost_building.set_building_type(new_building)
 	building_to_build_id = DataTypes.get_tilemap_id(new_building)
+
 
 func _deselect_building_to_build() -> void:
 	is_construction_state = false
-	building_ghost_preview.clear_preview()
+	ghost_building.clear_preview()
 	building_to_build_id = 0
 
 # -----------------------------------------
 # ------ Construction State Ghost Feedback -----
 # -----------------------------------------
-func update_ghost_tile_position(new_position: Vector2i) -> void:
+func _update_ghost_tile_position(new_position: Vector2i) -> void:
 	if ghost_tile_position == new_position:
 		return
 	ghost_tile_position = new_position
-	building_ghost_preview.position = local_tile_position
+	ghost_building.position = local_tile_position
 
+# Used in Keyboard Input Handling to check if a building can be built or moved
+# Called by the signal is_placeable emited everytime a building enters/exits BuildingGhost area2d
 func _on_building_ghost_preview_is_placeable(value: bool) -> void:
 	is_building_placeable = value
 
 # -----------------------------------------
 # --- Building Clicked in GameWorld -------
 # -----------------------------------------
-# Called when a building is clicked in the game world 
+# Called when a building is clicked in the game world
 # by connecting signal clicked on register_building
 func on_building_clicked(clicked_building: Building) -> void:
-	# if building_mode is on dont select buildings
+	# if construction state is on dont select buildings
 	if is_construction_state == true:
 		return
 
@@ -171,12 +174,10 @@ func on_building_clicked(clicked_building: Building) -> void:
 func _select_clicked_building(building: Building) -> void:
 	building_selected.emit(building)
 	current_clicked_building = building
-	#print("Building selected")
 
 func _deselect_clicked_building() -> void:
 	building_deselected.emit()
 	current_clicked_building = null
-	#print("Building deselected")
 
 # -----------------------------------------
 # --- Mouse and Keyboard Input Handling ---
@@ -222,23 +223,14 @@ func on_ui_destroy_button_pressed(building_to_destroy: Building) -> void:
 func on_ui_move_button_pressed(building_to_move: MovableBuilding) -> void:
 	is_move_state = true
 	current_building_to_move = building_to_move
-	building_ghost_preview.set_building_type(current_building_to_move.building_type)
+	ghost_building.set_building_type(current_building_to_move.building_type)
 
 # -----------------------------------------
 # --- Moving State Placement ------------
 # -----------------------------------------
-func move_building(btm: MovableBuilding) -> void:
-	btm.start_move(local_tile_position)
+func move_building(building_to_move: MovableBuilding) -> void:
+	building_to_move.start_move(local_tile_position)
 	is_move_state = false
 	current_building_to_move = null
-	building_ghost_preview.clear_preview()
+	ghost_building.clear_preview()
 	_deselect_clicked_building()
-
-func rebuild_moved_building(_moved_building: MovableBuilding) -> void:
-	#var tile_coords = buildings_layer.local_to_map(moved_building.global_position)
-	#var building_id = DataTypes.get_tilemap_id(moved_building.building_type)
-	#moved_building.destroy()
-	#buildings_layer.set_cell(tile_coords, 2, Vector2i.ZERO, building_id)
-	#is_move_state = false
-	#current_building_to_move = null
-	pass

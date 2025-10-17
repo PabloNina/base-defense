@@ -8,16 +8,18 @@
 [node name="BuildingManager" type="Node"]
 script = ExtResource("1_4wbys")
 
-[node name="BuildingGhostPreview" type="Area2D" parent="."]
+[node name="GhostBuilding" type="Area2D" parent="."]
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("2_13xf3")
 
-[node name="GhostSprite" type="Sprite2D" parent="BuildingGhostPreview"]
+[node name="GhostSprite" type="Sprite2D" parent="GhostBuilding"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="BuildingGhostPreview"]
+[node name="GhostLines" type="Node2D" parent="GhostBuilding"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GhostBuilding"]
 shape = SubResource("RectangleShape2D_13xf3")
 
-[connection signal="area_entered" from="BuildingGhostPreview" to="BuildingGhostPreview" method="_on_area_entered"]
-[connection signal="area_exited" from="BuildingGhostPreview" to="BuildingGhostPreview" method="_on_area_exited"]
-[connection signal="is_placeable" from="BuildingGhostPreview" to="." method="_on_building_ghost_preview_is_placeable"]
+[connection signal="area_entered" from="GhostBuilding" to="GhostBuilding" method="_on_area_entered"]
+[connection signal="area_exited" from="GhostBuilding" to="GhostBuilding" method="_on_area_exited"]
+[connection signal="is_placeable" from="GhostBuilding" to="." method="_on_building_ghost_preview_is_placeable"]
