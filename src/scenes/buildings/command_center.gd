@@ -13,6 +13,7 @@ const BASE_TICK_RATE: float = 1.0  # 1 ticks per second
 
 func _ready():
 	super()
+	is_built = true
 	# tick timer setup
 	tick_timer.wait_time = BASE_TICK_RATE
 	tick_timer.autostart = true

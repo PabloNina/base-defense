@@ -10,6 +10,9 @@ class_name Building extends Node2D
 ## Emited when building is clicked
 ## Connected to BuildingManager
 signal clicked(relay: Building)
+## Emited when building is built
+## Connected to NetWorkManager
+signal finish_building()
 
 # -------------------------------
 # --- Editor Settings ----------- 
@@ -126,6 +129,7 @@ func _handle_building_packet() -> void:
 
 	if build_progress >= cost_to_build:
 		is_built = true
+		finish_building.emit()
 		set_powered(true)
 		_updates_visuals()
 		is_scheduled_to_build = false

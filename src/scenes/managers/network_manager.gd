@@ -29,9 +29,16 @@ var last_target_index: Dictionary = {}      # { base: int } tracks incremental t
 # -----------------------------------------
 signal ui_update_energy(pkt_stored: float, pkt_produced: float, pkt_consumed: float, net_balance: float)
 
-const MIN_PACKETS_PER_TICK: int = 1
-const MAX_PACKETS_PER_TICK: int = 8
-const ENERGY_CRITICAL_THRESHOLD: float = 0.1  # 10% energy
+const MIN_PACKETS_PER_TICK: int = 0
+const MAX_PACKETS_PER_TICK: int = 12
+const ENERGY_CRITICAL_THRESHOLD: float = 0.12  # 12% energy
+@export var throttle_exponent: float = 1.6
+@export var critical_threshold: float = 0.12
+@export var ema_alpha: float = 0.25 # smoothing factor for energy ratio (0..1)
+@export var enable_quota_debug: bool = false
+
+# Smoothed energy ratio (EMA). Single value since only one Command Center is allowed.
+var _smoothed_energy_ratio: float = 0.0
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -46,6 +53,10 @@ func _ready():
 func register_relay(new_building: Building):
 	if new_building in registered_buildings:
 		return
+	
+	#
+	new_building.finish_building.connect(_on_building_built)
+	#
 	registered_buildings.append(new_building)
 	_update_connections_for(new_building)
 
@@ -59,6 +70,7 @@ func register_relay(new_building: Building):
 	if new_building.is_built:
 		new_building.set_powered(true)
 		new_building._updates_visuals()
+
 
 func unregister_relay(building: Building):
 	if building not in registered_buildings:
@@ -81,12 +93,16 @@ func unregister_relay(building: Building):
 	_refresh_network_caches() # clears all cached data Dictionaries
 	_rebuild_all_connections() # handles both connections and power states 
 
+
 # -----------------------------------------
 # --- Network Construction ----------------
 # -----------------------------------------
 func initialize_network():
 	_rebuild_all_connections()
 
+# Fully clears and rebuilds all physical connections in the network.
+# This is more expensive and is only needed after mass changes or a full reset.
+# Usually you only need to call _refresh_network_caches and _update_network_integrity for incremental changes.
 func _rebuild_all_connections():
 	_clear_all_connections()
 	for building in registered_buildings:
@@ -102,7 +118,10 @@ func _rebuild_all_connections():
 	_refresh_network_caches()
 	_update_network_integrity() 
 
-# used only in register
+
+# Connects the newly registered building to all other buildings in range.
+# Called only when a building is registered (added to the network).
+# This ensures new buildings are physically connected to all valid neighbors.
 func _update_connections_for(new_building: Building):
 	for building in registered_buildings:
 		if building == new_building:
@@ -169,6 +188,8 @@ func _create_connection_line(a: Building, b: Building):
 # -----------------------------------------
 # --- Network Cache -----------------------
 # -----------------------------------------
+# Updates all pathfinding, reachability, and distance caches for the network.
+# Call this after adding/removing buildings or when a relay is built/destroyed.
 func _refresh_network_caches():
 	path_cache.clear()
 	distance_cache.clear()
@@ -187,9 +208,15 @@ func _get_reachable_relays(base: Building) -> Array:
 	while queue.size() > 0:
 		var current: Building = queue.pop_front()
 		for neighbor in current.connected_buildings:
-			if is_instance_valid(neighbor) and neighbor not in visited:
+			if not is_instance_valid(neighbor):
+				continue
+			# Always add neighbor to visited so unbuilt targets are discoverable
+			if neighbor not in visited:
 				visited.append(neighbor)
-				queue.append(neighbor)
+				# Only traverse through built neighbors (enqueue) so paths don't go through unbuilt relays
+				if neighbor.is_built:
+					queue.append(neighbor)
+				# Cache path to neighbor (path may include unbuilt neighbor as final node)
 				var key = str(base.get_instance_id()) + "_" + str(neighbor.get_instance_id())
 				path_cache[key] = _find_path(base, neighbor)
 	return visited
@@ -202,6 +229,8 @@ func are_connected(a: Building, b: Building) -> bool:
 # -----------------------------------------
 # --- Network Integrity -------------------
 # -----------------------------------------
+# Recalculates which buildings are powered, updates connection line colors, and handles cluster power state.
+# Call this after any change to the network topology or after caches are refreshed.
 func _update_network_integrity():
 	var visited := {}
 	var powered_map := {}
@@ -232,8 +261,10 @@ func _update_network_integrity():
 
 		# Set power state for cluster
 		for r in cluster:
-			r.set_powered(cluster_has_cc)
-			powered_map[r] = cluster_has_cc
+			# Only built buildings can be powered. An unbuilt relay should not appear powered.
+			var powered_state = cluster_has_cc and r.is_built
+			r.set_powered(powered_state)
+			powered_map[r] = powered_state
 
 	# Update connection visuals
 	for c in connections:
@@ -241,7 +272,8 @@ func _update_network_integrity():
 			continue
 		var a_powered = powered_map.get(c.relay_a, false)
 		var b_powered = powered_map.get(c.relay_b, false)
-		c.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered and b_powered) else Color(1, 0.3, 0.3)
+		# Valid (blue) if either endpoint is powered, invalid (red) only if both are unpowered
+		c.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
 
 func _reset_isolated_construction(cluster: Array):
 	for building in cluster:
@@ -284,7 +316,15 @@ func _on_command_center_tick(command_center: Command_Center):
 	# Pay all active buildings per tick packet consumption
 	command_center.deduct_buildings_consumption(packets_consumed)
 
-	# Compute packet quota with updated Command_Center stored energy
+	# Update smoothed energy ratio (EMA) for this command center before computing quota
+	var raw_ratio := command_center.available_ratio()
+	# initialize smoothed ratio to raw on first tick
+	if _smoothed_energy_ratio == 0.0:
+		_smoothed_energy_ratio = raw_ratio
+	var smoothed := _smoothed_energy_ratio * (1.0 - ema_alpha) + raw_ratio * ema_alpha
+	_smoothed_energy_ratio = smoothed
+
+	# Compute packet quota with updated Command_Center stored energy and smoothed ratio
 	packets_allowed = _compute_packet_quota(command_center)
 	var packet_quota: int = packets_allowed
 	#print(packet_quota)
@@ -325,17 +365,28 @@ func _on_command_center_tick(command_center: Command_Center):
 		net_balance                # net balance
 	)
 
-# -----------------------------------------
-# Determines how many packets a base can send this tick
-# -----------------------------------------
-func _compute_packet_quota(command_center: Command_Center) -> int:
-	var energy_ratio := command_center.available_ratio()
 
-	# More aggressive throttling at low energy
-	var throttle_ratio := pow(energy_ratio, 1.5) if energy_ratio > ENERGY_CRITICAL_THRESHOLD else 0.5 * energy_ratio
+# Calculates how many packets the Command Center can send this tick.
+# This is based on available stored packets, network size, and throttling for low energy.
+#
+# Steps:
+# 1. Compute the ratio of available packets to max capacity (energy_ratio).
+# 2. Apply aggressive throttling if energy is low (throttle_ratio).
+# 3. Scale the max packet limit by network size (network_size_factor).
+# 4. Determine the max number of packets that can be afforded (max_affordable).
+# 5. The desired number of packets is the dynamic limit scaled by throttle_ratio.
+# 6. The final quota is the minimum of desired_packets and max_affordable, clamped to allowed range.
+#
+# Returns: The number of packets the Command Center is allowed to send this tick.
+func _compute_packet_quota(command_center: Command_Center) -> int:
+	# Use the smoothed energy ratio (single CC) or fall back to raw
+	var energy_ratio := _smoothed_energy_ratio if _smoothed_energy_ratio > 0.0 else command_center.available_ratio()
+
+	# More aggressive throttling at low energy. Uses exported parameters for tuning.
+	var throttle_ratio := pow(energy_ratio, throttle_exponent) if energy_ratio > critical_threshold else 0.5 * energy_ratio
 
 	# Dynamic packet limit based on network size
-	var network_size_factor := sqrt(float(registered_buildings.size()) / 10.0)  # Adjust divisor as needed
+	var network_size_factor := sqrt(float(registered_buildings.size()) / 20.0)  # Adjust divisor as needed (Option A uses 20)
 	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
 
 	var max_affordable := int(floor(float(command_center.stored_packets) / 1.0 )) # 1 = packet cost
@@ -344,7 +395,12 @@ func _compute_packet_quota(command_center: Command_Center) -> int:
 	# DON'T force a minimum of 1 here. Allow zero when energy is too low or max_affordable == 0.
 	var result: int = min(desired_packets, max_affordable)
 	# Clamp to the allowed range but allow 0.
-	return clamp(result, MIN_PACKETS_PER_TICK, MAX_PACKETS_PER_TICK)
+	var final_quota = clamp(result, MIN_PACKETS_PER_TICK, MAX_PACKETS_PER_TICK)
+
+	if enable_quota_debug:
+		print("[QuotaDebug] CC=", command_center, "raw_ratio=", command_center.available_ratio(), "smoothed=", energy_ratio, "throttle=", throttle_ratio, "dyn_limit=", dynamic_packet_limit, "desired=", desired_packets, "affordable=", max_affordable, "final=", final_quota)
+
+	return final_quota
 
 # -----------------------------------------
 # --- Packet Propagation ------------------
@@ -439,10 +495,46 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	# Safety checks
 	if path.size() < 2:
 		return
-	if path.any(func(r): return not is_instance_valid(r)):
-		return
+	# Prevent packets from traversing through unbuilt relays **except** allow the final target
+	# to be unbuilt when sending BUILDING packets (so CC can send building packets to construct new buildings).
+	if path.size() >= 2:
+		# Check intermediate nodes only (exclude last node)
+		for i in range(path.size() - 1):
+			var inter = path[i]
+			if not is_instance_valid(inter) or not inter.is_built:
+				return
 	if not are_connected(path[0], path[-1]):
 		return
+
+	# Additionally ensure each edge in the path is traversable.
+	# An edge between path[i] and path[i+1] is traversable if both nodes are built
+	# and at least one of the two endpoints is powered.
+	for i in range(path.size() - 1):
+		var a = path[i]
+		var b = path[i+1]
+		# If this edge is the final edge and packet_type == BUILDING, allow b to be unbuilt
+		var is_final_edge = (i == path.size() - 2)
+		if is_final_edge and packet_type == DataTypes.PACKETS.BUILDING:
+			if not (is_instance_valid(a) and is_instance_valid(b) and a.is_built):
+				return
+		else:
+			if not (is_instance_valid(a) and is_instance_valid(b) and a.is_built and b.is_built):
+				return
+		# Determine powered map from current network integrity (best-effort). If either is powered allow traversal.
+		var a_powered := false
+		var b_powered := false
+		# powered_map may not be directly accessible here; check building state as a fallback
+		if a.has_method("is_powered"):
+			a_powered = a.is_powered
+		else:
+			a_powered = a.is_powered
+		if b.has_method("is_powered"):
+			b_powered = b.is_powered
+		else:
+			b_powered = b.is_powered
+		if not (a_powered or b_powered):
+			# both endpoints unpowered -> edge not traversable
+			return
 	
 	# small per-packet delay to avoid packet stacking
 	if delay_offset > 0.0:
@@ -502,3 +594,9 @@ func _find_path(start: Building, goal: Building) -> Array[Building]:
 				new_path.append(neighbor)
 				queue.append(new_path)
 	return []
+
+###############################
+func _on_building_built() -> void:
+	_refresh_network_caches()
+	_update_network_integrity()
+#############################
