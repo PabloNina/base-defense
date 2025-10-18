@@ -21,3 +21,6 @@ texture = ExtResource("1_6q2hw")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BuildingHurtBox"]
 shape = SubResource("RectangleShape2D_pkfxu")
+
+[node name="TickTimer" type="Timer" parent="."]
+autostart = true

@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://b412gqhwl2dff"]
+
+[ext_resource type="Script" uid="uid://b48qx3e2s5dqn" path="res://src/scenes/objects/packets/red_packet.gd" id="1_qll2j"]
+[ext_resource type="Texture2D" uid="uid://dumwgtbqb3ci8" path="res://assets/sprites/objects/ammo_packet.png" id="2_wwsjj"]
+
+[node name="RedPacket" type="Node2D"]
+script = ExtResource("1_qll2j")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_wwsjj")

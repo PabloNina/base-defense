@@ -7,12 +7,12 @@ class_name EnergyGenerator extends Building
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
-# Amount of extra energy regeneration this generator provides
-@export var energy_bonus: int = 5
+# Amount of extra packet regeneration this generator provides
+@export var packet_production_bonus: int = 5
 
 
-# Function to add energy to command center if connected
-func provide_energy_bonus():
+# Function to add packets to command center if connected
+func add_packet_production_bonus():
 	if not is_powered or not is_built:
 		return
 
@@ -24,7 +24,7 @@ func provide_energy_bonus():
 	for building in network_manager.registered_buildings:
 		if building is Command_Center and network_manager.are_connected(building, self):
 			var cc := building as Command_Center
-			cc.generators_regen_bonus += energy_bonus # Boost regen rate temporarily for this tick
+			cc.generators_production_bonus += packet_production_bonus # Boost regen rate temporarily for this tick
 			return  # if Only one CC per network we can stop here
 
 

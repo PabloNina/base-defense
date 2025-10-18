@@ -15,7 +15,7 @@ class_name UserInterface extends CanvasLayer
 # --- ???????????? -----------------------
 # -----------------------------------------
 var current_building_selected: Building
-var max_balance_value: int = 200 # Maximum production/demand displayed on bar
+var max_balance_value: int = 100 # Maximum production/demand displayed on bar
 
 # -----------------------------------------
 # --- References ---------------
@@ -50,7 +50,7 @@ func _ready() -> void:
 	# Hide building panel at start
 	hide_building_actions_panel()
 
-	# Initialize energy stored bar range
+	# Initialize packets stored bar range
 	energy_stored_bar.min_value = 0
 	energy_stored_bar.max_value = max_balance_value
 	energy_stored_bar.value = 0
@@ -59,15 +59,16 @@ func _ready() -> void:
 # --- Energy Stats Panel ----------------
 # -----------------------------------------
 # Update energy stats
+
 func on_update_energy(current_energy: float, produced: float, consumed: float, net_balance: float) -> void:
-	# Update stored energy label and bar
-	energy_stored_label.text = "Energy Stored: %.1f / %.1f" % [current_energy, 200.0]
+	# Update stored packets label and bar
+	energy_stored_label.text = "Packets Stored: %.1f / %.1f" % [current_energy, max_balance_value]
 	energy_stored_bar.value = current_energy
-	
+
 	# Update production/consumption values
 	energy_produced_label.text = "+ %.1f" % [produced]
 	energy_spent_label.text = "- %.1f" % [consumed]
-	
+
 	# Update balance label
 	# Color code the balance label based on value
 	var balance_color := Color.GREEN if net_balance > 0 else Color.RED if net_balance < 0 else Color.WHITE

@@ -40,7 +40,7 @@ layout_mode = 2
 [node name="EnergyStoredLabel" type="Label" parent="EnergyStats/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Energy Stored: "
+text = "Packets Stored: "
 
 [node name="EnergyStoredBar" type="ProgressBar" parent="EnergyStats/Panel/MarginContainer/VBoxContainer"]
 modulate = Color(0, 0.75271684, 0.142034, 1)

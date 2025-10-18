@@ -3,22 +3,28 @@
 # -------------------------------
 # Base building class for all player structures, weapons and network nodes.
 # Other types (CommandCenter, relays, Generator, etc.) extend this.
-class_name Building
-extends Node2D
-
+class_name Building extends Node2D
 # -------------------------------
 # --- Signals -------------------
 # -------------------------------
+## Emited when building is clicked
+## Connected to BuildingManager
 signal clicked(relay: Building)
 
 # -------------------------------
 # --- Editor Settings ----------- 
 # -------------------------------
+## Distance this building can connect to others
 @export var connection_range: float = 200.0
-@export var cost_to_build: int = 1   # packets needed to complete construction
-@export var cost_to_supply: int = 0  # packets needed to maintain supply
-@export var is_relay: bool = false # is_relay tag to prevent connections between generators/weapons
-@export var energy_consumption_rate: float = 0.0  # Energy consumed per tick
+## packets needed to complete construction
+@export var cost_to_build: int = 1
+## packets needed to maintain supply
+@export var cost_to_supply: int = 0
+## tag to prevent connections between generators/weapons etc...
+@export var is_relay: bool = false
+## Amount of Packets this building consumes per tick
+@export var per_tick_packet_consumption: float = 0.0
+## 
 @export var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
 # -------------------------------
 # --- Node References -----------
@@ -36,7 +42,7 @@ var packets_received: int = 0
 var packets_on_the_way: int = 0
 var build_progress: int = 0
 var supply_level: int = 0
-var connected_relays: Array[Building] = []
+var connected_buildings: Array[Building] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
 
@@ -69,12 +75,12 @@ func on_hurtbox_clicked() -> void:
 # -------------------------------
 # --- Network Linking -----------
 # -------------------------------
-func connect_to(other_relay: Building):
-	if not connected_relays.has(other_relay):
-		connected_relays.append(other_relay)
+func connect_to(other_building: Building):
+	if not connected_buildings.has(other_building):
+		connected_buildings.append(other_building)
 
-func disconnect_from(other_relay: Building):
-	connected_relays.erase(other_relay)
+func disconnect_from(other_building: Building):
+	connected_buildings.erase(other_building)
 
 # -------------------------------
 # --- Power Management ----------
@@ -103,14 +109,8 @@ func receive_packet(packet_type: DataTypes.PACKETS):
 		DataTypes.PACKETS.ENERGY:
 			_handle_energy_packet()
 		DataTypes.PACKETS.AMMO:
-			if has_method("receive_ammo_packet"):
-				pass#receive_ammo_packet()
-		DataTypes.PACKETS.ORE:
-			if has_method("receive_ore_packet"):
-				pass#receive_ore_packet()
-		DataTypes.PACKETS.TECH:
-			if has_method("receive_tech_packet"):
-				pass#receive_tech_packet()
+			pass#receive_ammo_packet()
+
 		_:
 			push_warning("Unknown packet type received: %s" % str(packet_type))
 
@@ -159,13 +159,13 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 
 		DataTypes.PACKETS.AMMO:
 			# Needs ammo if 
-			return has_method("needs_ammo_packet") and call("needs_ammo_packet")
+			return false
 
-		DataTypes.PACKETS.ORE:
-			return has_method("needs_ore_packet") and call("needs_ore_packet")
-
-		DataTypes.PACKETS.TECH:
-			return has_method("needs_tech_packet") and call("needs_tech_packet")
+		#DataTypes.PACKETS.ORE:
+			#return has_method("needs_ore_packet") and call("needs_ore_packet")
+#
+		#DataTypes.PACKETS.TECH:
+			#return has_method("needs_tech_packet") and call("needs_tech_packet")
 
 		_:
 			return false
@@ -181,10 +181,10 @@ func destroy():
 		building_manager.unregister_building(self)
 
 	# Disconnect from others to avoid dangling references
-	for other in connected_relays:
+	for other in connected_buildings:
 		if is_instance_valid(other):
-			other.connected_relays.erase(self)
-	connected_relays.clear()
+			other.connected_buildings.erase(self)
+	connected_buildings.clear()
 
 	queue_free()
 
@@ -193,7 +193,7 @@ func destroy():
 # ------ Energy Consumption -----
 # -------------------------------
 # Called by networkmanager on tick
-func consume_energy() -> float:
+func consume_packets() -> float:
 	if not is_built or not is_powered:
 		return 0.0
-	return energy_consumption_rate
+	return per_tick_packet_consumption

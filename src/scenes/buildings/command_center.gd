@@ -1,49 +1,45 @@
 class_name Command_Center extends Building
 
-@export var max_energy_capacity: float = 200.0
-@export var stored_energy: float = 0.0
-@export var base_regen_rate: float = 4.0       # intrinsic regen
+@onready var tick_timer: Timer = $TickTimer
 
-var generators_regen_bonus: float = 0.0        # accumulated generator bonus each tick
+@export var max_packet_capacity: float = 100.0
+@export var stored_packets: float = 0.0
+@export var default_packet_production: float = 4.0       # intrinsic regen per tick
 
-# --- Per-packet energy cost table ---
-var packet_costs := {
-	DataTypes.PACKETS.BUILDING: 15,  # building = expensive
-	DataTypes.PACKETS.ENERGY: 5,     # supply = cheap
-	DataTypes.PACKETS.AMMO: 8,
-	DataTypes.PACKETS.ORE: 10,
-	DataTypes.PACKETS.TECH: 20
-}
+var generators_production_bonus: float = 0.0        # accumulated generator bonus each tick
 
-# --- Energy Production ---
-func produce_energy() -> float:
-	# Total energy produced this tick = base + generators 
-	var total_generated := base_regen_rate + generators_regen_bonus
-	stored_energy = min(max_energy_capacity, stored_energy + total_generated)
+const BASE_TICK_RATE: float = 1.0  # 1 ticks per second
 
+
+func _ready():
+	super()
+	# tick timer setup
+	tick_timer.wait_time = BASE_TICK_RATE
+	tick_timer.autostart = true
+	tick_timer.one_shot = false
+
+# --- Packet Production ---
+func produce_packets() -> float:
+	# Total packets produced this tick = base + generators 
+	var total_generated := default_packet_production + generators_production_bonus
+	stored_packets = min(max_packet_capacity, stored_packets + total_generated)
+	
 	# Reset generator contribution after applying
-	generators_regen_bonus = 0
-
+	generators_production_bonus = 0
 	return total_generated
 
-# --- Energy Spend & Queries ---
-func get_packet_cost(packet_type: int) -> int:
-	return packet_costs.get(packet_type)
+# --- Packet Deduction ---
+func deduct_packets_sent(packets_sent: int) -> void:
+	stored_packets = max(0, stored_packets - packets_sent)
 
-func has_enough_energy(packet_type: int) -> bool:
-	return stored_energy >= get_packet_cost(packet_type)
-
-func spend_energy_on_packets(packet_type: int, packet_cout: int) -> void:
-	var total_cost = get_packet_cost(packet_type) * packet_cout
-	stored_energy = max(0, stored_energy - total_cost)
-
-func spend_energy_on_buildings(buildings_consumption: float) -> void:
-	stored_energy = max(0, stored_energy - buildings_consumption)
+func deduct_buildings_consumption(buildings_consumption: float) -> void:
+	stored_packets = max(0, stored_packets - buildings_consumption)
 
 # --- Ratio (used for throttling) ---
 func available_ratio() -> float:
-	if max_energy_capacity <= 0.0:
+	if max_packet_capacity <= 0.0:
 		return 0.0
+		
 	# Use base + generator contribution to compute ratio
-	var effective_energy := stored_energy + generators_regen_bonus
-	return float(effective_energy) / float(max_energy_capacity)
+	var effective_energy := stored_packets + generators_production_bonus
+	return float(effective_energy) / float(max_packet_capacity)

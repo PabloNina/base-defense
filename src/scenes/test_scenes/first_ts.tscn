@@ -4,9 +4,9 @@
 [ext_resource type="PackedScene" uid="uid://cjr2r4qtmpky6" path="res://src/scenes/managers/network_manager.tscn" id="2_1nbkg"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="2_a3jph"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="3_1nbkg"]
-[ext_resource type="PackedScene" uid="uid://cpthepy782l2x" path="res://src/scenes/objects/packets/energy_packet.tscn" id="3_4mpmm"]
-[ext_resource type="PackedScene" uid="uid://ck33iyihxtbbf" path="res://src/scenes/objects/packets/building_packet.tscn" id="3_ce3it"]
-[ext_resource type="PackedScene" uid="uid://b412gqhwl2dff" path="res://src/scenes/objects/packets/ammo_packet.tscn" id="5_v2v25"]
+[ext_resource type="PackedScene" uid="uid://cpthepy782l2x" path="res://src/scenes/objects/packets/green_packet.tscn" id="3_ce3it"]
+[ext_resource type="PackedScene" uid="uid://b412gqhwl2dff" path="res://src/scenes/objects/packets/red_packet.tscn" id="4_v2v25"]
+[ext_resource type="PackedScene" uid="uid://ck33iyihxtbbf" path="res://src/scenes/objects/packets/blue_packet.tscn" id="5_41bhb"]
 [ext_resource type="PackedScene" uid="uid://dosdc7ctbrr8g" path="res://src/scenes/ui/user_interface.tscn" id="6_4mpmm"]
 
 [node name="FirstTestScene" type="Node2D"]
@@ -17,9 +17,9 @@ buildings_layer = NodePath("../TileMap/BuildingsLayer")
 user_interface = NodePath("../UserInterface")
 
 [node name="NetworkManager" parent="." instance=ExtResource("2_1nbkg")]
-building_packet_scene = ExtResource("3_4mpmm")
-energy_packet_scene = ExtResource("3_ce3it")
-ammo_packet_scene = ExtResource("5_v2v25")
+green_packet_scene = ExtResource("3_ce3it")
+red_packet_scene = ExtResource("4_v2v25")
+blue_packet_scene = ExtResource("5_41bhb")
 
 [node name="TileMap" type="Node2D" parent="."]
 

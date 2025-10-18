@@ -7,18 +7,15 @@ extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
-@export var building_packet_scene: PackedScene
-@export var energy_packet_scene: PackedScene
-@export var ammo_packet_scene: PackedScene
+@export var green_packet_scene: PackedScene
+@export var red_packet_scene: PackedScene
+@export var blue_packet_scene: PackedScene
 @export var current_packet_speed: int = 150
-
 # -----------------------------------------
 # --- Runtime Data ------------------------
 # -----------------------------------------
 var registered_buildings: Array[Building] = [] # All active buildings in the network
 var connections: Array = []                 # Connection visuals between buildings
-var base_timers: Dictionary = {}            # { base_relay: Timer } handles packet spawning timers
-
 # -----------------------------------------
 # --- Cached Data for Optimization --------
 # -----------------------------------------
@@ -30,14 +27,11 @@ var last_target_index: Dictionary = {}      # { base: int } tracks incremental t
 # -----------------------------------------
 # --- Energy Tracking ---------------------
 # -----------------------------------------
-signal ui_update_energy(current_energy: float, produced: float, consumed: float, net_balance: float)
+signal ui_update_energy(pkt_stored: float, pkt_produced: float, pkt_consumed: float, net_balance: float)
 
-var net_balance: float = 0.0  # Raw net balance
-
-const MIN_PACKETS_PER_TICK := 1
-const MAX_PACKETS_PER_TICK := 8
-const ENERGY_CRITICAL_THRESHOLD := 0.1  # 10% energy
-const BASE_TICK_RATE := 0.5  # 2 ticks per second
+const MIN_PACKETS_PER_TICK: int = 1
+const MAX_PACKETS_PER_TICK: int = 8
+const ENERGY_CRITICAL_THRESHOLD: float = 0.1  # 10% energy
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -47,7 +41,7 @@ func _ready():
 	initialize_network()
 
 # -----------------------------------------
-# --- Relay Registration ------------------
+# --- Buildings Registration ------------------
 # -----------------------------------------
 func register_relay(new_building: Building):
 	if new_building in registered_buildings:
@@ -57,7 +51,7 @@ func register_relay(new_building: Building):
 
 	if new_building is Command_Center:
 		new_building.set_powered(true)
-		_setup_packet_timer(new_building)
+		_setup_cc_tick_timer(new_building)
 
 	_refresh_network_caches()
 	_update_network_integrity()
@@ -70,26 +64,21 @@ func unregister_relay(building: Building):
 	if building not in registered_buildings:
 		return
 
-	# Remove all packets referencing this relay
+	# Remove all packets referencing this building
 	for packet in get_tree().get_nodes_in_group("packets"):
 		if packet is Packet and building in packet.path:
 			packet.queue_free()
 
-	# Remove relay from network
+	# Remove building from network
 	registered_buildings.erase(building)
 	
 	# Clear connections first
 	_clear_connections_for(building)
 	for other in registered_buildings:
-		other.connected_relays.erase(building)
-
-	# Remove timers
-	if base_timers.has(building):
-		base_timers[building].queue_free()
-		base_timers.erase(building)
+		other.connected_buildings.erase(building)
 
 	# Update network state (order is important)
-	_refresh_network_caches() # clears all cashed data Dictionaries
+	_refresh_network_caches() # clears all cached data Dictionaries
 	_rebuild_all_connections() # handles both connections and power states 
 
 # -----------------------------------------
@@ -101,7 +90,7 @@ func initialize_network():
 func _rebuild_all_connections():
 	_clear_all_connections()
 	for building in registered_buildings:
-		building.connected_relays.clear()
+		building.connected_buildings.clear()
 	# Build physical connections
 	for i in range(registered_buildings.size()):
 		for j in range(i + 1, registered_buildings.size()):
@@ -197,7 +186,7 @@ func _get_reachable_relays(base: Building) -> Array:
 
 	while queue.size() > 0:
 		var current: Building = queue.pop_front()
-		for neighbor in current.connected_relays:
+		for neighbor in current.connected_buildings:
 			if is_instance_valid(neighbor) and neighbor not in visited:
 				visited.append(neighbor)
 				queue.append(neighbor)
@@ -233,7 +222,7 @@ func _update_network_integrity():
 			cluster.append(r)
 			if r is Command_Center:
 				cluster_has_cc = true
-			for n in r.connected_relays:
+			for n in r.connected_buildings:
 				if is_instance_valid(n) and n not in visited:
 					queue.append(n)
 
@@ -261,64 +250,46 @@ func _reset_isolated_construction(cluster: Array):
 			building.is_scheduled_to_build = false
 
 # -----------------------------------------
-# --- Timer / Packet System ---------------
+# --- CommandCenter Timer / Tick ----------
 # -----------------------------------------
-var base_tick_rate := BASE_TICK_RATE
-var tick_rate_multiplier := 1.0
 
-func _setup_packet_timer(base: Building):
-	if base in base_timers:
-		return
-	var timer: Timer = Timer.new()
-	timer.wait_time = base_tick_rate / tick_rate_multiplier
-	timer.autostart = true
-	timer.one_shot = false
-	#timer.connect("timeout", Callable(self, "_on_packet_tick").bind(base))
-	timer.timeout.connect(_on_packet_tick.bind(base))
-	add_child(timer)
-	base_timers[base] = timer
-
-# Adjust tick rate dynamically
-func adjust_network_speed(multiplier: float):
-	tick_rate_multiplier = clampf(multiplier, 0.5, 2.0)
-	for timer in base_timers.values():
-		timer.wait_time = base_tick_rate / tick_rate_multiplier
+func _setup_cc_tick_timer(cc: Command_Center):
+	cc.tick_timer.timeout.connect(_on_command_center_tick.bind(cc))
 
 # -----------------------------------------
-# --- Packet Tick -------------------------
+# --- Command_Center Tick -----------------
 # -----------------------------------------
-func _on_packet_tick(command_center: Building):
+func _on_command_center_tick(command_center: Command_Center):
 	if not command_center is Command_Center:
 		return
 
-	var energy_produced: float = 0.0
-	var energy_spent: float = 0.0
-	var energy_consumed: float = 0.0
+	var packets_produced: float = 0.0
+	var packets_spent: float = 0.0
+	var packets_consumed: float = 0.0
 	var packets_allowed: int = MIN_PACKETS_PER_TICK  # amout of packet to be spawned
 	
-	# --- Stage 0: Add all active buildings energy consumption ---
+	# --- Stage 1: Add all active buildings per tick packet consumption ---
 	for building in registered_buildings:
 		if building.is_powered and building.is_built:
-			energy_consumed += building.consume_energy()
+			packets_consumed += building.consume_packets()
 	
-	# --- Stage 1: Add Generator bonuses ---
+	# --- Stage 2: Add Generator bonuses to Command Center ---
 	for generator in registered_buildings:
 		if generator is EnergyGenerator and generator.is_powered and generator.is_built:
-			generator.provide_energy_bonus()
+			generator.add_packet_production_bonus()
 
-	# --- Stage 2: Command Center produces energy ---
-	if command_center is Command_Center:
-		var cc := command_center as Command_Center
-		energy_produced = cc.produce_energy()
-		
-		# --- Stage 2.5: Command Center consumes energy ---
-		cc.spend_energy_on_buildings(energy_consumed)
-		# Compute packet quota with updated Command_Center stored energy
-		packets_allowed = _compute_packet_quota(cc)
+	# --- Stage 3: Command Center generates packets ---
+	packets_produced = command_center.produce_packets()
+	# --- Stage 3.5: Command Center consumes packets ---
+	# Pay all active buildings per tick packet consumption
+	command_center.deduct_buildings_consumption(packets_consumed)
 
+	# Compute packet quota with updated Command_Center stored energy
+	packets_allowed = _compute_packet_quota(command_center)
 	var packet_quota: int = packets_allowed
+	#print(packet_quota)
 
-	# --- Stage 3: Command Center starts packet propagation ---
+	# --- Stage 4: Command Center starts packet propagation ---
 	var packet_types := [
 		DataTypes.PACKETS.BUILDING,
 		DataTypes.PACKETS.ENERGY,
@@ -330,24 +301,26 @@ func _on_packet_tick(command_center: Building):
 	for pkt_type in packet_types:
 		if packet_quota <= 0:
 			break
-		var sent := _start_packet_propagation(command_center, packet_quota, pkt_type)
-		if sent > 0 and command_center is Command_Center:
+		var packets_sent := _start_packet_propagation(command_center, packet_quota, pkt_type)
+		if packets_sent > 0 and command_center is Command_Center:
 			var cc := command_center as Command_Center
-			cc.spend_energy_on_packets(pkt_type, sent)
-			energy_spent += sent * cc.get_packet_cost(pkt_type)
-			packet_quota -= sent
+			# Command_Center deducts stored packets
+			cc.deduct_packets_sent(packets_sent)
+			# Track total packets spent for UI
+			packets_spent += packets_sent 
+			packet_quota -= packets_sent
 
-	# --- Stage 4: Update energy values and Ui ---
+	# --- Stage 5: Update packet stats and Ui ---
 	# Calculate total consumption (packets spent + building consumption)
-	var total_consumption: float = energy_spent + energy_consumed
+	var total_consumption: float = packets_spent + packets_consumed
 	
 	# Update raw net balance
-	net_balance = energy_produced - total_consumption
+	var net_balance: float = packets_produced - total_consumption
 
 	# Update UI with proper values
 	ui_update_energy.emit(
-		get_global_energy_pool(),  # current energy
-		energy_produced,           # total produced
+		command_center.stored_packets,  # current packets stored
+		packets_produced,          # total produced
 		total_consumption,         # total consumed
 		net_balance                # net balance
 	)
@@ -365,7 +338,7 @@ func _compute_packet_quota(command_center: Command_Center) -> int:
 	var network_size_factor := sqrt(float(registered_buildings.size()) / 10.0)  # Adjust divisor as needed
 	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
 
-	var max_affordable := int(floor(float(command_center.stored_energy) / float(command_center.get_packet_cost(DataTypes.PACKETS.ENERGY))))
+	var max_affordable := int(floor(float(command_center.stored_packets) / 1.0 )) # 1 = packet cost
 	var desired_packets := int(floor(dynamic_packet_limit * throttle_ratio))
 
 	# DON'T force a minimum of 1 here. Allow zero when energy is too low or max_affordable == 0.
@@ -375,9 +348,6 @@ func _compute_packet_quota(command_center: Command_Center) -> int:
 
 # -----------------------------------------
 # --- Packet Propagation ------------------
-# -----------------------------------------
-# -----------------------------------------
-# Generic propagation for any packet type
 # -----------------------------------------
 func _start_packet_propagation(command_center: Command_Center, quota: int, packet_type: DataTypes.PACKETS) -> int:
 	var packets_sent := 0
@@ -482,11 +452,11 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	var packet_scene: PackedScene
 	match packet_type:
 		DataTypes.PACKETS.BUILDING:
-			packet_scene = building_packet_scene
+			packet_scene = green_packet_scene
 		DataTypes.PACKETS.ENERGY:
-			packet_scene = energy_packet_scene
+			packet_scene = blue_packet_scene
 		DataTypes.PACKETS.AMMO:
-			packet_scene = ammo_packet_scene
+			packet_scene = red_packet_scene
 		_:
 			return  # Unsupported packet type
 	
@@ -525,21 +495,10 @@ func _find_path(start: Building, goal: Building) -> Array[Building]:
 			for node in path:
 				typed_path.append(node as Building)
 			return typed_path
-		for neighbor in current.connected_relays:
+		for neighbor in current.connected_buildings:
 			if is_instance_valid(neighbor) and neighbor not in visited:
 				visited.append(neighbor)
 				var new_path = path.duplicate()
 				new_path.append(neighbor)
 				queue.append(new_path)
 	return []
-
-
-# -----------------------------------------
-# --- Energy Tracking ---------------------
-# -----------------------------------------
-func get_global_energy_pool() -> float:
-	var total := 0
-	for building in registered_buildings:
-		if building is Command_Center:
-			total += building.stored_energy
-	return total
