@@ -74,7 +74,6 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 		_:
 			return false
 
-
 # -------------------------------
 # --- Visuals Updating ----------
 # -------------------------------

@@ -4,15 +4,14 @@ class_name Command_Center extends Building
 
 @export var max_packet_capacity: float = 50.0
 @export var stored_packets: float = 0.0
-@export var default_packet_production: float = 4.0       # intrinsic regen per tick
+@export var default_packet_production: float = 4.0  # intrinsic regen per tick
 
-var generators_production_bonus: float = 0.0        # accumulated generator bonus each tick
+var generators_production_bonus: float = 0.0 # accumulated generator bonus each tick
 
-const BASE_TICK_RATE: float = 1.0  # 1 ticks per second
+const BASE_TICK_RATE: float = 1.0 # 1 ticks per second
 
 
 func _ready():
-	#super()
 	super._ready()
 	is_built = true
 	# tick timer setup
