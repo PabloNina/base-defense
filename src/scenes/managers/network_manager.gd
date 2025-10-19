@@ -1,16 +1,28 @@
 # =========================================
 # NetworkManager.gd
 # =========================================
-class_name NetworkManager
-extends Node
-
+class_name NetworkManager extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
+@export_group("Packets")
 @export var green_packet_scene: PackedScene
 @export var red_packet_scene: PackedScene
 @export var blue_packet_scene: PackedScene
 @export var current_packet_speed: int = 150
+@export var enable_packed_debug: bool = false
+@export_group("ComputeQuota")
+@export var throttle_exponent: float = 1.6
+@export var critical_threshold: float = 0.12
+@export var ema_alpha: float = 0.25 # smoothing factor for energy ratio (0..1)
+@export var enable_quota_debug: bool = false
+@export var ema_alpha_rise: float = 0.8 # faster smoothing when ratio increases
+@export var ema_alpha_fall: float = 0.25 # slower smoothing when ratio decreases
+# -----------------------------------------
+# --- Onready Variables -------------------
+# -----------------------------------------
+@onready var packets_container: Node = $PacketsContainer
+@onready var lines_2d_container: Node = $Lines2DContainer
 # -----------------------------------------
 # --- Runtime Data ------------------------
 # -----------------------------------------
@@ -23,7 +35,6 @@ var path_cache: Dictionary = {}             # { "aID_bID": [Relay path] } cached
 var distance_cache: Dictionary = {}         # { "aID_bID": float } cached buildings distances
 var reachable_cache: Dictionary = {}        # { base: [reachable_relays] } which buildings a base can reach
 var last_target_index: Dictionary = {}      # { base: int } tracks incremental target selection
-
 # -----------------------------------------
 # --- Energy Tracking ---------------------
 # -----------------------------------------
@@ -32,10 +43,6 @@ signal ui_update_energy(pkt_stored: float, pkt_produced: float, pkt_consumed: fl
 const MIN_PACKETS_PER_TICK: int = 0
 const MAX_PACKETS_PER_TICK: int = 12
 const ENERGY_CRITICAL_THRESHOLD: float = 0.12  # 12% energy
-@export var throttle_exponent: float = 1.6
-@export var critical_threshold: float = 0.12
-@export var ema_alpha: float = 0.25 # smoothing factor for energy ratio (0..1)
-@export var enable_quota_debug: bool = false
 
 # Smoothed energy ratio (EMA). Single value since only one Command Center is allowed.
 var _smoothed_energy_ratio: float = 0.0
@@ -54,21 +61,22 @@ func register_relay(new_building: Building):
 	if new_building in registered_buildings:
 		return
 	
-	#
-	new_building.finish_building.connect(_on_building_built)
-	#
+	# Prevents connecting multiple times the same signal when moving buildings
+	if not new_building.finish_building.is_connected(_on_building_built):
+		new_building.finish_building.connect(_on_building_built)
+	
 	registered_buildings.append(new_building)
 	_update_connections_for(new_building)
 
 	if new_building is Command_Center:
-		new_building.set_powered(true)
+		new_building.set_powered_state(true)
 		_setup_cc_tick_timer(new_building)
 
 	_refresh_network_caches()
 	_update_network_integrity()
 
 	if new_building.is_built:
-		new_building.set_powered(true)
+		new_building.set_powered_state(true)
 		new_building._updates_visuals()
 
 
@@ -142,7 +150,8 @@ func _are_relays_in_range(a: Building, b: Building) -> bool:
 	return dist <= min(a.connection_range, b.connection_range)
 
 
-# Public static-like helper for ghost preview: checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
+# Public static-like helper for ghost preview: 
+# checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
 static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
 	if not is_relay_a and not is_relay_b:
 		return false
@@ -182,7 +191,7 @@ func _create_connection_line(a: Building, b: Building):
 	line.width = 1
 	line.default_color = Color(0.3, 0.9, 1.0)
 	line.points = [a.global_position, b.global_position]
-	add_child(line)
+	lines_2d_container.add_child(line)
 	connections.append({"relay_a": a, "relay_b": b, "connection_line": line})
 
 # -----------------------------------------
@@ -216,6 +225,7 @@ func _get_reachable_relays(base: Building) -> Array:
 				# Only traverse through built neighbors (enqueue) so paths don't go through unbuilt relays
 				if neighbor.is_built:
 					queue.append(neighbor)
+
 				# Cache path to neighbor (path may include unbuilt neighbor as final node)
 				var key = str(base.get_instance_id()) + "_" + str(neighbor.get_instance_id())
 				path_cache[key] = _find_path(base, neighbor)
@@ -263,7 +273,7 @@ func _update_network_integrity():
 		for r in cluster:
 			# Only built buildings can be powered. An unbuilt relay should not appear powered.
 			var powered_state = cluster_has_cc and r.is_built
-			r.set_powered(powered_state)
+			r.set_powered_state(powered_state)
 			powered_map[r] = powered_state
 
 	# Update connection visuals
@@ -278,8 +288,7 @@ func _update_network_integrity():
 func _reset_isolated_construction(cluster: Array):
 	for building in cluster:
 		if not building.is_built:
-			building.packets_on_the_way = 0
-			building.is_scheduled_to_build = false
+			building.reset_packets_in_flight()
 
 # -----------------------------------------
 # --- CommandCenter Timer / Tick ----------
@@ -298,7 +307,7 @@ func _on_command_center_tick(command_center: Command_Center):
 	var packets_produced: float = 0.0
 	var packets_spent: float = 0.0
 	var packets_consumed: float = 0.0
-	var packets_allowed: int = MIN_PACKETS_PER_TICK  # amout of packet to be spawned
+	var packets_allowed: int = MIN_PACKETS_PER_TICK 
 	
 	# --- Stage 1: Add all active buildings per tick packet consumption ---
 	for building in registered_buildings:
@@ -316,12 +325,16 @@ func _on_command_center_tick(command_center: Command_Center):
 	# Pay all active buildings per tick packet consumption
 	command_center.deduct_buildings_consumption(packets_consumed)
 
-	# Update smoothed energy ratio (EMA) for this command center before computing quota
+	# Update smoothed energy ratio (asymmetric EMA) for this command center before computing quota
 	var raw_ratio := command_center.available_ratio()
 	# initialize smoothed ratio to raw on first tick
 	if _smoothed_energy_ratio == 0.0:
 		_smoothed_energy_ratio = raw_ratio
-	var smoothed := _smoothed_energy_ratio * (1.0 - ema_alpha) + raw_ratio * ema_alpha
+	# Use faster alpha when ratio is increasing to recover quicker from zeros
+	var alpha := ema_alpha_fall
+	if raw_ratio > _smoothed_energy_ratio:
+		alpha = ema_alpha_rise
+	var smoothed := _smoothed_energy_ratio * (1.0 - alpha) + raw_ratio * alpha
 	_smoothed_energy_ratio = smoothed
 
 	# Compute packet quota with updated Command_Center stored energy and smoothed ratio
@@ -368,38 +381,39 @@ func _on_command_center_tick(command_center: Command_Center):
 
 # Calculates how many packets the Command Center can send this tick.
 # This is based on available stored packets, network size, and throttling for low energy.
-#
-# Steps:
-# 1. Compute the ratio of available packets to max capacity (energy_ratio).
-# 2. Apply aggressive throttling if energy is low (throttle_ratio).
-# 3. Scale the max packet limit by network size (network_size_factor).
-# 4. Determine the max number of packets that can be afforded (max_affordable).
-# 5. The desired number of packets is the dynamic limit scaled by throttle_ratio.
-# 6. The final quota is the minimum of desired_packets and max_affordable, clamped to allowed range.
-#
-# Returns: The number of packets the Command Center is allowed to send this tick.
 func _compute_packet_quota(command_center: Command_Center) -> int:
+	# 1. Compute the ratio of available packets to max capacity (energy_ratio).
 	# Use the smoothed energy ratio (single CC) or fall back to raw
 	var energy_ratio := _smoothed_energy_ratio if _smoothed_energy_ratio > 0.0 else command_center.available_ratio()
-
+	
+	# 2. Apply aggressive throttling if energy is low (throttle_ratio).
 	# More aggressive throttling at low energy. Uses exported parameters for tuning.
 	var throttle_ratio := pow(energy_ratio, throttle_exponent) if energy_ratio > critical_threshold else 0.5 * energy_ratio
 
-	# Dynamic packet limit based on network size
-	var network_size_factor := sqrt(float(registered_buildings.size()) / 20.0)  # Adjust divisor as needed (Option A uses 20)
+	# 3. Scale the max packet limit by network size (network_size_factor).
+	var network_size_factor := sqrt(float(registered_buildings.size()) / 20.0)  # Adjust divisor as needed
 	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
-
+	
+	# 4. Determine the max number of packets that can be afforded (max_affordable).
 	var max_affordable := int(floor(float(command_center.stored_packets) / 1.0 )) # 1 = packet cost
+	# 5. The desired number of packets is the dynamic limit scaled by throttle_ratio.
 	var desired_packets := int(floor(dynamic_packet_limit * throttle_ratio))
 
+	# 6. The final quota is the minimum of desired_packets and max_affordable, clamped to allowed range.
 	# DON'T force a minimum of 1 here. Allow zero when energy is too low or max_affordable == 0.
 	var result: int = min(desired_packets, max_affordable)
 	# Clamp to the allowed range but allow 0.
 	var final_quota = clamp(result, MIN_PACKETS_PER_TICK, MAX_PACKETS_PER_TICK)
 
+	# 7. Preventing a final quota of 0 if cc has at least 1 packet stored
+	if final_quota == 0 and command_center.stored_packets >= 1:
+		final_quota = 1
+		
+	##### DEBUG ######
 	if enable_quota_debug:
-		print("[QuotaDebug] CC=", command_center, "raw_ratio=", command_center.available_ratio(), "smoothed=", energy_ratio, "throttle=", throttle_ratio, "dyn_limit=", dynamic_packet_limit, "desired=", desired_packets, "affordable=", max_affordable, "final=", final_quota)
-
+		prints("[QuotaDebug] CC =", command_center, "raw_ratio =", command_center.available_ratio(), "smoothed =", energy_ratio, "throttle =", throttle_ratio, "dyn_limit =", dynamic_packet_limit, "desired =", desired_packets, "affordable =", max_affordable, "final =", final_quota)
+	
+	# Returns: The number of packets the Command Center is allowed to send this tick.
 	return final_quota
 
 # -----------------------------------------
@@ -423,16 +437,17 @@ func _start_packet_propagation(command_center: Command_Center, quota: int, packe
 		# (use the correct target limit depending on packet type)
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
-				if building.packets_on_the_way >= building.cost_to_build:
+				if building.is_scheduled_to_build:
 					continue
 			DataTypes.PACKETS.ENERGY:
-				if building.packets_on_the_way >= building.cost_to_supply:
+				if building.packets_in_flight >= building.cost_to_supply:
+					continue
+			DataTypes.PACKETS.AMMO:
+				if building.is_full_ammo:
 					continue
 			# for other packet types you may add custom checks here
-			_:
-				# Default conservative check: avoid oversending if packets_on_the_way >= 1
-				if building.packets_on_the_way >= building.cost_to_build and building.cost_to_build > 0:
-					continue
+			#_:
+				# Default check
 
 		targets.append(building)
 
@@ -442,7 +457,11 @@ func _start_packet_propagation(command_center: Command_Center, quota: int, packe
 	# Round-robin selection over the filtered targets
 	var index = last_target_index.get(command_center, 0)
 	var n = targets.size()
-
+	
+	#
+	var spawn_delay_step: float = 0.1  # seconds between packets
+	var delay_accum: float = 0.0
+	
 	for i in range(n):
 		if packets_sent >= quota:
 			break
@@ -455,10 +474,10 @@ func _start_packet_propagation(command_center: Command_Center, quota: int, packe
 			continue
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
-				if building.packets_on_the_way >= building.cost_to_build:
+				if building.is_scheduled_to_build:
 					continue
 			DataTypes.PACKETS.ENERGY:
-				if building.packets_on_the_way >= building.cost_to_supply:
+				if building.packets_in_flight >= building.cost_to_supply:
 					continue
 
 		var key = str(command_center.get_instance_id()) + "_" + str(building.get_instance_id())
@@ -472,18 +491,21 @@ func _start_packet_propagation(command_center: Command_Center, quota: int, packe
 		if not are_connected(path[0], path[-1]):
 			continue
 
-		var spawn_delay_step: float = 0.1  # seconds between packets
-		var delay_accum: float = 0.0
 		# Increment in-flight AFTER the final checks and BEFORE spawning the packet.
 		# This ensures other bases/ticks see the incremented value immediately.
-		building.packets_on_the_way += 1
+		building.increment_packets_in_flight()
+
+		####### DEBUG ###############
+		if enable_packed_debug:
+			print("[DEBUG]", building.name, 
+			" inflight=", building.packets_in_flight,
+			" scheduled=", building.is_scheduled_to_build,
+			" built=", building.is_built,
+			" cost=", building.cost_to_build)
+	
 		_spawn_packet_along_path(path, packet_type, delay_accum)
 		delay_accum += spawn_delay_step
 		packets_sent += 1
-
-		# Mark scheduled state for building packets specifically
-		if packet_type == DataTypes.PACKETS.BUILDING and building.packets_on_the_way >= building.cost_to_build:
-			building.is_scheduled_to_build = true
 
 	last_target_index[command_center] = index % n
 	return packets_sent
@@ -559,7 +581,7 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	packet.packet_type = packet_type
 	packet.global_position = path[0].global_position  # ensure world position
 	packet.packet_arrived.connect(_on_packet_arrived)
-	add_child(packet)
+	packets_container.add_child(packet)
 	packet.add_to_group("packets")
 
 
@@ -567,10 +589,10 @@ func _on_packet_arrived(target_building: Building, packet_type: DataTypes.PACKET
 	# Safety check: ensure building is still valid
 	if not is_instance_valid(target_building):
 		return
-	# Decrement in-flight packet count safely
-	target_building.packets_on_the_way = max(0, target_building.packets_on_the_way - 1)
 	# Relay processes the packet
-	target_building.receive_packet(packet_type)
+	target_building.received_packet(packet_type)
+	# Decrement in-flight packet count safely
+	target_building.decrement_packets_in_flight()
 
 # -----------------------------------------
 # --- Pathfinding -------------------------

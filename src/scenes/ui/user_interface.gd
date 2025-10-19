@@ -15,7 +15,7 @@ class_name UserInterface extends CanvasLayer
 # --- ???????????? -----------------------
 # -----------------------------------------
 var current_building_selected: Building
-var max_balance_value: int = 100 # Maximum production/demand displayed on bar
+var max_balance_value: float = 50.0 # Maximum production/demand displayed on bar
 
 # -----------------------------------------
 # --- References ---------------

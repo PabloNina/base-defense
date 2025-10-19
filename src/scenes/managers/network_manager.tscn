@@ -4,3 +4,7 @@
 
 [node name="NetworkManager" type="Node"]
 script = ExtResource("1_houfk")
+
+[node name="PacketsContainer" type="Node" parent="."]
+
+[node name="Lines2DContainer" type="Node" parent="."]

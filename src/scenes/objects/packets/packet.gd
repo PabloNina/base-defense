@@ -50,13 +50,14 @@ func _process(delta):
 		if current_index >= path.size() - 1:
 			if is_instance_valid(path[-1]):
 				packet_arrived.emit(path[-1], packet_type)
-			_cleanup_packet()
+			#_cleanup_packet()
+			queue_free()
 
 # -------------------------------
 # --- Helper: Cleanup ----------
 # -------------------------------
 func _cleanup_packet():
-	# Decrement packets_on_the_way for the target relay safely
+	# Decrement packets_on_flight for the target relay safely
 	if path.size() > 0 and is_instance_valid(path[-1]):
-		path[-1].packets_on_the_way = max(0, path[-1].packets_on_the_way - 1)
+		path[-1].decrement_packets_in_flight()
 	queue_free()

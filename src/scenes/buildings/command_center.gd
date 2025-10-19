@@ -2,7 +2,7 @@ class_name Command_Center extends Building
 
 @onready var tick_timer: Timer = $TickTimer
 
-@export var max_packet_capacity: float = 100.0
+@export var max_packet_capacity: float = 50.0
 @export var stored_packets: float = 0.0
 @export var default_packet_production: float = 4.0       # intrinsic regen per tick
 
@@ -12,7 +12,8 @@ const BASE_TICK_RATE: float = 1.0  # 1 ticks per second
 
 
 func _ready():
-	super()
+	#super()
+	super._ready()
 	is_built = true
 	# tick timer setup
 	tick_timer.wait_time = BASE_TICK_RATE
@@ -42,5 +43,5 @@ func available_ratio() -> float:
 		return 0.0
 		
 	# Use base + generator contribution to compute ratio
-	var effective_energy := stored_packets + generators_production_bonus
+	var effective_energy := stored_packets #+ generators_production_bonus
 	return float(effective_energy) / float(max_packet_capacity)
