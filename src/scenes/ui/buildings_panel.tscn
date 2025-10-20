@@ -1,0 +1,82 @@
+[gd_scene format=3 uid="uid://bwxklu52i4lfa"]
+
+[node name="BuildingsPanel" type="MarginContainer"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -216.5
+offset_top = -132.0
+offset_right = 216.5
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="HBoxContainer"]
+custom_minimum_size = Vector2(137, 100)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+
+[node name="BuildingActionsPanel" type="MarginContainer" parent="HBoxContainer/Panel"]
+layout_mode = 0
+offset_right = 137.0
+offset_bottom = 4.0
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/Panel/BuildingActionsPanel"]
+layout_mode = 2
+
+[node name="BuildingActionsLabel" type="Label" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
+layout_mode = 2
+text = "Building Actions:"
+
+[node name="DestroyButton" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
+layout_mode = 2
+text = "Destroy"
+
+[node name="MoveButton" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
+layout_mode = 2
+text = "Move"
+
+[node name="BuildingSelectionPanel" type="Panel" parent="HBoxContainer"]
+custom_minimum_size = Vector2(260, 100)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/BuildingSelectionPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/BuildingSelectionPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="RelayButton" type="Button" parent="HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Relay"
+
+[node name="TurretButton" type="Button" parent="HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Turret"
+
+[node name="GeneratorButton" type="Button" parent="HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Generator"
+
+[node name="BaseButton" type="Button" parent="HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Base"

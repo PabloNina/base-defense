@@ -9,6 +9,7 @@ class_name UserInterface extends CanvasLayer
 @onready var packets_balance_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsBalanceLabel
 @onready var building_actions_panel: MarginContainer = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel
 @onready var building_actions_label: Label = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/BuildingActionsLabel
+
 # -----------------------------------------
 # --- ???????????? -----------------------
 # -----------------------------------------

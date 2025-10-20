@@ -36,7 +36,7 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 			DataTypes.PACKETS.AMMO:
 				if building.is_full_ammo:
 					continue
-			# for other packet types you may add custom checks here
+			# other packet types
 			#_:
 				# Default check
 
