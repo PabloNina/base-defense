@@ -8,7 +8,7 @@ class_name EnergyGenerator extends Building
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
 # Amount of extra packet regeneration this generator provides
-@export var packet_production_bonus: int = 5
+@export var packet_production_bonus: float = 5.0
 
 
 # Function to add packets to command center if connected

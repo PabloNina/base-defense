@@ -303,6 +303,9 @@ func _on_command_center_tick(command_center: Command_Center):
 	if not command_center is Command_Center:
 		return
 
+	#print("--- TICK START ---")
+	#print("Initial stored: ", command_center.stored_packets)
+
 	var packets_produced: float = 0.0
 	var packets_spent: float = 0.0
 	var packets_consumed: float = 0.0
@@ -320,9 +323,14 @@ func _on_command_center_tick(command_center: Command_Center):
 
 	# --- Stage 3: Command Center generates packets ---
 	packets_produced = command_center.produce_packets()
+	#print("Produced: ", packets_produced)
+	#print("Stored after production: ", command_center.stored_packets)
+
 	# --- Stage 3.5: Command Center consumes packets ---
 	# Pay all active buildings per tick packet consumption
 	command_center.deduct_buildings_consumption(packets_consumed)
+	#print("Consumed (upkeep): ", packets_consumed)
+	#print("Stored after upkeep: ", command_center.stored_packets)
 
 	# Update smoothed energy ratio (asymmetric EMA) for this command center before computing quota
 	var raw_ratio := command_center.available_ratio()
@@ -358,6 +366,8 @@ func _on_command_center_tick(command_center: Command_Center):
 			var cc := command_center as Command_Center
 			# Command_Center deducts stored packets
 			cc.deduct_packets_sent(packets_sent)
+			#print("Sent for ", pkt_type, ": ", packets_sent)
+			#print("Stored after sending: ", command_center.stored_packets)
 			# Track total packets spent for UI
 			packets_spent += packets_sent 
 			packet_quota -= packets_sent
@@ -368,6 +378,9 @@ func _on_command_center_tick(command_center: Command_Center):
 	
 	# Update raw net balance
 	var net_balance: float = packets_produced - total_consumption
+
+	#print("Final stored: ", command_center.stored_packets)
+	#print("--- TICK END ---")
 
 	# Update UI with proper values
 	ui_update_packets.emit(
