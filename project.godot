@@ -16,7 +16,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-packet_pool="*res://src/scenes/managers/packet_pool.gd"
+packet_pool="*res://src/scenes/autoloaded/packet_pool.gd"
 
 [display]
 
