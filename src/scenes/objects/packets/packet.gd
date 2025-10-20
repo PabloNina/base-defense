@@ -1,19 +1,24 @@
 # =========================================
 # Packet.gd
 # =========================================
-class_name Packet
-extends Node2D
+class_name Packet extends Node2D
 
+const PACKET_SCENE: PackedScene = preload("res://src/scenes/objects/packets/base_packet.tscn")
+const GREEN_TEXTURE: Texture2D = preload("res://assets/sprites/objects/energy_packet.png")
+const RED_TEXTURE:Texture2D = preload("res://assets/sprites/objects/ammo_packet.png")
+const BLUE_TEXTURE:Texture2D = preload("res://assets/sprites/objects/building_packet.png")
 # -------------------------------
 # --- Packet Configuration ------
 # -------------------------------
-var path: Array[Building] = []               # full path: base → ... → target
-var speed: int = 0
+var path: Array[Building] = [] # full path: base → ... → target
 var current_index: int = 0
+var speed: int = 0
+var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
 
-@export var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
+@onready var sprite_2d: Sprite2D = $Sprite2D
 
-signal packet_arrived(target: Building, packet_type: DataTypes.PACKETS)  # Listener: NetworkManager
+# Listener: NetworkManager
+signal packet_arrived(target: Building, packet_type: DataTypes.PACKETS)  
 
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -23,11 +28,28 @@ func _ready():
 		return
 	global_position = path[0].global_position
 	current_index = 0
+	_set_sprite()
+
+func _process(delta: float):
+	_follow_path(delta)
+
+# ------------------------------------
+# --- Public Methods / Constructor ---
+# ------------------------------------
+# Packet Constructor
+static func new_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
+	var new_packet_scene: Packet = PACKET_SCENE.instantiate()
+	new_packet_scene.packet_type = pkt_type
+	new_packet_scene.speed = pkt_speed
+	new_packet_scene.path = pkt_path
+	new_packet_scene.global_position = pkt_position
+	new_packet_scene.add_to_group("packets")
+	return new_packet_scene
 
 # -------------------------------
 # --- Movement Logic -----------
 # -------------------------------
-func _process(delta):
+func _follow_path(delta: float) -> void:
 	if current_index >= path.size() - 1:
 		return
 
@@ -50,14 +72,30 @@ func _process(delta):
 		if current_index >= path.size() - 1:
 			if is_instance_valid(path[-1]):
 				packet_arrived.emit(path[-1], packet_type)
-			#_cleanup_packet()
+			# destroy packet
 			queue_free()
+
+# -----------------------
+# --- Visuals -----------
+# -----------------------
+# Set sprite texture base on packet type
+func _set_sprite() -> void:
+	match packet_type:
+		DataTypes.PACKETS.BUILDING:
+			sprite_2d.texture = GREEN_TEXTURE
+		DataTypes.PACKETS.AMMO:
+			sprite_2d.texture = RED_TEXTURE
+		DataTypes.PACKETS.ENERGY:
+			sprite_2d.texture = BLUE_TEXTURE
+		_:
+			return  # Unsupported packet type
 
 # -------------------------------
 # --- Helper: Cleanup ----------
 # -------------------------------
+# Called when packet cant reach the final destination
 func _cleanup_packet():
-	# Decrement packets_on_flight for the target relay safely
+	# Decrement packets_on_flight for the target building safely
 	if path.size() > 0 and is_instance_valid(path[-1]):
 		path[-1].decrement_packets_in_flight()
 	queue_free()

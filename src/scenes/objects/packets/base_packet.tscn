@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://by7nkqhi30wjd"]
+
+[ext_resource type="Script" uid="uid://ckkkuv6816mbb" path="res://src/scenes/objects/packets/base_packet.gd" id="1_2kmpy"]
+
+[node name="BasePacket" type="Node2D"]
+script = ExtResource("1_2kmpy")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]

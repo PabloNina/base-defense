@@ -2,9 +2,6 @@ class_name PacketManager extends Node
 
 @export var network_manager: NetworkManager
 @export_group("Packets")
-@export var green_packet_scene: PackedScene
-@export var red_packet_scene: PackedScene
-@export var blue_packet_scene: PackedScene
 @export var current_packet_speed: int = 150
 @export var enable_packed_debug: bool = false
 
@@ -28,7 +25,7 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 			continue
 
 		# Prevent over-queuing: skip building that already have enough packets on the way
-		# (use the correct target limit depending on packet type)
+		# use the correct target limit depending on packet type
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
 				if building.is_scheduled_to_build:
@@ -156,27 +153,12 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	if delay_offset > 0.0:
 		await get_tree().create_timer(delay_offset).timeout
 	
-	# Create the actual packet
-	var packet_scene: PackedScene
-	match packet_type:
-		DataTypes.PACKETS.BUILDING:
-			packet_scene = green_packet_scene
-		DataTypes.PACKETS.ENERGY:
-			packet_scene = blue_packet_scene
-		DataTypes.PACKETS.AMMO:
-			packet_scene = red_packet_scene
-		_:
-			return  # Unsupported packet type
-	
 	# Instance and setup the packet
-	var packet: Packet = packet_scene.instantiate()
-	packet.path = path.duplicate()
-	packet.speed = current_packet_speed
-	packet.packet_type = packet_type
-	packet.global_position = path[0].global_position  # ensure world position
+	var packet: Packet = Packet.new_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
+	# Connect signals
 	packet.packet_arrived.connect(_on_packet_arrived)
+	# Add to container
 	packets_container.add_child(packet)
-	packet.add_to_group("packets")
 
 
 func _on_packet_arrived(target_building: Building, packet_type: DataTypes.PACKETS):

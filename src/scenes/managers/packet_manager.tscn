@@ -6,3 +6,5 @@
 script = ExtResource("1_8fwjn")
 
 [node name="PacketsContainer" type="Node" parent="."]
+
+[node name="PacketPool" type="Node" parent="."]
