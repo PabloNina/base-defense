@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://cpoaqe645mbpq"]
 
-[ext_resource type="Script" uid="uid://dhe57h5w5xkvq" path="res://src/scenes/buildings/energy_generator.gd" id="1_efbft"]
+[ext_resource type="Script" uid="uid://dhe57h5w5xkvq" path="res://src/scenes/buildings/generator.gd" id="1_efbft"]
 [ext_resource type="Texture2D" uid="uid://ip4hsht2n84x" path="res://assets/sprites/buildings/energy_generator.png" id="1_g1aqw"]
 [ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/building_hurt_box.tscn" id="2_gm03w"]
 

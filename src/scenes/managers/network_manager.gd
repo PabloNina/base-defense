@@ -32,7 +32,7 @@ var last_target_index: Dictionary = {}      # { base: int } tracks incremental t
 # -----------------------------------------
 # --- Energy Tracking ---------------------
 # -----------------------------------------
-signal ui_update_energy(pkt_stored: float, pkt_produced: float, pkt_consumed: float, net_balance: float)
+signal ui_update_packets(pkt_stored: float, max_pkt_capacity: float , pkt_produced: float, pkt_consumed: float, net_balance: float)
 
 const MIN_PACKETS_PER_TICK: int = 0
 const MAX_PACKETS_PER_TICK: int = 12
@@ -284,6 +284,11 @@ func _reset_isolated_construction(cluster: Array):
 		if not building.is_built:
 			building.reset_packets_in_flight()
 
+###############################
+func _on_building_built() -> void:
+	_refresh_network_caches()
+	_update_network_integrity()
+#############################
 # -----------------------------------------
 # --- CommandCenter Timer / Tick ----------
 # -----------------------------------------
@@ -365,8 +370,9 @@ func _on_command_center_tick(command_center: Command_Center):
 	var net_balance: float = packets_produced - total_consumption
 
 	# Update UI with proper values
-	ui_update_energy.emit(
+	ui_update_packets.emit(
 		command_center.stored_packets,  # current packets stored
+		command_center.max_packet_capacity, # current max storage
 		packets_produced,          # total produced
 		total_consumption,         # total consumed
 		net_balance                # net balance
@@ -432,9 +438,3 @@ func _find_path(start: Building, goal: Building) -> Array[Building]:
 				new_path.append(neighbor)
 				queue.append(new_path)
 	return []
-
-###############################
-func _on_building_built() -> void:
-	_refresh_network_caches()
-	_update_network_integrity()
-#############################

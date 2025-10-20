@@ -1,9 +1,9 @@
 # =========================================
 # GhostBuilding.gd
 # =========================================
-# Displays a semi-transparent ghost of the selected building.
-# Handles placement validity (via Area2D overlap) and visual tinting.
-# Communicates with BuildingManager to confirm whether placement is valid.
+# Displays a semi-transparent ghost of the selected building and connection lines
+# Handles placement validity (via Area2D overlap) and visual tinting
+# Communicates with BuildingManager to confirm whether placement is valid
 class_name GhostBuilding extends Area2D
 # -----------------------------------------
 # --- Onready References ------------------
@@ -46,7 +46,6 @@ var _last_global_position: Vector2 = Vector2.INF
 var _last_building_type: int = DataTypes.BUILDING_TYPE.NULL
 
 var _network_manager: NetworkManager
-#var _building_manager: BuildingManager
 
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
@@ -67,13 +66,6 @@ func _process(_delta: float) -> void:
 		_last_building_type = current_building_type
 		_update_connection_ghosts()
 
-	#if _building_manager.tile_source_id != _building_manager.buildable_tile_id:
-		#is_placeable.emit(false)
-		#_set_valid_color(false)
-	#else:
-		#is_placeable.emit(true)
-		#_set_valid_color(true)
-		
 # --------------------------------------------
 # --- Public Methods -------------------------
 # --------------------------------------------
@@ -112,32 +104,33 @@ func clear_preview() -> void:
 # --- Overlap Handling -----------------------
 # --------------------------------------------
 func _on_area_entered(area: Area2D) -> void:
-	# Called automatically when another area enters the marker.
-	# If there is an overlap, placement becomes invalid (red marker).
+	# Called automatically when another area enters the ghost detectionBox
+	# If there is an overlap, placement becomes invalid
 	overlapping_areas.append(area)
 	_set_valid_color(false)
 	is_placeable.emit(false)
-	# Update visuals (invalid connection color won't affect lines, but keep for parity)
+	# Update ghosts when an overlap changes
 	_update_connection_ghosts()
 
 func _on_area_exited(area: Area2D) -> void:
-	# Called when an area leaves the marker.
-	# If no more overlaps exist, placement becomes valid again (yellow marker).
+	# Called when an area leaves the ghost detectionBox
+	# If no more overlaps exist placement becomes valid again
 	overlapping_areas.erase(area)
 	if overlapping_areas.is_empty():
 		_set_valid_color(true)
 		is_placeable.emit(true)
-
 	# Update ghosts when an overlap changes
 	_update_connection_ghosts()
 
 # --------------------------------------------
 # --- Visual Feedback ------------------------
 # --------------------------------------------
+# Updates ghost tint based on placement validity
 func _set_valid_color(valid: bool) -> void:
-	# Updates ghost tint based on placement validity
 	ghost_sprite.modulate = VALID_COLOR if valid else INVALID_COLOR
 
+# Called on_process updates lines positions and points
+# Reuses lines2d from pool _ghost_lines 
 func _update_connection_ghosts() -> void:
 	# Safety
 	if current_building_type == DataTypes.BUILDING_TYPE.NULL or not ghost_sprite.visible:
@@ -187,6 +180,7 @@ func _update_connection_ghosts() -> void:
 		else:
 			_ghost_lines[i].visible = false
 
+# Deletes line2d objects and erases the container array
 func _clear_ghost_lines() -> void:
 	for l in _ghost_lines:
 		if is_instance_valid(l):

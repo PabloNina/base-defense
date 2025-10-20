@@ -1,4 +1,4 @@
-class_name MovableWeapon extends MovableBuilding
+class_name Weapon extends MovableBuilding
 
 @onready var base_sprite: Sprite2D = $BaseSprite
 @onready var turret_sprite: Sprite2D = $TurretSprite
@@ -8,10 +8,16 @@ class_name MovableWeapon extends MovableBuilding
 @export var fire_rate: float = 0.5
 @export var fire_range: int = 150
 
-
 var is_full_ammo: bool = false
 var current_ammo: float = 0.0
 var is_scheduled_to_full_ammo: bool = false
+
+# -----------------------------------------
+# --- Engine Callbacks --------------------
+# -----------------------------------------
+func _ready():
+	super._ready()
+	add_to_group("weapons")
 
 # -------------------------------
 # --- Packet In Flight ----------

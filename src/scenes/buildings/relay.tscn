@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://73yv02e6ghqj"]
 
 [ext_resource type="Texture2D" uid="uid://cegj3a117b1o0" path="res://assets/sprites/buildings/energy_relay.png" id="1_2cyx4"]
-[ext_resource type="Script" uid="uid://bmteaistl3cx7" path="res://src/scenes/buildings/energy_relay.gd" id="1_mk7m4"]
+[ext_resource type="Script" uid="uid://bmteaistl3cx7" path="res://src/scenes/buildings/relay.gd" id="1_mk7m4"]
 [ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/building_hurt_box.tscn" id="2_oxjp3"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_2cyx4"]
@@ -10,7 +10,7 @@ atlas = ExtResource("1_2cyx4")
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_oxjp3"]
 size = Vector2(14, 14)
 
-[node name="EnergyRelay" type="Node2D"]
+[node name="Relay" type="Node2D"]
 script = ExtResource("1_mk7m4")
 connection_range = 125.0
 cost_to_build = 2

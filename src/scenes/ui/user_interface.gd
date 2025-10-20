@@ -1,28 +1,24 @@
 class_name UserInterface extends CanvasLayer
-
 # -----------------------------------------
 # --- Nodes ------------------------------
 # -----------------------------------------
-@onready var energy_stored_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/EnergyStoredLabel
-@onready var energy_stored_bar: ProgressBar = $EnergyStats/Panel/MarginContainer/VBoxContainer/EnergyStoredBar
+@onready var packets_stored_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/PacketsStoredLabel
+@onready var packets_stored_bar: ProgressBar = $PacketsStats/Panel/MarginContainer/VBoxContainer/PacketsStoredBar
+@onready var packets_spent_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsDemandLabel
+@onready var packets_produced_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsProducedLabel
+@onready var packets_balance_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsBalanceLabel
 @onready var building_actions_panel: MarginContainer = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel
-@onready var energy_spent_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/EnergyDemandLabel
-@onready var energy_produced_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/EnergyProducedLabel
-@onready var energy_balance_label: Label = $EnergyStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/EnergyBalanceLabel
 @onready var building_actions_label: Label = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/BuildingActionsLabel
-
 # -----------------------------------------
 # --- ???????????? -----------------------
 # -----------------------------------------
 var current_building_selected: Building
-var max_balance_value: float = 50.0 # Maximum production/demand displayed on bar
-
+var default_max_storage: float = 50.0 
 # -----------------------------------------
 # --- References ---------------
 # -----------------------------------------
 var network_manager: NetworkManager
 var building_manager: BuildingManager
-
 # -----------------------------------------
 # --- Signals ------------------------------
 # -----------------------------------------
@@ -32,14 +28,14 @@ signal destroy_button_pressed(building_to_destroy: Building)
 signal move_button_pressed(building_to_move: MovableBuilding)
 
 # -----------------------------------------
-# --- Initialization ---------------------
+# --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
 
 	# Subscribe to network signals
 	network_manager = get_tree().get_first_node_in_group("network_manager")
 	if network_manager:
-		network_manager.ui_update_energy.connect(on_update_energy)
+		network_manager.ui_update_packets.connect(on_update_packets)
 
 	# Subscribe to building manager signals
 	building_manager = get_tree().get_first_node_in_group("building_manager")
@@ -51,29 +47,31 @@ func _ready() -> void:
 	hide_building_actions_panel()
 
 	# Initialize packets stored bar range
-	energy_stored_bar.min_value = 0
-	energy_stored_bar.max_value = max_balance_value
-	energy_stored_bar.value = 0
+	packets_stored_bar.min_value = 0
+	packets_stored_bar.max_value = default_max_storage
+	packets_stored_bar.value = 0
 
 # -----------------------------------------
-# --- Energy Stats Panel ----------------
+# --- Packets Stats Panel ----------------
 # -----------------------------------------
 # Update energy stats
-
-func on_update_energy(current_energy: float, produced: float, consumed: float, net_balance: float) -> void:
+func on_update_packets(stored: float, max_storage: float, produced: float, consumed: float, net_balance: float) -> void:
 	# Update stored packets label and bar
-	energy_stored_label.text = "Packets Stored: %.1f / %.1f" % [current_energy, max_balance_value]
-	energy_stored_bar.value = current_energy
+	packets_stored_label.text = "Packets Stored: %.1f / %.1f" % [stored, max_storage]
+	packets_stored_bar.value = stored
+	# Only if max storaged changed 
+	if packets_stored_bar.max_value != max_storage:
+		packets_stored_bar.max_value = max_storage
 
 	# Update production/consumption values
-	energy_produced_label.text = "+ %.1f" % [produced]
-	energy_spent_label.text = "- %.1f" % [consumed]
+	packets_produced_label.text = "+ %.1f" % [produced]
+	packets_spent_label.text = "- %.1f" % [consumed]
 
 	# Update balance label
 	# Color code the balance label based on value
 	var balance_color := Color.GREEN if net_balance > 0 else Color.RED if net_balance < 0 else Color.WHITE
-	energy_balance_label.add_theme_color_override("font_color", balance_color)
-	energy_balance_label.text = "%.1f" % [net_balance]
+	packets_balance_label.add_theme_color_override("font_color", balance_color)
+	packets_balance_label.text = "%.1f" % [net_balance]
 
 # -----------------------------------------
 # --- Building Actions Panel --------------
@@ -100,7 +98,7 @@ func _on_move_button_pressed() -> void:
 		hide_building_actions_panel()
 
 # -----------------------------------------
-# --- Building Selection Panel --------------
+# --- Building Selection Panel -------------
 # -----------------------------------------
 func _on_relay_button_pressed() -> void:
 	building_button_pressed.emit(DataTypes.BUILDING_TYPE.RELAY)

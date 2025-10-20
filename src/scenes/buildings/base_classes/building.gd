@@ -39,14 +39,25 @@ signal finish_building()
 var is_built: bool = false: set = set_built_state
 var is_powered: bool = false: set = set_powered_state
 var is_scheduled_to_build: bool = false
-var is_supplied: bool = false
+var is_selected: bool = false
 
 var packets_in_flight: int = 0
 var construction_progress: int = 0
-var supply_level: int = 0
 var connected_buildings: Array[Building] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
+
+# -------------------------------
+# --- Selection -----------------
+# -------------------------------
+func select() -> void:
+	is_selected = true
+	queue_redraw()
+
+
+func deselect() -> void:
+	is_selected = false
+	queue_redraw()
 
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -55,7 +66,7 @@ func _ready():
 	# Setup Click Detection
 	building_hurt_box.area_clicked.connect(on_hurtbox_clicked)
 	# group adding
-	add_to_group("relays")
+	add_to_group("buildings")
 
 	# Register with Managers
 	network_manager = get_tree().get_first_node_in_group("network_manager")
@@ -67,6 +78,20 @@ func _ready():
 		building_manager.register_building(self)
 
 	_updates_visuals()
+
+# -------------------------------
+# --- Selected Box Drawing ------
+# -------------------------------
+func _draw() -> void:                                                                                                                                   
+	if is_selected:                                                                                                                                     
+		# Find the building texture to determine the size of the selection box
+		var texture = DataTypes.get_ghost_texture(building_type)
+		if texture:
+			var rect: Rect2 
+			rect.size = texture.get_size()
+			rect.position = -rect.size / 2
+			# Grow the rectangle by 4 pixels on each side to create a margin
+			draw_rect(rect.grow(4), Color.GREEN, false, 2.0)
 
 # -------------------------------
 # --- Input / Click Handling ----
@@ -81,7 +106,6 @@ func connect_to(other_building: Building):
 	if not connected_buildings.has(other_building):
 		connected_buildings.append(other_building)
 
-
 func disconnect_from(other_building: Building):
 	connected_buildings.erase(other_building)
 
@@ -94,15 +118,13 @@ func set_powered_state(new_state: bool) -> void:
 	is_powered = new_state
 	_updates_visuals()
 
-
 func set_built_state(new_state: bool) -> void:
 	if is_built == new_state:
 		return
 	is_built = new_state
 	finish_building.emit()
 	_updates_visuals()
-	
- 
+
 # -------------------------------
 # --- Packet In Flight ----------
 # -------------------------------
@@ -127,8 +149,6 @@ func received_packet(packet_type: DataTypes.PACKETS):
 	match packet_type:
 		DataTypes.PACKETS.BUILDING:
 			_handle_received_building_packet()
-		DataTypes.PACKETS.ENERGY:
-			_handle_received_energy_packet()
 		_:
 			push_warning("Unknown packet type received: %s" % str(packet_type))
 
@@ -143,16 +163,6 @@ func _handle_received_building_packet() -> void:
 	if construction_progress >= cost_to_build:
 		is_built = true
 
-func _handle_received_energy_packet() -> void:
-	if not is_built:
-		return
-	supply_level += 1
-	if supply_level >= cost_to_supply:
-		is_supplied = true
-	else:
-		is_supplied = false
-
-
 # -------------------------------
 # --- Packet Demand Query -------
 # -------------------------------
@@ -162,17 +172,12 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 			# Needs building packets if not yet built and not fully scheduled to build
 			return not is_built and not is_scheduled_to_build
 
-		DataTypes.PACKETS.ENERGY:
-			# Needs energy if built, powered, and not fully supplied
-			return false#is_built and is_powered and (supply_level < cost_to_supply)
-
 		#DataTypes.PACKETS.AMMO:
 			## Needs ammo if built, powered, and not fully stocked
 			#return false
 
 		_:
 			return false
-
 
 # -------------------------------
 # --- Destroy and Clean ---------
@@ -191,7 +196,6 @@ func destroy():
 	connected_buildings.clear()
 
 	queue_free()
-
 
 # -----------------------------------------
 # ------ Building Energy Consumption ------

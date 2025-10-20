@@ -4,7 +4,6 @@
 # Base class for movable buildings connected to the network.
 # Extends building for network integration.
 class_name MovableBuilding extends Building
-
 # -----------------------------------------
 # -------- Move State Variables -----------
 # -----------------------------------------
@@ -29,7 +28,6 @@ func start_move(target_pos: Vector2) -> void:
 	move_target_position = target_pos
 	is_built = false
 	is_powered = false
-	is_supplied = false
 
 	is_moving = true
 	_updates_visuals()

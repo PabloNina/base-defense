@@ -1,8 +1,10 @@
 # =========================================
 # BuildingManager.gd
 # =========================================
-# Handles Mouse tracking and Building placement/selection/movement
-class_name BuildingManager extends Node
+# Handles Mouse tracking and Input Events related to Buildings
+# Manages construction, selection, movement and other buildings actions(to be implemented)
+# Comunicates with GhostBuilding for placement validity
+class_name BuildingManager extends Node2D
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
@@ -29,24 +31,31 @@ var local_tile_position: Vector2
 var command_center_id: int = 3
 var is_command_center_placed: bool = false
 # -----------------------------------------
-# --- Construction State ----------------------
+# --- Construction State ------------------
 # -----------------------------------------
 var is_construction_state: bool = false
 var is_building_placeable: bool = true
 var building_to_build_id: int = 0
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
-# -----------------------------------------
-# --- Select State ----------------------
-# -----------------------------------------
-var current_clicked_building: Building = null
-var buildings: Array[Building] = []  # All active buildings
 # ---------------------------------------
 # --- Move State -----------------------
 # ---------------------------------------
 var current_building_to_move: MovableBuilding = null
 var is_move_state: bool = false
 var position_to_move: Vector2 = Vector2.ZERO
+# ---------------------------------------
+# --- Box Selecting State -------------------
+# ---------------------------------------
+var is_box_selecting_state: bool = false
+var selection_start_pos: Vector2 = Vector2.ZERO
+var selection_end_pos: Vector2 = Vector2.ZERO
+# -----------------------------------------
+# --- Clicked State ----------------------
+# -----------------------------------------
+var current_clicked_building: Building = null
+var buildings: Array[Building] = []  # All active buildings
+var selected_weapons: Array[Weapon] = [] # Stored weapons in box selection
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -61,14 +70,16 @@ func _ready() -> void:
 	add_to_group("building_manager")
 	# Dependency injection
 	ghost_building._network_manager = network_manager
-	#ghost_building._building_manager = self
+
 	# Subscribe to Ui signals
 	user_interface.building_button_pressed.connect(_on_ui_building_button_pressed)
 	user_interface.destroy_button_pressed.connect(_on_ui_destroy_button_pressed)
 	user_interface.move_button_pressed.connect(_on_ui_move_button_pressed)
 	
+	# Start with Command Center selected 
 	is_construction_state = true
 	building_to_build_id = command_center_id
+	ghost_building.set_building_type(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
 
 func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
@@ -77,7 +88,7 @@ func _process(_delta: float) -> void:
 		_update_ghost_tile_position(tile_position)
 
 # ----------------------------------------------
-# --- Building Registration / Public Methods ---
+# --- Public Methods / Building Registration ---
 # ----------------------------------------------
 func register_building(new_building: Building) -> void:
 	if new_building not in buildings:
@@ -104,7 +115,7 @@ func _get_cell_under_mouse() -> void:
 	local_tile_position = ground_layer.map_to_local(tile_position)
 
 # -----------------------------------------
-# --- Construction State Placement --------
+# --- Construction State / Placement --------
 # -----------------------------------------
 func _place_building() -> void:
 	# Only build on valid ground tiles
@@ -116,18 +127,15 @@ func _place_building() -> void:
 	if not is_command_center_placed and building_to_build_id == command_center_id:
 		is_command_center_placed = true
 		buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, building_to_build_id)
-	elif not is_command_center_placed and building_to_build_id != command_center_id:
-		print("Build Command Center First!")
+		is_construction_state = false
 	elif is_command_center_placed and building_to_build_id == command_center_id:
 		print("You can only have 1 Command Center!")
 	elif is_command_center_placed and building_to_build_id != command_center_id:
 		# Place regular building
 		buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, building_to_build_id)
-	else:
-		print("Invalid Placement State")
 
 # -----------------------------------------
-# --- Construction State Helpers ---------------
+# --- Construction State / Helpers --------
 # -----------------------------------------
 func _select_building_to_build(new_building: DataTypes.BUILDING_TYPE) -> void:
 	is_construction_state = true
@@ -140,7 +148,7 @@ func _deselect_building_to_build() -> void:
 	building_to_build_id = 0
 
 # ----------------------------------------------
-# ------ Construction State Ghost Feedback -----
+# ------ Construction State / Ghost Feedback -----
 # ----------------------------------------------
 func _update_ghost_tile_position(new_position: Vector2i) -> void:
 	if ghost_tile_position == new_position:
@@ -152,32 +160,7 @@ func _update_ghost_tile_position(new_position: Vector2i) -> void:
 # Called by the signal is_placeable emited everytime a building enters/exits BuildingGhost area2d
 func _on_building_ghost_preview_is_placeable(value: bool) -> void:
 	is_building_placeable = value
-
-# -----------------------------------------
-# --- Building Clicked in GameWorld -------
-# -----------------------------------------
-# Called when a building is clicked in the game world
-# by connecting signal clicked on register_building
-func _on_building_clicked(clicked_building: Building) -> void:
-	# if construction state is on dont select buildings
-	if is_construction_state == true:
-		return
-
-	if current_clicked_building == clicked_building:
-		# Deselect if clicked again
-		_deselect_clicked_building()
-	else:
-		# Select new building
-		_select_clicked_building(clicked_building)
-
-func _select_clicked_building(building: Building) -> void:
-	building_selected.emit(building)
-	current_clicked_building = building
-
-func _deselect_clicked_building() -> void:
-	building_deselected.emit()
-	current_clicked_building = null
-
+	
 # -----------------------------------------
 # --- Moving State Placement ------------
 # -----------------------------------------
@@ -187,12 +170,99 @@ func _move_building(building_to_move: MovableBuilding) -> void:
 	current_building_to_move = null
 	ghost_building.clear_preview()
 	_deselect_clicked_building()
+	
+# -----------------------------------------
+# --- Single Selection / Clicked ----------
+# -----------------------------------------
+# Called when a building is clicked in the game world
+# by connecting signal clicked on register_building
+func _on_building_clicked(clicked_building: Building) -> void:
+	# if construction state is on dont select buildings
+	if is_construction_state == true:
+		return
+
+	# Clear any previous multi-selection when clicking a single building
+	_clear_selection()
+
+	if current_clicked_building == clicked_building:
+		# Deselect if clicked again
+		_deselect_clicked_building()
+	else:
+		# Select new building
+		_select_clicked_building(clicked_building)
+
+func _select_clicked_building(building: Building) -> void:
+	if is_instance_valid(current_clicked_building):
+		current_clicked_building.deselect()
+		current_clicked_building = null
+	building_selected.emit(building)
+	current_clicked_building = building
+	# last thing added
+	building.select()
+
+func _deselect_clicked_building() -> void:
+	building_deselected.emit()
+	if is_instance_valid(current_clicked_building):
+		current_clicked_building.deselect()
+		current_clicked_building = null
+		
+	_clear_selection()
+
+# ---------------------------------------
+# --- Multi Selection / Drag Box --------
+# ---------------------------------------
+func _draw() -> void:
+	if is_box_selecting_state:
+		var rect = Rect2(selection_start_pos, selection_end_pos - selection_start_pos)
+		# Draw a semi-transparent blue rectangle
+		draw_rect(rect, Color(0, 0.5, 1, 0.2))
+		# Draw a thin blue border
+		draw_rect(rect, Color(0, 0.5, 1, 1), false, 1.0)
+
+func _clear_selection() -> void:
+	for weapon in selected_weapons:
+		if is_instance_valid(weapon):
+			weapon.deselect()
+	selected_weapons.clear()
+
+func _select_weapons_in_box() -> void:
+	var selection_box = Rect2(selection_start_pos, selection_end_pos - selection_start_pos).abs()
+
+	_clear_selection()
+
+	var weapons_in_scene = get_tree().get_nodes_in_group("weapons")
+	for weapon in weapons_in_scene:
+		if selection_box.has_point(weapon.global_position):
+			var weapon_node := weapon as Weapon
+			if weapon_node:
+				weapon_node.select()
+				selected_weapons.append(weapon_node)
 
 # -----------------------------------------
 # --- Mouse and Keyboard Input Handling ---
 # -----------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
-	# --- Placement ---
+	# --- Selection Box ---
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.is_pressed() and not is_construction_state and not is_move_state:
+			is_box_selecting_state = true
+			selection_start_pos = get_global_mouse_position()
+			selection_end_pos = selection_start_pos
+			if is_instance_valid(current_clicked_building):
+				current_clicked_building.deselect()
+				current_clicked_building = null
+		elif not event.is_pressed() and is_box_selecting_state:
+			is_box_selecting_state = false
+			# To avoid calling selection on a single click, check if the box is a certain size
+			if selection_start_pos.distance_to(selection_end_pos) > 5:
+				_select_weapons_in_box()
+			queue_redraw()
+
+	if event is InputEventMouseMotion and is_box_selecting_state:
+		selection_end_pos = get_global_mouse_position()
+		queue_redraw()
+
+	# --- Construction/Move placement ---
 	if event.is_action_pressed("left_mouse") and is_construction_state and is_building_placeable:
 		_place_building()
 	elif event.is_action_pressed("left_mouse") and is_move_state and is_building_placeable:
@@ -208,8 +278,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("key_4"):
 		_select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
 
-	# --- Cancel Building Mode or Building selection---
-	elif event.is_action_pressed("right_mouse"):
+	# --- Cancel Construction Mode or Building selection---
+	elif event.is_action_pressed("right_mouse"): # Cancel action
 		if is_construction_state == true:
 			_deselect_building_to_build()
 
@@ -223,9 +293,11 @@ func _unhandled_input(event: InputEvent) -> void:
 # -----------------------------------------
 # --- User Interface Input Handling ------
 # -----------------------------------------
+# Signals from UI BuildingsPanel
 func _on_ui_building_button_pressed(building: DataTypes.BUILDING_TYPE) -> void:
 	_select_building_to_build(building)
-	
+
+# Signals from UI BuildingActionPanel Buttons
 func _on_ui_destroy_button_pressed(building_to_destroy: Building) -> void:
 	building_to_destroy.destroy()
 
