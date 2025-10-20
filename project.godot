@@ -14,6 +14,10 @@ config/name="BaseDefense"
 config/features=PackedStringArray("4.5", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+packet_pool="*res://src/scenes/managers/packet_pool.gd"
+
 [display]
 
 window/size/viewport_width=1280

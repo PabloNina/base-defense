@@ -1,10 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://dlgb1bhcttdy2"]
+[gd_scene load_steps=3 format=3 uid="uid://dlgb1bhcttdy2"]
 
 [ext_resource type="Script" uid="uid://15vq36jtofk2" path="res://src/scenes/managers/packet_manager.gd" id="1_8fwjn"]
+[ext_resource type="Script" uid="uid://qn2quqrnys37" path="res://src/scenes/managers/packet_pool.gd" id="2_2ipxe"]
 
 [node name="PacketManager" type="Node"]
 script = ExtResource("1_8fwjn")
 
-[node name="PacketsContainer" type="Node" parent="."]
-
 [node name="PacketPool" type="Node" parent="."]
+script = ExtResource("2_2ipxe")
+
+[node name="PacketsContainer" type="Node" parent="."]

@@ -155,10 +155,17 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	
 	# Instance and setup the packet
 	var packet: Packet = Packet.new_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
+	# Check if packet was created successfully
+	if not is_instance_valid(packet):
+		# Decrement packets_on_flight since we failed to spawn
+		if path.size() > 0 and is_instance_valid(path[-1]):
+			path[-1].decrement_packets_in_flight()
+		return
+		
 	# Connect signals
 	packet.packet_arrived.connect(_on_packet_arrived)
 	# Add to container
-	packets_container.add_child(packet)
+	packet.reparent(packets_container)
 
 
 func _on_packet_arrived(target_building: Building, packet_type: DataTypes.PACKETS):

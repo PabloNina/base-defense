@@ -36,15 +36,16 @@ func _process(delta: float):
 # ------------------------------------
 # --- Public Methods / Constructor ---
 # ------------------------------------
-# Packet Constructor
+# Packet Constructor - uses the packet_pool singleton
 static func new_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
-	var new_packet_scene: Packet = PACKET_SCENE.instantiate()
-	new_packet_scene.packet_type = pkt_type
-	new_packet_scene.speed = pkt_speed
-	new_packet_scene.path = pkt_path
-	new_packet_scene.global_position = pkt_position
-	new_packet_scene.add_to_group("packets")
-	return new_packet_scene
+	# Acquire a packet from the global pool.
+	var packet: Packet = packet_pool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
+	
+	# The group is useful for debugging or broad interactions, so we add it here.
+	if is_instance_valid(packet) and not packet.is_in_group("packets"):
+		packet.add_to_group("packets")
+		
+	return packet
 
 # -------------------------------
 # --- Movement Logic -----------
@@ -72,8 +73,8 @@ func _follow_path(delta: float) -> void:
 		if current_index >= path.size() - 1:
 			if is_instance_valid(path[-1]):
 				packet_arrived.emit(path[-1], packet_type)
-			# destroy packet
-			queue_free()
+			# Release packet back to the pool
+			packet_pool.release_packet(self)
 
 # -----------------------
 # --- Visuals -----------
@@ -98,4 +99,6 @@ func _cleanup_packet():
 	# Decrement packets_on_flight for the target building safely
 	if path.size() > 0 and is_instance_valid(path[-1]):
 		path[-1].decrement_packets_in_flight()
-	queue_free()
+	
+	# Release packet back to the pool
+	packet_pool.release_packet(self)
