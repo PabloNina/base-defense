@@ -15,8 +15,7 @@ buildings_layer = NodePath("../TileMap/BuildingsLayer")
 user_interface = NodePath("../UserInterface")
 network_manager = NodePath("../NetworkManager")
 
-[node name="NetworkManager" parent="." node_paths=PackedStringArray("packet_manager") instance=ExtResource("2_1nbkg")]
-packet_manager = NodePath("../PacketManager")
+[node name="NetworkManager" parent="." instance=ExtResource("2_1nbkg")]
 
 [node name="PacketManager" parent="." node_paths=PackedStringArray("network_manager") instance=ExtResource("6_v2v25")]
 network_manager = NodePath("../NetworkManager")

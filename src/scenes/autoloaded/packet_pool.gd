@@ -39,7 +39,7 @@ func acquire_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array
 		# Get a packet from the front of the pool.
 		packet = _pool.pop_front()
 
-	# Initialize the packet's properties.
+	# Initialize the packet's properties
 	packet.packet_type = pkt_type
 	packet.speed = pkt_speed
 	packet.path = pkt_path
@@ -49,7 +49,7 @@ func acquire_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array
 	packet.current_index = 0
 	packet._set_sprite()
 
-	# Enable the packet for processing and visibility.
+	# Enable the packet for processing and visibility
 	packet.process_mode = Node.PROCESS_MODE_INHERIT
 	packet.visible = true
 	

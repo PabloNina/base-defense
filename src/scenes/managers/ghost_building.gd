@@ -66,9 +66,9 @@ func _process(_delta: float) -> void:
 		_last_building_type = current_building_type
 		_update_connection_ghosts()
 
-# --------------------------------------------
-# --- Public Methods -------------------------
-# --------------------------------------------
+# --------------------------------------------------
+# --- Public / Preview Ghost Set&Clear -------------
+# --------------------------------------------------
 func set_building_type(new_type: DataTypes.BUILDING_TYPE) -> void:
 	# Updates the ghost appearance and connections based on selected building type.
 	# Pulls ghost texture and connection range from DataTypes.
@@ -82,7 +82,9 @@ func set_building_type(new_type: DataTypes.BUILDING_TYPE) -> void:
 		ghost_sprite.visible = true
 	else:
 		ghost_sprite.visible = false
-	
+
+	# Enable collision shape
+	collision_shape_2d.set_deferred("disabled", false) #collision_shape_2d.disabled = false
 	# Adjust collisionshape size automatically from texture
 	collision_shape_size = ghost_sprite.texture.get_size() * ghost_sprite.scale
 	collision_shape_2d.shape.size = collision_shape_size
@@ -96,12 +98,13 @@ func clear_preview() -> void:
 	ghost_sprite.texture = null
 	ghost_sprite.visible = false
 	overlapping_areas.clear()
-
 	# Clear ghost connection lines
 	_clear_ghost_lines()
-
+	# Disable collision shape
+	#collision_shape_2d.disabled = true
+	collision_shape_2d.set_deferred("disabled", true)
 # --------------------------------------------
-# --- Overlap Handling -----------------------
+# --- Overlap Handling / Placement Validity --
 # --------------------------------------------
 func _on_area_entered(area: Area2D) -> void:
 	# Called automatically when another area enters the ghost detectionBox
@@ -125,10 +128,13 @@ func _on_area_exited(area: Area2D) -> void:
 # --------------------------------------------
 # --- Visual Feedback ------------------------
 # --------------------------------------------
-# Updates ghost tint based on placement validity
+# Updates ghost building tint based on placement validity
 func _set_valid_color(valid: bool) -> void:
 	ghost_sprite.modulate = VALID_COLOR if valid else INVALID_COLOR
 
+# --------------------------------------------
+# --- Preview Ghost Connections Update -------
+# --------------------------------------------
 # Called on_process updates lines positions and points
 # Reuses lines2d from pool _ghost_lines 
 func _update_connection_ghosts() -> void:
@@ -145,11 +151,11 @@ func _update_connection_ghosts() -> void:
 	for other in _network_manager.registered_buildings:
 		if not is_instance_valid(other):
 			continue
-		# Use the public static helper for connection logic
+		# Use the NetworkManager public static helper for connection logic
 		if NetworkManager.can_buildings_connect(
 			current_building_type,
 			global_position,
-			DataTypes.get_is_relay(current_building_type), # ghost is always is_relay (or could be settable if needed)
+			DataTypes.get_is_relay(current_building_type),
 			other.building_type if other.has_method("get") else DataTypes.BUILDING_TYPE.NULL,
 			other.global_position,
 			other.is_relay if other.has_method("get") else false

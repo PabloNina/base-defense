@@ -11,7 +11,7 @@ size = Vector2(14, 14)
 script = ExtResource("1_efbft")
 connection_range = 75.0
 cost_to_build = 5
-per_tick_packet_consumption = 0.5
+upkeep_cost = 0.5
 building_type = 3
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

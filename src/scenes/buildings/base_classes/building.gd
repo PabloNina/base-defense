@@ -3,6 +3,7 @@
 # -------------------------------
 # Base building class for all player structures, weapons and network nodes.
 # Other types (CommandCenter, relays, Generator, etc.) extend this.
+@abstract
 class_name Building extends Node2D
 # -------------------------------
 # --- Signals -------------------
@@ -26,11 +27,11 @@ signal finish_building()
 ## tag to prevent connections between generators/weapons etc...
 @export var is_relay: bool = false
 ## Amount of Packets this building consumes per tick
-@export var per_tick_packet_consumption: float = 0.0
+@export var upkeep_cost: float = 0.0
 ## Type of building that is using this class for Ui labeling
 @export var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
 # -------------------------------
-# --- Node References -----------
+# --- Child Node References -----
 # -------------------------------
 @onready var building_hurt_box: Area2D = $BuildingHurtBox
 # -------------------------------
@@ -46,9 +47,8 @@ var construction_progress: int = 0
 var connected_buildings: Array[Building] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
-
 # -------------------------------
-# --- Selection -----------------
+# --- Selection Box Updating ----
 # -------------------------------
 func select() -> void:
 	is_selected = true
@@ -200,15 +200,22 @@ func destroy():
 # -----------------------------------------
 # ------ Building Energy Consumption ------
 # -----------------------------------------
-# Called by networkmanager on tick
-func consume_packets() -> float:
+# Called by command center on tick
+func get_upkeep_cost() -> float:
 	if not is_built or not is_powered:
 		return 0.0
-	return per_tick_packet_consumption
+	return upkeep_cost
+# -----------------------------------------
+# ------ Building Actions -----------------
+# -----------------------------------------
+func get_available_actions() -> Array[DataTypes.BUILDING_ACTIONS]:
+# By default, every building can be destroyed.
+	return [DataTypes.BUILDING_ACTIONS.DESTROY]
 
 # -------------------------------
 # --- Visuals Updating ----------
 # -------------------------------
-func _updates_visuals():
-	# Implemented by child classes (e.g., change color or glow)
+# Make it abstract
+func _updates_visuals() -> void:
+# Implemented by child classes (e.g., change color or glow)
 	pass

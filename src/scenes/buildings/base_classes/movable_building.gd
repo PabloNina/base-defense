@@ -5,10 +5,15 @@
 # Extends building for network integration.
 class_name MovableBuilding extends Building
 # -----------------------------------------
+# -------- Signals -----------------------
+# -----------------------------------------
+signal move_started(building: MovableBuilding, landing_position: Vector2)
+signal move_completed(building: MovableBuilding)
+# -----------------------------------------
 # -------- Move State Variables -----------
 # -----------------------------------------
 var is_moving: bool = false
-var move_target_position: Vector2 = Vector2.ZERO
+var landing_target_position: Vector2 = Vector2.ZERO
 var move_speed: float = 100.0
 
 # -----------------------------------------
@@ -24,20 +29,23 @@ func _physics_process(delta: float) -> void:
 func start_move(target_pos: Vector2) -> void:
 	if not is_built:
 		return
-
-	move_target_position = target_pos
+	
+	landing_target_position = target_pos
 	is_built = false
 	is_powered = false
 
+	move_started.emit(self, landing_target_position)
+	
 	is_moving = true
 	_updates_visuals()
+	reset_packets_in_flight()
 
-	# Unregister for clearing connections and energy demand/production during move 
+	# Unregister for clearing connections and packet demand/production during move 
 	network_manager.unregister_relay(self)
 
 
 func _move_towards_target(delta: float) -> void:
-	var dir = (move_target_position - global_position)
+	var dir = (landing_target_position - global_position)
 	var dist = dir.length()
 
 	if dist < 1.0:
@@ -52,5 +60,13 @@ func _complete_move() -> void:
 	# re-register to managers if needed
 	network_manager.register_relay(self)
 	#land
+	move_completed.emit(self)
 	#_updates_visuals()
 	
+
+func get_available_actions() -> Array[DataTypes.BUILDING_ACTIONS]:
+	# Start with the parent class's actions (DESTROY)
+	var actions = super.get_available_actions()
+	# Add the actions specific to this class
+	actions.append(DataTypes.BUILDING_ACTIONS.MOVE)
+	return actions

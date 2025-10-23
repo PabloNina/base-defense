@@ -1,6 +1,6 @@
 class_name UserInterface extends CanvasLayer
 # -----------------------------------------
-# --- Nodes ------------------------------
+# --- Child Nodes References --------------
 # -----------------------------------------
 @onready var packets_stored_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/PacketsStoredLabel
 @onready var packets_stored_bar: ProgressBar = $PacketsStats/Panel/MarginContainer/VBoxContainer/PacketsStoredBar
@@ -8,15 +8,10 @@ class_name UserInterface extends CanvasLayer
 @onready var packets_produced_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsProducedLabel
 @onready var packets_balance_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsBalanceLabel
 @onready var building_actions_panel: MarginContainer = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel
-@onready var building_actions_label: Label = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/BuildingActionsLabel
-
+@onready var building_actions_label: Label = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/BuildingActionsLabel
+@onready var buttons_container: VBoxContainer = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer
 # -----------------------------------------
-# --- ???????????? -----------------------
-# -----------------------------------------
-var current_building_selected: Building
-var default_max_storage: float = 50.0 
-# -----------------------------------------
-# --- References ---------------
+# --- Managers References ---------------
 # -----------------------------------------
 var network_manager: NetworkManager
 var building_manager: BuildingManager
@@ -27,12 +22,20 @@ var building_manager: BuildingManager
 signal building_button_pressed(building_to_build: DataTypes.BUILDING_TYPE)
 signal destroy_button_pressed(building_to_destroy: Building)
 signal move_button_pressed(building_to_move: MovableBuilding)
-
+# -----------------------------------------
+# --- ???????????? -----------------------
+# -----------------------------------------
+var current_building_selected: Building
+var default_max_storage: float = 50.0
+# A dictionary to map actions to button text and methods
+const ACTION_DEFINITIONS = {
+	DataTypes.BUILDING_ACTIONS.DESTROY: {"text": "Destroy", "method": "_on_destroy_button_pressed"},
+	DataTypes.BUILDING_ACTIONS.MOVE: {"text": "Move", "method": "_on_move_button_pressed"},
+}
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
-
 	# Subscribe to network signals
 	network_manager = get_tree().get_first_node_in_group("network_manager")
 	if network_manager:
@@ -44,7 +47,7 @@ func _ready() -> void:
 		building_manager.building_selected.connect(show_building_actions_panel)
 		building_manager.building_deselected.connect(hide_building_actions_panel)
 
-	# Hide building panel at start
+	# Hide building actions panel at start
 	hide_building_actions_panel()
 
 	# Initialize packets stored bar range
@@ -55,12 +58,12 @@ func _ready() -> void:
 # -----------------------------------------
 # --- Packets Stats Panel ----------------
 # -----------------------------------------
-# Update energy stats
+# Update packets stats
 func on_update_packets(stored: float, max_storage: float, produced: float, consumed: float, net_balance: float) -> void:
 	# Update stored packets label and bar
 	packets_stored_label.text = "Packets Stored: %.1f / %.1f" % [stored, max_storage]
 	packets_stored_bar.value = stored
-	# Only if max storaged changed 
+	# Only assign new value if max storaged changed 
 	if packets_stored_bar.max_value != max_storage:
 		packets_stored_bar.max_value = max_storage
 
@@ -80,6 +83,24 @@ func on_update_packets(stored: float, max_storage: float, produced: float, consu
 func show_building_actions_panel(selected_building: Building) -> void:
 	current_building_selected = selected_building
 	building_actions_label.text = DataTypes.get_display_name(selected_building.building_type)
+	
+	# Clear any old buttons
+	for child in buttons_container.get_children():
+		child.queue_free()
+
+	# Ask the building what it can do
+	var available_actions = selected_building.get_available_actions()
+
+	# Create a button for each action
+	for action in available_actions:
+		if ACTION_DEFINITIONS.has(action):
+			var definition = ACTION_DEFINITIONS[action]
+			var button = Button.new()
+			button.text = definition.text
+			# Connect the button's press signal to the corresponding method
+			button.pressed.connect(self.call.bind(definition.method))
+			buttons_container.add_child(button)
+	
 	building_actions_panel.visible = true
 
 func hide_building_actions_panel() -> void:

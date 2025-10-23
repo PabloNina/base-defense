@@ -11,24 +11,12 @@ class_name EnergyGenerator extends Building
 @export var packet_production_bonus: float = 5.0
 
 
-# Function to add packets to command center if connected
-func add_packet_production_bonus():
-	if not is_powered or not is_built:
-		return
-
-	if network_manager == null:
-		print("No network_manager found")
-		return
-
-	# Find any Command Center reachable from this generator
-	for building in network_manager.registered_buildings:
-		if building is Command_Center and network_manager.are_connected(building, self):
-			var cc := building as Command_Center
-			cc.generators_production_bonus += packet_production_bonus # Boost regen rate temporarily for this tick
-			return  # if Only one CC per network we can stop here
+# Called by CC on tick used to calc total packet production
+func get_packet_production_bonus() -> float:
+	return packet_production_bonus
 
 
-func _updates_visuals():
+func _updates_visuals() -> void:
 	# Color the sprite based on whether the relay is built
 	# maybe change something if unpowered
 	if is_built:

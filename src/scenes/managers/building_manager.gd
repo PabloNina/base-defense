@@ -5,6 +5,9 @@
 # Manages construction, selection, movement and other buildings actions(to be implemented)
 # Comunicates with GhostBuilding for placement validity
 class_name BuildingManager extends Node2D
+
+const landing_marker_scene: PackedScene = preload("res://src/scenes/objects/landing_marker.tscn")
+
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
@@ -44,18 +47,19 @@ var buildable_tile_id: int = 0
 var current_building_to_move: MovableBuilding = null
 var is_move_state: bool = false
 var position_to_move: Vector2 = Vector2.ZERO
+var landing_markers = {} # Key: building instance, Value: marker instance
 # ---------------------------------------
-# --- Box Selecting State -------------------
+# --- Multi Selection (Box) State -------
 # ---------------------------------------
 var is_box_selecting_state: bool = false
 var selection_start_pos: Vector2 = Vector2.ZERO
 var selection_end_pos: Vector2 = Vector2.ZERO
+var selected_weapons: Array[Weapon] = [] # Stored weapons in box selection
 # -----------------------------------------
-# --- Clicked State ----------------------
+# --- Single Selection (Clicked) State ----
 # -----------------------------------------
 var current_clicked_building: Building = null
 var buildings: Array[Building] = []  # All active buildings
-var selected_weapons: Array[Weapon] = [] # Stored weapons in box selection
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -94,6 +98,10 @@ func register_building(new_building: Building) -> void:
 	if new_building not in buildings:
 		buildings.append(new_building)
 		new_building.clicked.connect(_on_building_clicked)
+		
+		if new_building is MovableBuilding:
+			new_building.move_started.connect(_on_building_move_started)
+			new_building.move_completed.connect(_on_building_move_completed)
 
 func unregister_building(destroyed_building: Building) -> void:
 	if destroyed_building not in buildings:
@@ -156,13 +164,13 @@ func _update_ghost_tile_position(new_position: Vector2i) -> void:
 	ghost_tile_position = new_position
 	ghost_building.position = local_tile_position
 
-# Used in Keyboard Input Handling to check if a building can be built or moved
+# Used in Mouse&Keyboard Input Handling to check if a building can be built or moved
 # Called by the signal is_placeable emited everytime a building enters/exits BuildingGhost area2d
 func _on_building_ghost_preview_is_placeable(value: bool) -> void:
 	is_building_placeable = value
 	
 # -----------------------------------------
-# --- Moving State Placement ------------
+# --- Moving State Placement / Signals ----
 # -----------------------------------------
 func _move_building(building_to_move: MovableBuilding) -> void:
 	building_to_move.start_move(local_tile_position)
@@ -170,14 +178,33 @@ func _move_building(building_to_move: MovableBuilding) -> void:
 	current_building_to_move = null
 	ghost_building.clear_preview()
 	_deselect_clicked_building()
-	
+
+func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
+	# If this building already has a marker, remove the old one
+	if landing_markers.has(building):
+		landing_markers[building].queue_free()
+
+	# Create the new marker using LandingMarker constructor
+	var new_marker = LandingMarker.new_landing_marker(building.building_type, landing_position)
+	add_child(new_marker)
+
+	# Store the new marker in the dictionary with the building as the key
+	landing_markers[building] = new_marker
+
+func _on_building_move_completed(building: MovableBuilding) -> void:
+	# Check if a marker exists for this building
+	if landing_markers.has(building):
+		# Remove the marker from the scene and the dictionary
+		landing_markers[building].queue_free()
+		landing_markers.erase(building)
+
 # -----------------------------------------
-# --- Single Selection / Clicked ----------
+# --- Single Selection / Signal Clicked ---
 # -----------------------------------------
 # Called when a building is clicked in the game world
 # by connecting signal clicked on register_building
 func _on_building_clicked(clicked_building: Building) -> void:
-	# if construction state is on dont select buildings
+	# if construction state is true dont select buildings
 	if is_construction_state == true:
 		return
 

@@ -3,17 +3,6 @@
 # =========================================
 class_name NetworkManager extends Node
 # -----------------------------------------
-# --- Editor Exports ----------------------
-# -----------------------------------------
-@export var packet_manager: PacketManager
-@export_group("ComputeQuota")
-@export var throttle_exponent: float = 1.6
-@export var critical_threshold: float = 0.12
-@export var ema_alpha: float = 0.25 # smoothing factor for energy ratio (0..1)
-@export var enable_quota_debug: bool = false
-@export var ema_alpha_rise: float = 0.8 # faster smoothing when ratio increases
-@export var ema_alpha_fall: float = 0.25 # slower smoothing when ratio decreases
-# -----------------------------------------
 # --- Onready Variables -------------------
 # -----------------------------------------
 @onready var lines_2d_container: Node = $Lines2DContainer
@@ -30,17 +19,9 @@ var distance_cache: Dictionary = {}         # { "aID_bID": float } cached buildi
 var reachable_cache: Dictionary = {}        # { base: [reachable_relays] } which buildings a base can reach
 var last_target_index: Dictionary = {}      # { base: int } tracks incremental target selection
 # -----------------------------------------
-# --- Energy Tracking ---------------------
+# --- Signals -----------------------------
 # -----------------------------------------
 signal ui_update_packets(pkt_stored: float, max_pkt_capacity: float , pkt_produced: float, pkt_consumed: float, net_balance: float)
-
-const MIN_PACKETS_PER_TICK: int = 0
-const MAX_PACKETS_PER_TICK: int = 12
-const ENERGY_CRITICAL_THRESHOLD: float = 0.12  # 12% energy
-
-# Smoothed energy ratio (EMA). Single value since only one Command Center is allowed.
-var _smoothed_energy_ratio: float = 0.0
-
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
@@ -64,7 +45,7 @@ func register_relay(new_building: Building):
 
 	if new_building is Command_Center:
 		new_building.set_powered_state(true)
-		_setup_cc_tick_timer(new_building)
+		new_building.update_packets.connect(_on_cc_update_packets)
 
 	_refresh_network_caches()
 	_update_network_integrity()
@@ -81,7 +62,7 @@ func unregister_relay(building: Building):
 	# Remove all packets referencing this building
 	for packet in get_tree().get_nodes_in_group("packets"):
 		if packet is Packet and building in packet.path:
-			packet.queue_free()
+			packet_pool.release_packet(packet)
 
 	# Remove building from network
 	registered_buildings.erase(building)
@@ -284,151 +265,6 @@ func _reset_isolated_construction(cluster: Array):
 		if not building.is_built:
 			building.reset_packets_in_flight()
 
-###############################
-func _on_building_built() -> void:
-	_refresh_network_caches()
-	_update_network_integrity()
-#############################
-# -----------------------------------------
-# --- CommandCenter Timer / Tick ----------
-# -----------------------------------------
-
-func _setup_cc_tick_timer(cc: Command_Center):
-	cc.tick_timer.timeout.connect(_on_command_center_tick.bind(cc))
-
-# -----------------------------------------
-# --- Command_Center Tick -----------------
-# -----------------------------------------
-func _on_command_center_tick(command_center: Command_Center):
-	if not command_center is Command_Center:
-		return
-
-	#print("--- TICK START ---")
-	#print("Initial stored: ", command_center.stored_packets)
-
-	var packets_produced: float = 0.0
-	var packets_spent: float = 0.0
-	var packets_consumed: float = 0.0
-	var packets_allowed: int = MIN_PACKETS_PER_TICK 
-	
-	# --- Stage 1: Add all active buildings per tick packet consumption ---
-	for building in registered_buildings:
-		if building.is_powered and building.is_built:
-			packets_consumed += building.consume_packets()
-	
-	# --- Stage 2: Add Generator bonuses to Command Center ---
-	for generator in registered_buildings:
-		if generator is EnergyGenerator and generator.is_powered and generator.is_built:
-			generator.add_packet_production_bonus()
-
-	# --- Stage 3: Command Center generates packets ---
-	packets_produced = command_center.produce_packets()
-	#print("Produced: ", packets_produced)
-	#print("Stored after production: ", command_center.stored_packets)
-
-	# --- Stage 3.5: Command Center consumes packets ---
-	# Pay all active buildings per tick packet consumption
-	command_center.deduct_buildings_consumption(packets_consumed)
-	#print("Consumed (upkeep): ", packets_consumed)
-	#print("Stored after upkeep: ", command_center.stored_packets)
-
-	# Update smoothed energy ratio (asymmetric EMA) for this command center before computing quota
-	var raw_ratio := command_center.available_ratio()
-	# initialize smoothed ratio to raw on first tick
-	if _smoothed_energy_ratio == 0.0:
-		_smoothed_energy_ratio = raw_ratio
-	# Use faster alpha when ratio is increasing to recover quicker from zeros
-	var alpha := ema_alpha_fall
-	if raw_ratio > _smoothed_energy_ratio:
-		alpha = ema_alpha_rise
-	var smoothed := _smoothed_energy_ratio * (1.0 - alpha) + raw_ratio * alpha
-	_smoothed_energy_ratio = smoothed
-
-	# Compute packet quota with updated Command_Center stored energy and smoothed ratio
-	packets_allowed = _compute_packet_quota(command_center)
-	var packet_quota: int = packets_allowed
-	#print(packet_quota)
-
-	# --- Stage 4: Command Center starts packet propagation ---
-	var packet_types := [
-		DataTypes.PACKETS.BUILDING,
-		DataTypes.PACKETS.ENERGY,
-		DataTypes.PACKETS.AMMO,
-		DataTypes.PACKETS.ORE,
-		DataTypes.PACKETS.TECH
-	]
-
-	for pkt_type in packet_types:
-		if packet_quota <= 0:
-			break
-		var packets_sent := packet_manager.start_packet_propagation(command_center, packet_quota, pkt_type)
-		if packets_sent > 0 and command_center is Command_Center:
-			var cc := command_center as Command_Center
-			# Command_Center deducts stored packets
-			cc.deduct_packets_sent(packets_sent)
-			#print("Sent for ", pkt_type, ": ", packets_sent)
-			#print("Stored after sending: ", command_center.stored_packets)
-			# Track total packets spent for UI
-			packets_spent += packets_sent 
-			packet_quota -= packets_sent
-
-	# --- Stage 5: Update packet stats and Ui ---
-	# Calculate total consumption (packets spent + building consumption)
-	var total_consumption: float = packets_spent + packets_consumed
-	
-	# Update raw net balance
-	var net_balance: float = packets_produced - total_consumption
-
-	#print("Final stored: ", command_center.stored_packets)
-	#print("--- TICK END ---")
-
-	# Update UI with proper values
-	ui_update_packets.emit(
-		command_center.stored_packets,  # current packets stored
-		command_center.max_packet_capacity, # current max storage
-		packets_produced,          # total produced
-		total_consumption,         # total consumed
-		net_balance                # net balance
-	)
-
-
-# Calculates how many packets the Command Center can send this tick.
-# This is based on available stored packets, network size, and throttling for low energy.
-func _compute_packet_quota(command_center: Command_Center) -> int:
-	# 1. Compute the ratio of available packets to max capacity (energy_ratio).
-	# Use the smoothed energy ratio (single CC) or fall back to raw
-	var energy_ratio := _smoothed_energy_ratio if _smoothed_energy_ratio > 0.0 else command_center.available_ratio()
-	
-	# 2. Apply aggressive throttling if energy is low (throttle_ratio).
-	# More aggressive throttling at low energy. Uses exported parameters for tuning.
-	var throttle_ratio := pow(energy_ratio, throttle_exponent) if energy_ratio > critical_threshold else 0.5 * energy_ratio
-
-	# 3. Scale the max packet limit by network size (network_size_factor).
-	var network_size_factor := sqrt(float(registered_buildings.size()) / 20.0)  # Adjust divisor as needed
-	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
-	
-	# 4. Determine the max number of packets that can be afforded (max_affordable).
-	var max_affordable := int(floor(float(command_center.stored_packets) / 1.0 )) # 1 = packet cost
-	# 5. The desired number of packets is the dynamic limit scaled by throttle_ratio.
-	var desired_packets := int(floor(dynamic_packet_limit * throttle_ratio))
-
-	# 6. The final quota is the minimum of desired_packets and max_affordable, clamped to allowed range.
-	# DON'T force a minimum of 1 here. Allow zero when energy is too low or max_affordable == 0.
-	var result: int = min(desired_packets, max_affordable)
-	# Clamp to the allowed range but allow 0.
-	var final_quota = clamp(result, MIN_PACKETS_PER_TICK, MAX_PACKETS_PER_TICK)
-
-	# 7. Preventing a final quota of 0 if cc has at least 1 packet stored
-	if final_quota == 0 and command_center.stored_packets >= 1:
-		final_quota = 1
-		
-	##### DEBUG ######
-	if enable_quota_debug:
-		prints("[QuotaDebug] CC =", command_center, "raw_ratio =", command_center.available_ratio(), "smoothed =", energy_ratio, "throttle =", throttle_ratio, "dyn_limit =", dynamic_packet_limit, "desired =", desired_packets, "affordable =", max_affordable, "final =", final_quota)
-	
-	# Returns: The number of packets the Command Center is allowed to send this tick.
-	return final_quota
-
 # -----------------------------------------
 # --- Pathfinding -------------------------
 # -----------------------------------------
@@ -451,3 +287,15 @@ func _find_path(start: Building, goal: Building) -> Array[Building]:
 				new_path.append(neighbor)
 				queue.append(new_path)
 	return []
+
+# -----------------------------------------
+# --- Signals Handling --------------------
+# -----------------------------------------
+# Called when a registered building is built
+func _on_building_built() -> void:
+	_refresh_network_caches()
+	_update_network_integrity()
+
+# Called when cc finishes timer tick calculations and updates packets values
+func _on_cc_update_packets(pkt_stored: float, max_pkt_capacity: float , pkt_produced: float, pkt_consumed: float, net_balance: float) -> void:
+	ui_update_packets.emit(pkt_stored, max_pkt_capacity, pkt_produced, pkt_consumed, net_balance)

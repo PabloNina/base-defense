@@ -7,6 +7,11 @@ class_name PacketManager extends Node
 
 @onready var packets_container: Node = $PacketsContainer
 
+
+
+func _ready() -> void:
+	add_to_group("packet_manager")
+
 # -----------------------------------------
 # --- Packet Propagation ------------------
 # -----------------------------------------
@@ -28,13 +33,13 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		# use the correct target limit depending on packet type
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
-				if building.is_scheduled_to_build:
+				if building.is_scheduled_to_build or building.is_built:
 					continue
 			DataTypes.PACKETS.ENERGY:
 				if building.packets_in_flight >= building.cost_to_supply:
 					continue
 			DataTypes.PACKETS.AMMO:
-				if building.is_full_ammo:
+				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
 					continue
 			# other packet types
 			#_:
@@ -65,11 +70,15 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 			continue
 		match packet_type:
 			DataTypes.PACKETS.BUILDING:
-				if building.is_scheduled_to_build:
+				if building.is_scheduled_to_build or building.is_built:
 					continue
 			DataTypes.PACKETS.ENERGY:
 				if building.packets_in_flight >= building.cost_to_supply:
 					continue
+			DataTypes.PACKETS.AMMO:
+				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
+					continue
+
 
 		var key = str(command_center.get_instance_id()) + "_" + str(building.get_instance_id())
 		if not network_manager.path_cache.has(key):
@@ -163,7 +172,8 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 		return
 		
 	# Connect signals
-	packet.packet_arrived.connect(_on_packet_arrived)
+	if not packet.packet_arrived.is_connected(_on_packet_arrived):
+		packet.packet_arrived.connect(_on_packet_arrived)
 	# Add to container
 	packet.reparent(packets_container)
 

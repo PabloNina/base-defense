@@ -15,7 +15,7 @@ script = ExtResource("1_mk7m4")
 connection_range = 125.0
 cost_to_build = 2
 is_relay = true
-per_tick_packet_consumption = 0.5
+upkeep_cost = 0.5
 building_type = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
