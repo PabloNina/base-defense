@@ -21,7 +21,9 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 # --------------------------------------------
 # --- Preview Configuration ------------------
 # --------------------------------------------
+# The type of building this preview represents.
 var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
+# Reference to the NetworkManager to check for connections.
 var network_manager: NetworkManager
 
 # --- Visuals ---
@@ -30,10 +32,13 @@ const INVALID_COLOR: Color = Color(1.0, 0.0, 0.0, 0.5)
 const LINE_WIDTH: float = 1.0
 const LINE_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)
 const LINE_INVALID_COLOR: Color = Color(1.0, 0.2, 0.2, 0.6)
+# Color for the weapon range visualization circle.
 const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 
 # --- State ---
+# Keeps track of overlapping placement-blocking areas.
 var overlapping_areas: Array[Area2D] = []
+# Pool of Line2D nodes for drawing connection previews.
 var _ghost_lines: Array[Line2D] = []
 
 # --------------------------------------------
@@ -44,6 +49,7 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 	area_exited.connect(_on_area_exited)
 
+# Draws the weapon's fire range if applicable.
 func _draw() -> void:
 	var fire_range = DataTypes.get_fire_range(building_type)
 	if fire_range > 0:
@@ -65,7 +71,7 @@ func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: Net
 	# Ensure collision is enabled
 	collision_shape.set_deferred("disabled", false)
 	
-	# Force an immediate update of the connection lines
+	# Force an immediate update of the connection lines and range indicator.
 	_update_connection_ghosts()
 	queue_redraw()
 
@@ -82,17 +88,20 @@ func clear() -> void:
 	overlapping_areas.clear()
 	_clear_ghost_lines()
 	collision_shape.set_deferred("disabled", true)
+	# Clear the fire range circle.
 	queue_redraw()
 
 # --------------------------------------------
 # --- Overlap Handling -----------------------
 # --------------------------------------------
+# Called when another area enters the preview's detection box.
 func _on_area_entered(area: Area2D) -> void:
 	overlapping_areas.append(area)
 	_set_valid_color(false)
 	is_placeable.emit(false, self)
 	_update_connection_ghosts()
 
+# Called when an area leaves the preview's detection box.
 func _on_area_exited(area: Area2D) -> void:
 	overlapping_areas.erase(area)
 	if overlapping_areas.is_empty():
@@ -103,12 +112,14 @@ func _on_area_exited(area: Area2D) -> void:
 # --------------------------------------------
 # --- Visual Feedback ------------------------
 # --------------------------------------------
+# Tints the preview sprite based on placement validity.
 func _set_valid_color(is_valid: bool) -> void:
 	sprite.modulate = VALID_COLOR if is_valid else INVALID_COLOR
 
 # --------------------------------------------
 # --- Connection Previews --------------------
 # --------------------------------------------
+# Updates the visibility and position of connection lines to nearby buildings.
 func _update_connection_ghosts() -> void:
 	if building_type == DataTypes.BUILDING_TYPE.NULL or not is_visible():
 		_clear_ghost_lines()
@@ -148,6 +159,7 @@ func _update_connection_ghosts() -> void:
 		else:
 			line.visible = false
 
+# Frees the Line2D nodes and clears the line array.
 func _clear_ghost_lines() -> void:
 	for line in _ghost_lines:
 		if is_instance_valid(line):

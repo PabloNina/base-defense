@@ -18,6 +18,7 @@ const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
+# The primary preview used for construction and single-building moves.
 @onready var construction_preview: PlacementPreview = $PlacementPreview
 # -----------------------------------------
 # --- Mouse Tracking ----------------------
@@ -49,9 +50,18 @@ var is_move_state: bool = false
 var is_group_move_state: bool = false
 var buildings_to_move_group: Array[Building] = []
 var formation_offsets: Array[Vector2] = []
+# --- Formation Scaling ---
+# Adjusts the tightness of the group formation.
+var formation_scale: float = 1.0
+const MIN_FORMATION_SCALE: float = 0.5
+const MAX_FORMATION_SCALE: float = 2.0
+const FORMATION_SCALE_STEP: float = 0.5
 var position_to_move: Vector2 = Vector2.ZERO
+# Dictionary of active landing markers for buildings currently moving.
 var landing_markers = {} # Key: building instance, Value: marker instance
+# Array of active previews for group moves.
 var move_previews: Array[PlacementPreview] = []
+# Tracks the validity of each preview in a group move.
 var move_previews_validity: Dictionary = {}
 # ---------------------------------------
 # --- Multi Selection (Box) State -------
@@ -167,22 +177,29 @@ func _deselect_building_to_build() -> void:
 # ----------------------------------------------
 # ------ Preview Feedback ----------------------
 # ----------------------------------------------
+# Updates the active placement previews based on the current state.
 func _update_previews(new_position: Vector2i) -> void:
 	if ghost_tile_position == new_position:
 		return
 	ghost_tile_position = new_position
 	
+	# For single building construction or moves, update the main preview.
 	if is_construction_state or is_move_state:
 		construction_preview.update_position(local_tile_position)
+	# For group moves, update the array of previews.
 	elif is_group_move_state:
 		_update_move_previews()
 
+# Callback for when a preview's placement validity changes.
 func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPreview) -> void:
+	# If it's the main construction preview, update the global flag directly.
 	if preview == construction_preview:
 		is_building_placeable = is_valid
+	# If it's a group move preview, update its status in the dictionary.
 	else:
 		move_previews_validity[preview] = is_valid
 		
+		# The entire group is only placeable if all individual previews are valid.
 		var all_valid = true
 		for valid in move_previews_validity.values():
 			if not valid:
@@ -209,7 +226,8 @@ func _move_building_selection() -> void:
 	
 	for i in range(buildings_to_move_group.size()):
 		var building = buildings_to_move_group[i]
-		var offset = formation_offsets[i]
+		# Apply the current formation scale to the offset.
+		var offset = formation_offsets[i] * formation_scale
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
@@ -224,6 +242,7 @@ func _move_building_selection() -> void:
 	formation_offsets.clear()
 	_clear_move_previews()
 
+# Creates and configures the placement previews for a group move.
 func _create_move_previews() -> void:
 	move_previews_validity.clear()
 	for building in buildings_to_move_group:
@@ -239,11 +258,13 @@ func _create_move_previews() -> void:
 			move_previews_validity[preview] = true # Assume valid at start
 			preview.is_placeable.connect(_on_placement_preview_is_placeable)
 
+# Updates the positions of all previews in a group move.
 func _update_move_previews() -> void:
 	var new_centroid = local_tile_position
 	for i in range(move_previews.size()):
 		var preview = move_previews[i]
-		var offset = formation_offsets[i]
+		# Apply the current formation scale to the offset.
+		var offset = formation_offsets[i] * formation_scale
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
@@ -251,12 +272,14 @@ func _update_move_previews() -> void:
 		var snapped_pos = buildings_layer.map_to_local(target_tile)
 		preview.update_position(snapped_pos)
 
+# Clears and frees all previews used in a group move.
 func _clear_move_previews() -> void:
 	for preview in move_previews:
 		preview.queue_free()
 	move_previews.clear()
 	move_previews_validity.clear()
 
+# Creates a static marker when a building's move begins.
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
 	if landing_markers.has(building):
 		landing_markers[building].queue_free()
@@ -271,6 +294,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 	marker.global_position = landing_position
 	landing_markers[building] = marker
 
+# Removes the static marker when a building's move is complete.
 func _on_building_move_completed(building: MovableBuilding) -> void:
 	if landing_markers.has(building):
 		landing_markers[building].queue_free()
@@ -342,6 +366,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			if selection_start_pos.distance_to(selection_end_pos) > 5:
 				_select_weapons_in_box()
 			queue_redraw()
+	
+	# --- Formation Scale Adjustment ---
+	# Adjust formation tightness if in group move state and the appropriate action is pressed.
+	if is_group_move_state:
+		if event.is_action_pressed("formation_tighter"):
+			formation_scale = clamp(formation_scale + FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
+			_update_move_previews()
+		elif event.is_action_pressed("formation_looser"):
+			formation_scale = clamp(formation_scale - FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
+			_update_move_previews()
 
 	if event is InputEventMouseMotion and is_box_selecting_state:
 		selection_end_pos = get_global_mouse_position()
@@ -376,6 +410,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			current_building_to_move = null
 			buildings_to_move_group.clear()
 			formation_offsets.clear()
+			# Reset the formation scale to its default value.
+			formation_scale = 1.0
 			construction_preview.clear()
 			_clear_move_previews()
 		else:

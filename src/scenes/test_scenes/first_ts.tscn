@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=4 uid="uid://dfstbgurxnd7l"]
+[gd_scene load_steps=9 format=4 uid="uid://dfstbgurxnd7l"]
 
 [ext_resource type="PackedScene" uid="uid://b343w2e4y27v" path="res://src/scenes/managers/building_manager.tscn" id="1_e8kqi"]
 [ext_resource type="PackedScene" uid="uid://cjr2r4qtmpky6" path="res://src/scenes/managers/network_manager.tscn" id="2_1nbkg"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dosdc7ctbrr8g" path="res://src/scenes/ui/user_interface.tscn" id="6_4mpmm"]
 [ext_resource type="PackedScene" uid="uid://dlgb1bhcttdy2" path="res://src/scenes/managers/packet_manager.tscn" id="6_v2v25"]
 [ext_resource type="PackedScene" uid="uid://cpoaqe645mbpq" path="res://src/scenes/buildings/generator.tscn" id="7_vpigq"]
+[ext_resource type="PackedScene" uid="uid://bmwseob8yf20s" path="res://src/scenes/buildings/gun_turret.tscn" id="8_ce3it"]
 
 [node name="FirstTestScene" type="Node2D"]
 
@@ -40,3 +41,9 @@ position = Vector2(280, 168)
 
 [node name="EnergyGenerator2" parent="." instance=ExtResource("7_vpigq")]
 position = Vector2(312, 168)
+
+[node name="GunTurret" parent="." instance=ExtResource("8_ce3it")]
+position = Vector2(280, 40)
+
+[node name="GunTurret2" parent="." instance=ExtResource("8_ce3it")]
+position = Vector2(312, 40)
