@@ -1,8 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://6jgl6ihfudj0"]
+[gd_scene load_steps=3 format=3 uid="uid://6jgl6ihfudj0"]
 
 [ext_resource type="Script" uid="uid://bg7lptshado5x" path="res://src/scenes/objects/landing_marker.gd" id="1_nsiet"]
 
-[node name="LandingMarker" type="Node2D"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_nsiet"]
+
+[node name="LandingMarker" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
 script = ExtResource("1_nsiet")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="GhostLines" type="Node2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_nsiet")

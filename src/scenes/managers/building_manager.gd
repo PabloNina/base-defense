@@ -6,8 +6,6 @@
 # Comunicates with GhostBuilding for placement validity
 class_name BuildingManager extends Node2D
 
-const landing_marker_scene: PackedScene = preload("res://src/scenes/objects/landing_marker.tscn")
-
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
@@ -52,6 +50,7 @@ var formation_offsets: Array[Vector2] = []
 var position_to_move: Vector2 = Vector2.ZERO
 var landing_markers = {} # Key: building instance, Value: marker instance
 var landing_marker_previews: Array = []
+var landing_marker_validity: Dictionary = {}
 # ---------------------------------------
 # --- Multi Selection (Box) State -------
 # ---------------------------------------
@@ -206,13 +205,25 @@ func _move_building_selection() -> void:
 	formation_offsets.clear()
 	_clear_landing_marker_previews()
 
+func _on_landing_marker_is_placeable(is_valid: bool, marker: LandingMarker) -> void:
+	landing_marker_validity[marker] = is_valid
+	
+	var all_valid = true
+	for valid in landing_marker_validity.values():
+		if not valid:
+			all_valid = false
+			break
+	is_building_placeable = all_valid
+
 func _create_landing_marker_previews() -> void:
+	landing_marker_validity.clear()
 	for building in buildings_to_move_group:
 		if building is MovableBuilding:
-			var preview_marker = LandingMarker.new_landing_marker(building.building_type, building.global_position)
-			preview_marker.modulate = Color(1, 1, 1, 0.5)
+			var preview_marker = LandingMarker.new_landing_marker(building.building_type, building.global_position, network_manager)
 			add_child(preview_marker)
 			landing_marker_previews.append(preview_marker)
+			landing_marker_validity[preview_marker] = true # Assume valid at start
+			preview_marker.is_placeable.connect(_on_landing_marker_is_placeable)
 
 func _update_landing_marker_previews() -> void:
 	var new_centroid = local_tile_position
@@ -224,12 +235,13 @@ func _update_landing_marker_previews() -> void:
 		# Snap to the grid
 		var target_tile = buildings_layer.local_to_map(target_pos)
 		var snapped_pos = buildings_layer.map_to_local(target_tile)
-		marker.global_position = snapped_pos
+		marker.update_preview(snapped_pos)
 
 func _clear_landing_marker_previews() -> void:
 	for marker in landing_marker_previews:
 		marker.queue_free()
 	landing_marker_previews.clear()
+	landing_marker_validity.clear()
 
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
 	# If this building already has a marker, remove the old one
@@ -237,7 +249,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 		landing_markers[building].queue_free()
 
 	# Create the new marker using LandingMarker constructor
-	var new_marker = LandingMarker.new_landing_marker(building.building_type, landing_position)
+	var new_marker = LandingMarker.new_landing_marker(building.building_type, landing_position, network_manager)
 	add_child(new_marker)
 
 	# Store the new marker in the dictionary with the building as the key
