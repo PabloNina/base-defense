@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://dx4db46amet62"]
 
-[ext_resource type="Script" uid="uid://b3iflobeptxti" path="res://src/scenes/managers/ghost_building.gd" id="1_v8nw7"]
+[ext_resource type="Script" uid="uid://b3iflobeptxti" path="res://src/scenes/deprecated/ghost_building.gd" id="1_v8nw7"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_13xf3"]
 

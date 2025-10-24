@@ -30,6 +30,7 @@ const INVALID_COLOR: Color = Color(1.0, 0.0, 0.0, 0.5)
 const LINE_WIDTH: float = 1.0
 const LINE_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)
 const LINE_INVALID_COLOR: Color = Color(1.0, 0.2, 0.2, 0.6)
+const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 
 # --- State ---
 var overlapping_areas: Array[Area2D] = []
@@ -42,6 +43,11 @@ func _ready() -> void:
 	# Connect signals for area overlap detection
 	area_entered.connect(_on_area_entered)
 	area_exited.connect(_on_area_exited)
+
+func _draw() -> void:
+	var fire_range = DataTypes.get_fire_range(building_type)
+	if fire_range > 0:
+		draw_circle(Vector2.ZERO, fire_range, RANGE_COLOR)
 
 # --------------------------------------------
 # --- Public Methods -------------------------
@@ -61,6 +67,7 @@ func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: Net
 	
 	# Force an immediate update of the connection lines
 	_update_connection_ghosts()
+	queue_redraw()
 
 # Updates the preview's position and redraws connection lines.
 func update_position(new_position: Vector2) -> void:
@@ -75,6 +82,7 @@ func clear() -> void:
 	overlapping_areas.clear()
 	_clear_ghost_lines()
 	collision_shape.set_deferred("disabled", true)
+	queue_redraw()
 
 # --------------------------------------------
 # --- Overlap Handling -----------------------

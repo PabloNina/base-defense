@@ -68,6 +68,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": false,
 		"upkeep_cost": 0.0,
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
+		"fire_range": 100,
 	},
 }
 
@@ -101,7 +102,11 @@ static func get_is_relay(building_type: int) -> bool:
 static func get_landing_marker_texture(building_type: int) -> Texture2D:
 	var data = get_building_data(building_type)
 	return data.get("landing_marker_texture", null)
-	
+
+static func get_fire_range(building_type: DataTypes.BUILDING_TYPE) -> int:
+	var data = get_building_data(building_type)
+	return data.get("fire_range", -1)
+
 #static func get_scene_path(building_type: int) -> String:
 	#var data = get_building_data(building_type)
 	#return data.get("scene_path", "")

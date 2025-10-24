@@ -7,7 +7,7 @@ class_name Weapon extends MovableBuilding
 @export var max_ammo_storage: int = 10
 @export var cost_per_shot: float = 0.25
 @export var fire_rate: float = 0.5
-@export var fire_range: int = 150
+@export var fire_range: int = 100
 
 var is_full_ammo: bool = false
 var current_ammo: float = 0.0: set = _set_ammo
