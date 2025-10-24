@@ -50,7 +50,8 @@ var is_group_move_state: bool = false
 var buildings_to_move_group: Array[Building] = []
 var formation_offsets: Array[Vector2] = []
 var position_to_move: Vector2 = Vector2.ZERO
-var landing_markers: Dictionary = {} # Key: building instance, Value: marker instance
+var landing_markers = {} # Key: building instance, Value: marker instance
+var landing_marker_previews: Array = []
 # ---------------------------------------
 # --- Multi Selection (Box) State -------
 # ---------------------------------------
@@ -91,7 +92,7 @@ func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
 	if is_construction_state or is_move_state or is_group_move_state:
 		_get_cell_under_mouse()
-		_update_ghost_tile_position(tile_position)
+		_update_previews(tile_position)
 
 # ----------------------------------------------
 # --- Public Methods / Building Registration ---
@@ -160,11 +161,15 @@ func _deselect_building_to_build() -> void:
 # ----------------------------------------------
 # ------ Construction State / Ghost Feedback -----
 # ----------------------------------------------
-func _update_ghost_tile_position(new_position: Vector2i) -> void:
+func _update_previews(new_position: Vector2i) -> void:
 	if ghost_tile_position == new_position:
 		return
 	ghost_tile_position = new_position
-	ghost_building.position = local_tile_position
+	
+	if is_construction_state or is_move_state:
+		ghost_building.position = local_tile_position
+	elif is_group_move_state:
+		_update_landing_marker_previews()
 
 # Used in Mouse&Keyboard Input Handling to check if a building can be built or moved
 # Called by the signal is_placeable emited everytime a building enters/exits BuildingGhost area2d
@@ -199,7 +204,32 @@ func _move_building_selection() -> void:
 	is_group_move_state = false
 	buildings_to_move_group.clear()
 	formation_offsets.clear()
-	ghost_building.clear_preview()
+	_clear_landing_marker_previews()
+
+func _create_landing_marker_previews() -> void:
+	for building in buildings_to_move_group:
+		if building is MovableBuilding:
+			var preview_marker = LandingMarker.new_landing_marker(building.building_type, building.global_position)
+			preview_marker.modulate = Color(1, 1, 1, 0.5)
+			add_child(preview_marker)
+			landing_marker_previews.append(preview_marker)
+
+func _update_landing_marker_previews() -> void:
+	var new_centroid = local_tile_position
+	for i in range(landing_marker_previews.size()):
+		var marker = landing_marker_previews[i]
+		var offset = formation_offsets[i]
+		var target_pos = new_centroid + offset
+		
+		# Snap to the grid
+		var target_tile = buildings_layer.local_to_map(target_pos)
+		var snapped_pos = buildings_layer.map_to_local(target_tile)
+		marker.global_position = snapped_pos
+
+func _clear_landing_marker_previews() -> void:
+	for marker in landing_marker_previews:
+		marker.queue_free()
+	landing_marker_previews.clear()
 
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
 	# If this building already has a marker, remove the old one
@@ -324,6 +354,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			buildings_to_move_group.clear()
 			formation_offsets.clear()
 			ghost_building.clear_preview()
+			_clear_landing_marker_previews()
 		else:
 			clear_selection()
 
@@ -364,8 +395,7 @@ func _enter_move_mode() -> void:
 		for building in buildings_to_move_group:
 			formation_offsets.append(building.global_position - centroid)
 			
-		# For now, ghost the first building type in the selection
-		if not buildings_to_move_group.is_empty():
-			ghost_building.set_building_type(buildings_to_move_group[0].building_type)
+		ghost_building.clear_preview()
+		_create_landing_marker_previews()
 	
 	clear_selection()
