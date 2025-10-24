@@ -3,8 +3,10 @@
 # =========================================
 # Handles Mouse tracking and Input Events related to Buildings
 # Manages construction, selection, movement and other buildings actions(to be implemented)
-# Comunicates with GhostBuilding for placement validity
+# Comunicates with PlacementPreview for placement validity
 class_name BuildingManager extends Node2D
+
+const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/placement_preview.tscn")
 
 # -----------------------------------------
 # --- Editor Exports ----------------------
@@ -16,7 +18,7 @@ class_name BuildingManager extends Node2D
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
-@onready var ghost_building: GhostBuilding = $GhostBuilding
+@onready var construction_preview: PlacementPreview = $PlacementPreview
 # -----------------------------------------
 # --- Mouse Tracking ----------------------
 # -----------------------------------------
@@ -49,8 +51,8 @@ var buildings_to_move_group: Array[Building] = []
 var formation_offsets: Array[Vector2] = []
 var position_to_move: Vector2 = Vector2.ZERO
 var landing_markers = {} # Key: building instance, Value: marker instance
-var landing_marker_previews: Array = []
-var landing_marker_validity: Dictionary = {}
+var move_previews: Array[PlacementPreview] = []
+var move_previews_validity: Dictionary = {}
 # ---------------------------------------
 # --- Multi Selection (Box) State -------
 # ---------------------------------------
@@ -74,18 +76,17 @@ signal building_deselected()
 # -----------------------------------------
 func _ready() -> void:
 	add_to_group("building_manager")
-	# Dependency injection
-	ghost_building._network_manager = network_manager
-
+	
 	# Subscribe to Ui signals
 	user_interface.building_button_pressed.connect(_on_ui_building_button_pressed)
 	user_interface.destroy_button_pressed.connect(_on_ui_destroy_button_pressed)
 	user_interface.move_selection_pressed.connect(_on_ui_move_selection_pressed)
 	
+	# Connect to the construction preview's signal
+	construction_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+	
 	# Start with Command Center selected 
-	is_construction_state = true
-	building_to_build_id = command_center_id
-	ghost_building.set_building_type(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
+	_select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
 
 func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
@@ -147,18 +148,24 @@ func _place_building() -> void:
 # -----------------------------------------
 # --- Construction State / Helpers --------
 # -----------------------------------------
-func _select_building_to_build(new_building: DataTypes.BUILDING_TYPE) -> void:
+func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> void:
 	is_construction_state = true
-	ghost_building.set_building_type(new_building)
-	building_to_build_id = DataTypes.get_tilemap_id(new_building)
+	building_to_build_id = DataTypes.get_tilemap_id(new_building_type)
+	
+	construction_preview.initialize(
+		new_building_type,
+		network_manager,
+		DataTypes.get_ghost_texture(new_building_type)
+	)
+	construction_preview.visible = true
 
 func _deselect_building_to_build() -> void:
 	is_construction_state = false
-	ghost_building.clear_preview()
+	construction_preview.clear()
 	building_to_build_id = 0
 
 # ----------------------------------------------
-# ------ Construction State / Ghost Feedback -----
+# ------ Preview Feedback ----------------------
 # ----------------------------------------------
 func _update_previews(new_position: Vector2i) -> void:
 	if ghost_tile_position == new_position:
@@ -166,15 +173,23 @@ func _update_previews(new_position: Vector2i) -> void:
 	ghost_tile_position = new_position
 	
 	if is_construction_state or is_move_state:
-		ghost_building.position = local_tile_position
+		construction_preview.update_position(local_tile_position)
 	elif is_group_move_state:
-		_update_landing_marker_previews()
+		_update_move_previews()
 
-# Used in Mouse&Keyboard Input Handling to check if a building can be built or moved
-# Called by the signal is_placeable emited everytime a building enters/exits BuildingGhost area2d
-func _on_building_ghost_preview_is_placeable(value: bool) -> void:
-	is_building_placeable = value
-	
+func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPreview) -> void:
+	if preview == construction_preview:
+		is_building_placeable = is_valid
+	else:
+		move_previews_validity[preview] = is_valid
+		
+		var all_valid = true
+		for valid in move_previews_validity.values():
+			if not valid:
+				all_valid = false
+				break
+		is_building_placeable = all_valid
+
 # -----------------------------------------
 # --- Moving State Placement / Signals ----
 # -----------------------------------------
@@ -182,8 +197,12 @@ func _move_building(building_to_move: MovableBuilding) -> void:
 	building_to_move.start_move(local_tile_position)
 	is_move_state = false
 	current_building_to_move = null
-	ghost_building.clear_preview()
+	construction_preview.clear()
 	clear_selection()
+	
+	# Remove tile from map so it can be used again
+	var tile_coords = buildings_layer.local_to_map(building_to_move.global_position)
+	buildings_layer.erase_cell(tile_coords)
 
 func _move_building_selection() -> void:
 	var new_centroid = local_tile_position
@@ -203,62 +222,57 @@ func _move_building_selection() -> void:
 	is_group_move_state = false
 	buildings_to_move_group.clear()
 	formation_offsets.clear()
-	_clear_landing_marker_previews()
+	_clear_move_previews()
 
-func _on_landing_marker_is_placeable(is_valid: bool, marker: LandingMarker) -> void:
-	landing_marker_validity[marker] = is_valid
-	
-	var all_valid = true
-	for valid in landing_marker_validity.values():
-		if not valid:
-			all_valid = false
-			break
-	is_building_placeable = all_valid
-
-func _create_landing_marker_previews() -> void:
-	landing_marker_validity.clear()
+func _create_move_previews() -> void:
+	move_previews_validity.clear()
 	for building in buildings_to_move_group:
 		if building is MovableBuilding:
-			var preview_marker = LandingMarker.new_landing_marker(building.building_type, building.global_position, network_manager)
-			add_child(preview_marker)
-			landing_marker_previews.append(preview_marker)
-			landing_marker_validity[preview_marker] = true # Assume valid at start
-			preview_marker.is_placeable.connect(_on_landing_marker_is_placeable)
+			var preview = placement_preview_scene.instantiate() as PlacementPreview
+			add_child(preview)
+			preview.initialize(
+				building.building_type,
+				network_manager,
+				DataTypes.get_landing_marker_texture(building.building_type)
+			)
+			move_previews.append(preview)
+			move_previews_validity[preview] = true # Assume valid at start
+			preview.is_placeable.connect(_on_placement_preview_is_placeable)
 
-func _update_landing_marker_previews() -> void:
+func _update_move_previews() -> void:
 	var new_centroid = local_tile_position
-	for i in range(landing_marker_previews.size()):
-		var marker = landing_marker_previews[i]
+	for i in range(move_previews.size()):
+		var preview = move_previews[i]
 		var offset = formation_offsets[i]
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
 		var target_tile = buildings_layer.local_to_map(target_pos)
 		var snapped_pos = buildings_layer.map_to_local(target_tile)
-		marker.update_preview(snapped_pos)
+		preview.update_position(snapped_pos)
 
-func _clear_landing_marker_previews() -> void:
-	for marker in landing_marker_previews:
-		marker.queue_free()
-	landing_marker_previews.clear()
-	landing_marker_validity.clear()
+func _clear_move_previews() -> void:
+	for preview in move_previews:
+		preview.queue_free()
+	move_previews.clear()
+	move_previews_validity.clear()
 
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
-	# If this building already has a marker, remove the old one
 	if landing_markers.has(building):
 		landing_markers[building].queue_free()
 
-	# Create the new marker using LandingMarker constructor
-	var new_marker = LandingMarker.new_landing_marker(building.building_type, landing_position, network_manager)
-	add_child(new_marker)
-
-	# Store the new marker in the dictionary with the building as the key
-	landing_markers[building] = new_marker
+	var marker = placement_preview_scene.instantiate() as PlacementPreview
+	add_child(marker)
+	marker.initialize(
+		building.building_type,
+		network_manager,
+		DataTypes.get_landing_marker_texture(building.building_type)
+	)
+	marker.global_position = landing_position
+	landing_markers[building] = marker
 
 func _on_building_move_completed(building: MovableBuilding) -> void:
-	# Check if a marker exists for this building
 	if landing_markers.has(building):
-		# Remove the marker from the scene and the dictionary
 		landing_markers[building].queue_free()
 		landing_markers.erase(building)
 
@@ -309,9 +323,7 @@ func _update_selection() -> void:
 func _draw() -> void:
 	if is_box_selecting_state:
 		var rect = Rect2(selection_start_pos, selection_end_pos - selection_start_pos)
-		# Draw a semi-transparent blue rectangle
 		draw_rect(rect, Color(0, 0.5, 1, 0.2))
-		# Draw a thin blue border
 		draw_rect(rect, Color(0, 0.5, 1, 1), false, 1.0)
 
 # -----------------------------------------
@@ -327,7 +339,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			clear_selection()
 		elif not event.is_pressed() and is_box_selecting_state:
 			is_box_selecting_state = false
-			# To avoid calling selection on a single click, check if the box is a certain size
 			if selection_start_pos.distance_to(selection_end_pos) > 5:
 				_select_weapons_in_box()
 			queue_redraw()
@@ -365,8 +376,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			current_building_to_move = null
 			buildings_to_move_group.clear()
 			formation_offsets.clear()
-			ghost_building.clear_preview()
-			_clear_landing_marker_previews()
+			construction_preview.clear()
+			_clear_move_previews()
 		else:
 			clear_selection()
 
@@ -391,23 +402,27 @@ func _enter_move_mode() -> void:
 	if selected_buildings.size() == 1 and selected_buildings[0] is MovableBuilding:
 		is_move_state = true
 		current_building_to_move = selected_buildings[0]
-		ghost_building.set_building_type(current_building_to_move.building_type)
+		var building_type = current_building_to_move.building_type
+		construction_preview.initialize(
+			building_type,
+			network_manager,
+			DataTypes.get_ghost_texture(building_type)
+		)
+		construction_preview.visible = true
 	else:
 		is_group_move_state = true
 		buildings_to_move_group = selected_buildings.duplicate()
 		formation_offsets.clear()
 		
-		# Calculate centroid
 		var centroid = Vector2.ZERO
 		for building in buildings_to_move_group:
 			centroid += building.global_position
 		centroid /= buildings_to_move_group.size()
 		
-		# Calculate offsets
 		for building in buildings_to_move_group:
 			formation_offsets.append(building.global_position - centroid)
 			
-		ghost_building.clear_preview()
-		_create_landing_marker_previews()
+		construction_preview.clear()
+		_create_move_previews()
 	
 	clear_selection()

@@ -1,25 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://btaln064qhcx"]
+[gd_scene load_steps=3 format=3 uid="uid://b343w2e4y27v"]
 
-[ext_resource type="Script" uid="uid://cymhc3rmgng4k" path="res://src/scenes/managers/building_manager.gd" id="1_4wbys"]
-[ext_resource type="Script" uid="uid://b3iflobeptxti" path="res://src/scenes/managers/ghost_building.gd" id="2_13xf3"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_13xf3"]
+[ext_resource type="Script" uid="uid://cymhc3rmgng4k" path="res://src/scenes/managers/building_manager.gd" id="1_t5t3c"]
+[ext_resource type="PackedScene" uid="uid://c8t5w2j2qg3j" path="res://src/scenes/managers/placement_preview.tscn" id="2_6ga8u"]
 
 [node name="BuildingManager" type="Node2D"]
-script = ExtResource("1_4wbys")
+script = ExtResource("1_t5t3c")
 
-[node name="GhostBuilding" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 2
-script = ExtResource("2_13xf3")
-
-[node name="GhostSprite" type="Sprite2D" parent="GhostBuilding"]
-
-[node name="GhostLines" type="Node2D" parent="GhostBuilding"]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="GhostBuilding"]
-shape = SubResource("RectangleShape2D_13xf3")
-
-[connection signal="area_entered" from="GhostBuilding" to="GhostBuilding" method="_on_area_entered"]
-[connection signal="area_exited" from="GhostBuilding" to="GhostBuilding" method="_on_area_exited"]
-[connection signal="is_placeable" from="GhostBuilding" to="." method="_on_building_ghost_preview_is_placeable"]
+[node name="PlacementPreview" parent="." instance=ExtResource("2_6ga8u")]
