@@ -46,26 +46,28 @@ var buildable_tile_id: int = 0
 # ---------------------------------------
 var current_building_to_move: MovableBuilding = null
 var is_move_state: bool = false
+var is_group_move_state: bool = false
+var buildings_to_move_group: Array[Building] = []
+var formation_offsets: Array[Vector2] = []
 var position_to_move: Vector2 = Vector2.ZERO
-var landing_markers = {} # Key: building instance, Value: marker instance
+var landing_markers: Dictionary = {} # Key: building instance, Value: marker instance
 # ---------------------------------------
 # --- Multi Selection (Box) State -------
 # ---------------------------------------
 var is_box_selecting_state: bool = false
 var selection_start_pos: Vector2 = Vector2.ZERO
 var selection_end_pos: Vector2 = Vector2.ZERO
-var selected_weapons: Array[Weapon] = [] # Stored weapons in box selection
 # -----------------------------------------
-# --- Single Selection (Clicked) State ----
+# --- Selection State ----
 # -----------------------------------------
-var current_clicked_building: Building = null
+var selected_buildings: Array[Building] = []
 var buildings: Array[Building] = []  # All active buildings
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
 # Emited when building is clicked and selected
 # Connected to UserInterface
-signal building_selected(building: Building)
+signal selection_changed(buildings: Array[Building])
 signal building_deselected()
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -78,7 +80,7 @@ func _ready() -> void:
 	# Subscribe to Ui signals
 	user_interface.building_button_pressed.connect(_on_ui_building_button_pressed)
 	user_interface.destroy_button_pressed.connect(_on_ui_destroy_button_pressed)
-	user_interface.move_button_pressed.connect(_on_ui_move_button_pressed)
+	user_interface.move_selection_pressed.connect(_on_ui_move_selection_pressed)
 	
 	# Start with Command Center selected 
 	is_construction_state = true
@@ -87,7 +89,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
-	if is_construction_state == true or is_move_state == true:
+	if is_construction_state or is_move_state or is_group_move_state:
 		_get_cell_under_mouse()
 		_update_ghost_tile_position(tile_position)
 
@@ -177,7 +179,27 @@ func _move_building(building_to_move: MovableBuilding) -> void:
 	is_move_state = false
 	current_building_to_move = null
 	ghost_building.clear_preview()
-	_deselect_clicked_building()
+	clear_selection()
+
+func _move_building_selection() -> void:
+	var new_centroid = local_tile_position
+	
+	for i in range(buildings_to_move_group.size()):
+		var building = buildings_to_move_group[i]
+		var offset = formation_offsets[i]
+		var target_pos = new_centroid + offset
+		
+		# Snap to the grid
+		var target_tile = buildings_layer.local_to_map(target_pos)
+		var snapped_pos = buildings_layer.map_to_local(target_tile)
+		
+		if building is MovableBuilding:
+			building.start_move(snapped_pos)
+
+	is_group_move_state = false
+	buildings_to_move_group.clear()
+	formation_offsets.clear()
+	ghost_building.clear_preview()
 
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
 	# If this building already has a marker, remove the old one
@@ -199,41 +221,45 @@ func _on_building_move_completed(building: MovableBuilding) -> void:
 		landing_markers.erase(building)
 
 # -----------------------------------------
-# --- Single Selection / Signal Clicked ---
+# --- Selection Logic ---------------------
 # -----------------------------------------
-# Called when a building is clicked in the game world
-# by connecting signal clicked on register_building
 func _on_building_clicked(clicked_building: Building) -> void:
-	# if construction state is true dont select buildings
-	if is_construction_state == true:
+	if is_construction_state:
 		return
 
-	# Clear any previous multi-selection when clicking a single building
-	_clear_selection()
-
-	if current_clicked_building == clicked_building:
-		# Deselect if clicked again
-		_deselect_clicked_building()
+	if selected_buildings.size() == 1 and selected_buildings[0] == clicked_building:
+		clear_selection()
 	else:
-		# Select new building
-		_select_clicked_building(clicked_building)
+		clear_selection()
+		selected_buildings.append(clicked_building)
+		_update_selection()
 
-func _select_clicked_building(building: Building) -> void:
-	if is_instance_valid(current_clicked_building):
-		current_clicked_building.deselect()
-		current_clicked_building = null
-	building_selected.emit(building)
-	current_clicked_building = building
-	# last thing added
-	building.select()
+func _select_weapons_in_box() -> void:
+	var selection_box = Rect2(selection_start_pos, selection_end_pos - selection_start_pos).abs()
+	clear_selection()
 
-func _deselect_clicked_building() -> void:
-	building_deselected.emit()
-	if is_instance_valid(current_clicked_building):
-		current_clicked_building.deselect()
-		current_clicked_building = null
-		
-	_clear_selection()
+	var weapons_in_scene = get_tree().get_nodes_in_group("weapons")
+	for weapon in weapons_in_scene:
+		if selection_box.has_point(weapon.global_position):
+			selected_buildings.append(weapon)
+	
+	_update_selection()
+
+func clear_selection() -> void:
+	for building in selected_buildings:
+		if is_instance_valid(building):
+			building.deselect()
+	selected_buildings.clear()
+	_update_selection()
+
+func _update_selection() -> void:
+	if selected_buildings.is_empty():
+		building_deselected.emit()
+	else:
+		for building in selected_buildings:
+			if is_instance_valid(building):
+				building.select()
+		selection_changed.emit(selected_buildings)
 
 # ---------------------------------------
 # --- Multi Selection / Drag Box --------
@@ -246,38 +272,17 @@ func _draw() -> void:
 		# Draw a thin blue border
 		draw_rect(rect, Color(0, 0.5, 1, 1), false, 1.0)
 
-func _clear_selection() -> void:
-	for weapon in selected_weapons:
-		if is_instance_valid(weapon):
-			weapon.deselect()
-	selected_weapons.clear()
-
-func _select_weapons_in_box() -> void:
-	var selection_box = Rect2(selection_start_pos, selection_end_pos - selection_start_pos).abs()
-
-	_clear_selection()
-
-	var weapons_in_scene = get_tree().get_nodes_in_group("weapons")
-	for weapon in weapons_in_scene:
-		if selection_box.has_point(weapon.global_position):
-			var weapon_node := weapon as Weapon
-			if weapon_node:
-				weapon_node.select()
-				selected_weapons.append(weapon_node)
-
 # -----------------------------------------
 # --- Mouse and Keyboard Input Handling ---
 # -----------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
 	# --- Selection Box ---
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.is_pressed() and not is_construction_state and not is_move_state:
+		if event.is_pressed() and not is_construction_state and not is_move_state and not is_group_move_state:
 			is_box_selecting_state = true
 			selection_start_pos = get_global_mouse_position()
 			selection_end_pos = selection_start_pos
-			if is_instance_valid(current_clicked_building):
-				current_clicked_building.deselect()
-				current_clicked_building = null
+			clear_selection()
 		elif not event.is_pressed() and is_box_selecting_state:
 			is_box_selecting_state = false
 			# To avoid calling selection on a single click, check if the box is a certain size
@@ -290,10 +295,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		queue_redraw()
 
 	# --- Construction/Move placement ---
-	if event.is_action_pressed("left_mouse") and is_construction_state and is_building_placeable:
-		_place_building()
-	elif event.is_action_pressed("left_mouse") and is_move_state and is_building_placeable:
-		_move_building(current_building_to_move)
+	if event.is_action_pressed("left_mouse"):
+		if is_construction_state and is_building_placeable:
+			_place_building()
+		elif is_move_state and is_building_placeable:
+			_move_building(current_building_to_move)
+		elif is_group_move_state and is_building_placeable:
+			_move_building_selection()
 
 	# --- Selection: Building Hotkeys ---
 	if event.is_action_pressed("key_1"):
@@ -307,15 +315,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# --- Cancel Construction Mode or Building selection---
 	elif event.is_action_pressed("right_mouse"): # Cancel action
-		if is_construction_state == true:
+		if is_construction_state:
 			_deselect_building_to_build()
-
-		else:
-			# if is_construction_state == false:
-			_deselect_clicked_building()
-			# deselect moving state
-			current_building_to_move = null
+		elif is_move_state or is_group_move_state:
 			is_move_state = false
+			is_group_move_state = false
+			current_building_to_move = null
+			buildings_to_move_group.clear()
+			formation_offsets.clear()
+			ghost_building.clear_preview()
+		else:
+			clear_selection()
 
 # -----------------------------------------
 # --- User Interface Input Handling ------
@@ -328,7 +338,34 @@ func _on_ui_building_button_pressed(building: DataTypes.BUILDING_TYPE) -> void:
 func _on_ui_destroy_button_pressed(building_to_destroy: Building) -> void:
 	building_to_destroy.destroy()
 
-func _on_ui_move_button_pressed(building_to_move: MovableBuilding) -> void:
-	is_move_state = true
-	current_building_to_move = building_to_move
-	ghost_building.set_building_type(current_building_to_move.building_type)
+func _on_ui_move_selection_pressed() -> void:
+	_enter_move_mode()
+
+func _enter_move_mode() -> void:
+	if selected_buildings.is_empty():
+		return
+
+	if selected_buildings.size() == 1 and selected_buildings[0] is MovableBuilding:
+		is_move_state = true
+		current_building_to_move = selected_buildings[0]
+		ghost_building.set_building_type(current_building_to_move.building_type)
+	else:
+		is_group_move_state = true
+		buildings_to_move_group = selected_buildings.duplicate()
+		formation_offsets.clear()
+		
+		# Calculate centroid
+		var centroid = Vector2.ZERO
+		for building in buildings_to_move_group:
+			centroid += building.global_position
+		centroid /= buildings_to_move_group.size()
+		
+		# Calculate offsets
+		for building in buildings_to_move_group:
+			formation_offsets.append(building.global_position - centroid)
+			
+		# For now, ghost the first building type in the selection
+		if not buildings_to_move_group.is_empty():
+			ghost_building.set_building_type(buildings_to_move_group[0].building_type)
+	
+	clear_selection()
