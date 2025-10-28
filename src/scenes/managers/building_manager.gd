@@ -53,7 +53,8 @@ var formation_offsets: Array[Vector2] = []
 # --- Formation Scaling ---
 # Adjusts the tightness of the group formation.
 var formation_scale: float = 1.0
-const MIN_FORMATION_SCALE: float = 0.5
+var formation_angle: float = 0.0
+const MIN_FORMATION_SCALE: float = 1.0
 const MAX_FORMATION_SCALE: float = 2.0
 const FORMATION_SCALE_STEP: float = 0.5
 var position_to_move: Vector2 = Vector2.ZERO
@@ -159,6 +160,10 @@ func _place_building() -> void:
 # --- Construction State / Helpers --------
 # -----------------------------------------
 func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> void:
+	# If the player was in a move state, cancel it before entering construction state.
+	if is_move_state or is_group_move_state:
+		_cancel_move_state()
+
 	is_construction_state = true
 	building_to_build_id = DataTypes.get_tilemap_id(new_building_type)
 	
@@ -228,6 +233,8 @@ func _move_building_selection() -> void:
 		var building = buildings_to_move_group[i]
 		# Apply the current formation scale to the offset.
 		var offset = formation_offsets[i] * formation_scale
+		# Rotate the offset based on the current formation angle.
+		offset = offset.rotated(deg_to_rad(formation_angle))
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
@@ -265,6 +272,8 @@ func _update_move_previews() -> void:
 		var preview = move_previews[i]
 		# Apply the current formation scale to the offset.
 		var offset = formation_offsets[i] * formation_scale
+		# Rotate the offset based on the current formation angle.
+		offset = offset.rotated(deg_to_rad(formation_angle))
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
@@ -278,6 +287,21 @@ func _clear_move_previews() -> void:
 		preview.queue_free()
 	move_previews.clear()
 	move_previews_validity.clear()
+
+
+# Cancels the current single or group move state, resetting all related variables and clearing previews.
+func _cancel_move_state() -> void:
+	is_move_state = false
+	is_group_move_state = false
+	current_building_to_move = null
+	buildings_to_move_group.clear()
+	formation_offsets.clear()
+	# Reset the formation scale and angle to their default values.
+	formation_scale = 1.0
+	formation_angle = 0.0
+	construction_preview.clear()
+	_clear_move_previews()
+
 
 # Creates a static marker when a building's move begins.
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
@@ -371,11 +395,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Adjust formation tightness if in group move state and the appropriate action is pressed.
 	if is_group_move_state:
 		if event.is_action_pressed("formation_tighter"):
-			formation_scale = clamp(formation_scale + FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
-			_update_move_previews()
-		elif event.is_action_pressed("formation_looser"):
+			# Decrease scale to make the formation tighter
 			formation_scale = clamp(formation_scale - FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
 			_update_move_previews()
+		elif event.is_action_pressed("formation_looser"):
+			# Increase scale to make the formation looser.
+			formation_scale = clamp(formation_scale + FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
+			_update_move_previews()
+		elif event.is_action_pressed("formation_rotate"):
+			formation_angle = fmod(formation_angle + 90.0, 360.0)
+			_update_move_previews()
+
 
 	if event is InputEventMouseMotion and is_box_selecting_state:
 		selection_end_pos = get_global_mouse_position()
@@ -405,15 +435,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if is_construction_state:
 			_deselect_building_to_build()
 		elif is_move_state or is_group_move_state:
-			is_move_state = false
-			is_group_move_state = false
-			current_building_to_move = null
-			buildings_to_move_group.clear()
-			formation_offsets.clear()
-			# Reset the formation scale to its default value.
-			formation_scale = 1.0
-			construction_preview.clear()
-			_clear_move_previews()
+			_cancel_move_state()
 		else:
 			clear_selection()
 
@@ -450,13 +472,16 @@ func _enter_move_mode() -> void:
 		buildings_to_move_group = selected_buildings.duplicate()
 		formation_offsets.clear()
 		
-		var centroid = Vector2.ZERO
-		for building in buildings_to_move_group:
-			centroid += building.global_position
-		centroid /= buildings_to_move_group.size()
+		# When moving a group, calculate a compact line formation instead of preserving original spacing.
+		# The formation can be adjusted by the player using the formation_tighter/formation_looser actions.
+		var num_buildings = buildings_to_move_group.size()
+		var tile_size = buildings_layer.tile_set.tile_size
 		
-		for building in buildings_to_move_group:
-			formation_offsets.append(building.global_position - centroid)
+		for i in range(num_buildings):
+			# Calculate position in a horizontal line formation. The offsets are centered around (0,0).
+			var offset_x = (i - (num_buildings - 1) / 2.0) * tile_size.x
+			var offset_y = 0
+			formation_offsets.append(Vector2(offset_x, offset_y))
 			
 		construction_preview.clear()
 		_create_move_previews()
