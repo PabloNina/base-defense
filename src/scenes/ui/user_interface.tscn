@@ -63,11 +63,11 @@ text = "Destroy"
 layout_mode = 2
 text = "Move"
 
-[node name="BuildingSelectionPanel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
+[node name="BuildingConstructionPanel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
 custom_minimum_size = Vector2(260, 100)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel"]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
@@ -76,28 +76,28 @@ theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="HBoxContainer" type="HBoxContainer" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer"]
 layout_mode = 2
 
-[node name="RelayButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+[node name="RelayButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "Relay"
 
-[node name="TurretButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+[node name="TurretButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "Turret"
 
-[node name="GeneratorButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+[node name="GeneratorButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "Generator"
 
-[node name="BaseButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer"]
+[node name="BaseButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "Base"
 
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/DestroyButton" to="." method="_on_destroy_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/MoveButton" to="." method="_on_move_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/RelayButton" to="." method="_on_relay_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/TurretButton" to="." method="_on_turret_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/GeneratorButton" to="." method="_on_generator_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingSelectionPanel/MarginContainer/HBoxContainer/BaseButton" to="." method="_on_base_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/RelayButton" to="." method="_on_relay_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/TurretButton" to="." method="_on_turret_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/GeneratorButton" to="." method="_on_generator_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/BaseButton" to="." method="_on_base_button_pressed"]
