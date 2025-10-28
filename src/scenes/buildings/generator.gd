@@ -1,5 +1,5 @@
 # -------------------------------
-# EnergyGenerator.gd
+# Generator.gd
 # -------------------------------
 # Small generator that produces extra energy for the command center
 # Network-only: only connects to normal relays, never moves
@@ -9,6 +9,14 @@ class_name EnergyGenerator extends Building
 
 # Amount of extra packet regeneration this generator provides
 @export var packet_production_bonus: float = 5.0
+
+
+# -----------------------------------------
+# --- Engine Callbacks --------------------
+# -----------------------------------------
+func _ready():
+	super._ready()
+	add_to_group("generators")
 
 
 # Called by CC on tick used to calc total packet production

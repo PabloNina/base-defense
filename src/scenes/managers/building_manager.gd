@@ -75,6 +75,9 @@ var selection_end_pos: Vector2 = Vector2.ZERO
 # -----------------------------------------
 var selected_buildings: Array[Building] = []
 var buildings: Array[Building] = []  # All active buildings
+# --- Double Click Selection ---
+var double_click_timer: Timer
+var last_clicked_building: Building = null
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -87,6 +90,13 @@ signal building_deselected()
 # -----------------------------------------
 func _ready() -> void:
 	add_to_group("building_manager")
+	
+	# --- Timer for Double Click ---
+	# The timer is created by code so there is no need to edit the scene file.
+	double_click_timer = Timer.new()
+	double_click_timer.one_shot = true
+	add_child(double_click_timer)
+	double_click_timer.timeout.connect(_on_double_click_timer_timeout)
 	
 	# Subscribe to Ui signals
 	user_interface.building_button_pressed.connect(_on_ui_building_button_pressed)
@@ -327,16 +337,48 @@ func _on_building_move_completed(building: MovableBuilding) -> void:
 # -----------------------------------------
 # --- Selection Logic ---------------------
 # -----------------------------------------
+# This function is called when a building's 'clicked' signal is emitted.
+# It now handles both single and double clicks.
 func _on_building_clicked(clicked_building: Building) -> void:
 	if is_construction_state:
 		return
 
-	if selected_buildings.size() == 1 and selected_buildings[0] == clicked_building:
+	# If the timer is running and the same building is clicked, it's a double-click.
+	if not double_click_timer.is_stopped() and clicked_building == last_clicked_building:
+		double_click_timer.stop()
+		_select_all_by_type(clicked_building.building_type)
+		last_clicked_building = null # Reset for the next click sequence.
+	# Otherwise, it's the first click of a potential double-click.
+	else:
+		double_click_timer.start(0.2) # 0.2 second window for a double-click.
+		last_clicked_building = clicked_building
+
+
+# Called when the double-click timer runs out, indicating a single click.
+func _on_double_click_timer_timeout() -> void:
+	# Ensure the building is still valid before proceeding.
+	if not is_instance_valid(last_clicked_building):
+		return
+
+	# Standard single-click logic: deselect if already selected, otherwise select it.
+	if selected_buildings.size() == 1 and selected_buildings[0] == last_clicked_building:
 		clear_selection()
 	else:
 		clear_selection()
-		selected_buildings.append(clicked_building)
+		selected_buildings.append(last_clicked_building)
 		_update_selection()
+
+	last_clicked_building = null # Reset for the next click sequence.
+
+
+# Finds and selects all buildings of a specific type from the manager's list.
+func _select_all_by_type(type: DataTypes.BUILDING_TYPE) -> void:
+	clear_selection()
+	# Filter all registered buildings to find ones that match the given type.
+	var all_of_type = buildings.filter(func(b): return b.building_type == type)
+	selected_buildings = all_of_type
+	_update_selection()
+
 
 func _select_weapons_in_box() -> void:
 	var selection_box = Rect2(selection_start_pos, selection_end_pos - selection_start_pos).abs()
