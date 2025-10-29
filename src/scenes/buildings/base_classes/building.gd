@@ -18,8 +18,6 @@ signal finish_building()
 # -------------------------------
 # --- Editor Settings ----------- 
 # -------------------------------
-## Distance this building can connect to others
-@export var connection_range: float = 0.0
 ## packets needed to complete construction
 @export var cost_to_build: int = 0
 ## packets needed to maintain supply
@@ -37,6 +35,7 @@ signal finish_building()
 # -------------------------------
 # --- Runtime State -------------
 # -------------------------------
+var connection_range: float = 0.0
 var is_built: bool = false: set = set_built_state
 var is_powered: bool = false: set = set_powered_state
 var is_scheduled_to_build: bool = false
@@ -63,6 +62,9 @@ func deselect() -> void:
 # --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
+	# Set connection range from DataTypes
+	connection_range = DataTypes.get_connection_range(building_type)
+
 	# Setup Click Detection
 	building_hurt_box.area_clicked.connect(on_hurtbox_clicked)
 	# group adding

@@ -27,6 +27,7 @@ enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DISABLE}
 # - display_name: for UI labels
 # - cost: for resource logic
 # - optimal_building_distance_tiles: in tile units
+# - connection_range_tiles: in tile units
 # - add more and comment
 const TILE_SIZE: int = 16
 const BUILDINGS_DATA: Dictionary = {
@@ -36,7 +37,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 3,
 		"display_name": "Command Center",
 		"cost_to_build": 0,
-		"connection_range": 128.0,
+		"connection_range_tiles": 8,
 		"is_relay": true,
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 0,
@@ -47,7 +48,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 5,
 		"display_name": "Relay",
 		"cost_to_build": 2,
-		"connection_range": 128.0,
+		"connection_range_tiles": 8,
 		"is_relay": true,
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 8,
@@ -58,7 +59,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 4,
 		"display_name": "Generator",
 		"cost_to_build": 5,
-		"connection_range": 80.0,
+		"connection_range_tiles": 5,
 		"is_relay": false,
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 1,
@@ -69,7 +70,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 6,
 		"display_name": "Gun Turret",
 		"cost_to_build": 3,
-		"connection_range": 96.0,
+		"connection_range_tiles": 6,
 		"is_relay": false,
 		"upkeep_cost": 0.0,
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
@@ -99,7 +100,8 @@ static func get_display_name(building_type: int) -> String:
 
 static func get_connection_range(building_type: int) -> float:
 	var data = get_building_data(building_type)
-	return data.get("connection_range", 0.0)
+	var range_in_tiles = data.get("connection_range_tiles", 0)
+	return float(range_in_tiles * TILE_SIZE)
 
 static func get_is_relay(building_type: int) -> bool:
 	var data = get_building_data(building_type)
