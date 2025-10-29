@@ -18,16 +18,18 @@ signal finish_building()
 # -------------------------------
 # --- Editor Settings ----------- 
 # -------------------------------
-## packets needed to complete construction
-@export var cost_to_build: int = 0
-## packets needed to maintain supply
-@export var cost_to_supply: int = 0
-## tag to prevent connections between generators/weapons etc...
-@export var is_relay: bool = false
-## Amount of Packets this building consumes per tick
-@export var upkeep_cost: float = 0.0
+# packets needed to complete construction
+var cost_to_build: int = 0
+# packets needed to maintain supply
+#@export var cost_to_supply: int = 0
+# tag to prevent connections between generators/weapons etc...
+var is_relay: bool = false
+# Amount of Packets this building consumes per tick
+var upkeep_cost: float = 0.0
 ## Type of building that is using this class for Ui labeling
 @export var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
+# Max range for connection lines to be created
+var connection_range: float = 0.0
 # -------------------------------
 # --- Child Node References -----
 # -------------------------------
@@ -35,7 +37,6 @@ signal finish_building()
 # -------------------------------
 # --- Runtime State -------------
 # -------------------------------
-var connection_range: float = 0.0
 var is_built: bool = false: set = set_built_state
 var is_powered: bool = false: set = set_powered_state
 var is_scheduled_to_build: bool = false
@@ -46,24 +47,17 @@ var construction_progress: int = 0
 var connected_buildings: Array[Building] = []
 var network_manager: NetworkManager
 var building_manager: BuildingManager
-# -------------------------------
-# --- Selection Box Updating ----
-# -------------------------------
-func select() -> void:
-	is_selected = true
-	queue_redraw()
 
-
-func deselect() -> void:
-	is_selected = false
-	queue_redraw()
 
 # -------------------------------
 # --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
-	# Set connection range from DataTypes
+	# Config building with data from DataTypes
 	connection_range = DataTypes.get_connection_range(building_type)
+	cost_to_build = DataTypes.get_cost_to_build(building_type)
+	is_relay = DataTypes.get_is_relay(building_type)
+	upkeep_cost = DataTypes.get_upkeep_cost(building_type)
 
 	# Setup Click Detection
 	building_hurt_box.area_clicked.connect(on_hurtbox_clicked)
@@ -94,7 +88,19 @@ func _draw() -> void:
 			rect.position = -rect.size / 2
 			# Grow the rectangle by 4 pixels on each side to create a margin
 			draw_rect(rect.grow(4), Color.GREEN, false, 2.0)
+			
+# -------------------------------
+# --- Selection Box Updating ----
+# -------------------------------
+func select() -> void:
+	is_selected = true
+	queue_redraw()
 
+
+func deselect() -> void:
+	is_selected = false
+	queue_redraw()
+	
 # -------------------------------
 # --- Input / Click Handling ----
 # -------------------------------

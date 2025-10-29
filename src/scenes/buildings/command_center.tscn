@@ -9,20 +9,13 @@ size = Vector2(48, 48)
 
 [node name="CommandCenter" type="Node2D"]
 script = ExtResource("1_oaft0")
-max_packet_capacity = null
-stored_packets = null
-default_packet_production = null
 throttle_exponent = null
 critical_threshold = null
 ema_alpha = null
 enable_quota_debug = null
 ema_alpha_rise = null
 ema_alpha_fall = null
-connection_range = 128.0
-cost_to_build = null
-cost_to_supply = null
 is_relay = true
-upkeep_cost = null
 building_type = 1
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

@@ -1,7 +1,7 @@
 # =========================================
 # DataTypes.gd
 # =========================================
-# Centralized global enums and metadata tables for consistency across systems
+# Centralized global consts, enums and metadata tables for consistency across systems
 class_name DataTypes extends Node
 # --------------------------------------------
 # --- Enumerations ---------------------------
@@ -50,7 +50,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"cost_to_build": 2,
 		"connection_range_tiles": 8,
 		"is_relay": true,
-		"upkeep_cost": 0.0,
+		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 8,
 	},
 	BUILDING_TYPE.GENERATOR: {
@@ -61,7 +61,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"cost_to_build": 5,
 		"connection_range_tiles": 5,
 		"is_relay": false,
-		"upkeep_cost": 0.0,
+		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 1,
 	},
 	BUILDING_TYPE.GUN_TURRET: {
@@ -72,10 +72,14 @@ const BUILDINGS_DATA: Dictionary = {
 		"cost_to_build": 3,
 		"connection_range_tiles": 6,
 		"is_relay": false,
-		"upkeep_cost": 0.0,
-		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
-		"fire_range": 100,
+		"upkeep_cost": 1.0,
 		"optimal_building_distance_tiles": 3,
+		# Weapon class only
+		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
+		"max_ammo_storage": 10,
+		"cost_per_shot": 0.25,
+		"fire_rate": 0.5,
+		"fire_range": 100,
 	},
 }
 
@@ -119,6 +123,14 @@ static func get_optimal_building_distance(building_type: DataTypes.BUILDING_TYPE
 	var data = get_building_data(building_type)
 	var distance_in_tiles = data.get("optimal_building_distance_tiles", 0)
 	return float(distance_in_tiles * TILE_SIZE)
+
+static func get_cost_to_build(building_type: DataTypes.BUILDING_TYPE) -> int:
+	var data = get_building_data(building_type)
+	return data.get("cost_to_build", -1)
+
+static func get_upkeep_cost(building_type: DataTypes.BUILDING_TYPE) -> float:
+	var data = get_building_data(building_type)
+	return data.get("upkeep_cost", -1.0)
 
 #static func get_scene_path(building_type: int) -> String:
 	#var data = get_building_data(building_type)

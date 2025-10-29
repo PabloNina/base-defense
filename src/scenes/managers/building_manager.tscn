@@ -7,3 +7,6 @@
 script = ExtResource("1_t5t3c")
 
 [node name="PlacementPreview" parent="." instance=ExtResource("2_6ga8u")]
+
+[node name="DoubleClickTimer" type="Timer" parent="."]
+one_shot = true

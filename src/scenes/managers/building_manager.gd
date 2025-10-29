@@ -20,6 +20,7 @@ const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/
 # -----------------------------------------
 # The primary preview used for construction and single-building moves.
 @onready var construction_preview: PlacementPreview = $PlacementPreview
+@onready var double_click_timer: Timer = $DoubleClickTimer
 # -----------------------------------------
 # --- Mouse Tracking ----------------------
 # -----------------------------------------
@@ -83,8 +84,9 @@ var selection_end_pos: Vector2 = Vector2.ZERO
 var selected_buildings: Array[Building] = []
 var buildings: Array[Building] = []  # All active buildings
 # --- Double Click Selection ---
-var double_click_timer: Timer
 var last_clicked_building: Building = null
+# Window in seconds for double-click detection
+var double_click_window: float = 0.2 
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -98,11 +100,6 @@ signal building_deselected()
 func _ready() -> void:
 	add_to_group("building_manager")
 	
-	# --- Timer for Double Click ---
-	# The timer is created by code so there is no need to edit the scene file.
-	double_click_timer = Timer.new()
-	double_click_timer.one_shot = true
-	add_child(double_click_timer)
 	double_click_timer.timeout.connect(_on_double_click_timer_timeout)
 	
 	# Subscribe to Ui signals
@@ -489,7 +486,7 @@ func _on_building_clicked(clicked_building: Building) -> void:
 		last_clicked_building = null # Reset for the next click sequence.
 	# Otherwise, it's the first click of a potential double-click.
 	else:
-		double_click_timer.start(0.3) # 0.3-second window for a double-click.
+		double_click_timer.start(double_click_window) # 0.3-second window for a double-click.
 		last_clicked_building = clicked_building
 
 

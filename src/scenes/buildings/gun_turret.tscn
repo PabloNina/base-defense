@@ -10,8 +10,6 @@ size = Vector2(14, 14)
 
 [node name="GunTurret" type="Node2D"]
 script = ExtResource("1_es320")
-cost_to_build = 3
-upkeep_cost = 1.0
 building_type = 4
 
 [node name="BaseSprite" type="Sprite2D" parent="."]
