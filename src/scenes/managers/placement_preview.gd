@@ -25,6 +25,8 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
 # Reference to the NetworkManager to check for connections.
 var network_manager: NetworkManager
+var ground_layer: TileMapLayer
+var buildable_tile_id: int = 0
 
 # --- Visuals ---
 const VALID_COLOR: Color = Color(1.0, 1.0, 1.0, 0.5)
@@ -38,8 +40,11 @@ const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 # --- State ---
 # Keeps track of overlapping placement-blocking areas.
 var overlapping_areas: Array[Area2D] = []
+var is_on_buildable_tile: bool = true
 # Pool of Line2D nodes for drawing connection previews.
 var _ghost_lines: Array[Line2D] = []
+# Tracks if the preview has been configured.
+var _is_initialized: bool = false
 
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
@@ -58,11 +63,18 @@ func _draw() -> void:
 # --------------------------------------------
 # --- Public Methods -------------------------
 # --------------------------------------------
+# Returns whether the preview has been initialized.
+func is_initialized() -> bool:
+	return _is_initialized
+
+
 # Initializes the preview's properties.
-func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D) -> void:
+func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int) -> void:
 	building_type = p_building_type
 	network_manager = p_network_manager
 	sprite.texture = p_texture
+	ground_layer = p_ground_layer
+	buildable_tile_id = p_buildable_tile_id
 	
 	# Configure collision shape based on texture size
 	var shape_size = sprite.texture.get_size() * sprite.scale
@@ -74,10 +86,20 @@ func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: Net
 	# Force an immediate update of the connection lines and range indicator.
 	_update_connection_ghosts()
 	queue_redraw()
+	_is_initialized = true
+	
+	_update_validity()
 
 # Updates the preview's position and redraws connection lines.
 func update_position(new_position: Vector2) -> void:
 	global_position = new_position
+
+	if ground_layer:
+		var tile_pos = ground_layer.local_to_map(global_position)
+		var source_id = ground_layer.get_cell_source_id(tile_pos)
+		is_on_buildable_tile = (source_id == buildable_tile_id)
+	
+	_update_validity()
 	_update_connection_ghosts()
 
 # Hides and resets the preview.
@@ -90,6 +112,7 @@ func clear() -> void:
 	collision_shape.set_deferred("disabled", true)
 	# Clear the fire range circle.
 	queue_redraw()
+	_is_initialized = false
 
 # --------------------------------------------
 # --- Overlap Handling -----------------------
@@ -97,21 +120,23 @@ func clear() -> void:
 # Called when another area enters the preview's detection box.
 func _on_area_entered(area: Area2D) -> void:
 	overlapping_areas.append(area)
-	_set_valid_color(false)
-	is_placeable.emit(false, self)
+	_update_validity()
 	_update_connection_ghosts()
 
 # Called when an area leaves the preview's detection box.
 func _on_area_exited(area: Area2D) -> void:
 	overlapping_areas.erase(area)
-	if overlapping_areas.is_empty():
-		_set_valid_color(true)
-		is_placeable.emit(true, self)
+	_update_validity()
 	_update_connection_ghosts()
 
 # --------------------------------------------
 # --- Visual Feedback ------------------------
 # --------------------------------------------
+func _update_validity() -> void:
+	var is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
+	_set_valid_color(is_valid)
+	is_placeable.emit(is_valid, self)
+
 # Tints the preview sprite based on placement validity.
 func _set_valid_color(is_valid: bool) -> void:
 	sprite.modulate = VALID_COLOR if is_valid else INVALID_COLOR
@@ -154,7 +179,7 @@ func _update_connection_ghosts() -> void:
 			var target = targets[i]
 			line.points = [global_position, target.global_position]
 			line.global_position = Vector2.ZERO
-			line.default_color = LINE_COLOR if overlapping_areas.is_empty() else LINE_INVALID_COLOR
+			line.default_color = LINE_COLOR if overlapping_areas.is_empty() and is_on_buildable_tile else LINE_INVALID_COLOR
 			line.visible = true
 		else:
 			line.visible = false

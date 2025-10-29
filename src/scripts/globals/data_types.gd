@@ -26,7 +26,9 @@ enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DISABLE}
 # - tilemap_id: ID used in tilemap collections
 # - display_name: for UI labels
 # - cost: for resource logic
+# - optimal_building_distance_tiles: in tile units
 # - add more and comment
+const TILE_SIZE: int = 16
 const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		#"scene_path": "res://Scenes/Buildings/CommandCenter.tscn",
@@ -34,9 +36,10 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 3,
 		"display_name": "Command Center",
 		"cost_to_build": 0,
-		"connection_range": 125.0,
+		"connection_range": 128.0,
 		"is_relay": true,
 		"upkeep_cost": 0.0,
+		"optimal_building_distance_tiles": 0,
 	},
 	BUILDING_TYPE.RELAY: {
 		#"scene_path": "res://Scenes/Buildings/Relay.tscn",
@@ -44,9 +47,10 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 5,
 		"display_name": "Relay",
 		"cost_to_build": 2,
-		"connection_range": 125.0,
+		"connection_range": 128.0,
 		"is_relay": true,
 		"upkeep_cost": 0.0,
+		"optimal_building_distance_tiles": 8,
 	},
 	BUILDING_TYPE.GENERATOR: {
 		#"scene_path": "res://Scenes/Buildings/Mine.tscn",
@@ -54,9 +58,10 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 4,
 		"display_name": "Generator",
 		"cost_to_build": 5,
-		"connection_range": 75.0,
+		"connection_range": 80.0,
 		"is_relay": false,
 		"upkeep_cost": 0.0,
+		"optimal_building_distance_tiles": 1,
 	},
 	BUILDING_TYPE.GUN_TURRET: {
 		#"scene_path": "res://Scenes/Buildings/ResearchLab.tscn",
@@ -64,11 +69,12 @@ const BUILDINGS_DATA: Dictionary = {
 		"tilemap_id": 6,
 		"display_name": "Gun Turret",
 		"cost_to_build": 3,
-		"connection_range": 90.0,
+		"connection_range": 96.0,
 		"is_relay": false,
 		"upkeep_cost": 0.0,
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
 		"fire_range": 100,
+		"optimal_building_distance_tiles": 3,
 	},
 }
 
@@ -106,6 +112,11 @@ static func get_landing_marker_texture(building_type: int) -> Texture2D:
 static func get_fire_range(building_type: DataTypes.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
 	return data.get("fire_range", -1)
+
+static func get_optimal_building_distance(building_type: DataTypes.BUILDING_TYPE) -> float:
+	var data = get_building_data(building_type)
+	var distance_in_tiles = data.get("optimal_building_distance_tiles", 0)
+	return float(distance_in_tiles * TILE_SIZE)
 
 #static func get_scene_path(building_type: int) -> String:
 	#var data = get_building_data(building_type)

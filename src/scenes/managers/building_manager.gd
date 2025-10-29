@@ -40,8 +40,15 @@ var is_command_center_placed: bool = false
 var is_construction_state: bool = false
 var is_building_placeable: bool = true
 var building_to_build_id: int = 0
+var building_to_build_type: DataTypes.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
+# --- Line Construction ---
+var is_line_construction_state: bool = false
+var line_construction_start_pos: Vector2i
+var construction_line_previews: Array[PlacementPreview] = []
+var construction_previews_validity: Dictionary = {}
+var relay_line_previews: Array[Line2D] = []
 # ---------------------------------------
 # --- Move State -----------------------
 # ---------------------------------------
@@ -113,6 +120,7 @@ func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
 	if is_construction_state or is_move_state or is_group_move_state:
 		_get_cell_under_mouse()
+		# The tile_position is passed to the update_previews function
 		_update_previews(tile_position)
 
 # ----------------------------------------------
@@ -150,11 +158,6 @@ func _get_cell_under_mouse() -> void:
 # --- Construction State / Placement --------
 # -----------------------------------------
 func _place_building() -> void:
-	# Only build on valid ground tiles
-	if tile_source_id != buildable_tile_id:
-		print("Invalid Placement")
-		return
-
 	# --- Command Center Logic ---
 	if not is_command_center_placed and building_to_build_id == command_center_id:
 		is_command_center_placed = true
@@ -166,6 +169,16 @@ func _place_building() -> void:
 		# Place regular building
 		buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, building_to_build_id)
 
+
+# Places a line of buildings based on the final positions of the construction previews.
+func _place_building_line() -> void:
+	for preview in construction_line_previews:
+		# Ensure the preview is visible and its position is valid before placing.
+		if preview.visible and construction_previews_validity.get(preview, false):
+			var building_tile_pos = buildings_layer.local_to_map(preview.global_position)
+			buildings_layer.set_cell(building_tile_pos, 2, Vector2i.ZERO, building_to_build_id)
+
+
 # -----------------------------------------
 # --- Construction State / Helpers --------
 # -----------------------------------------
@@ -176,11 +189,14 @@ func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> vo
 
 	is_construction_state = true
 	building_to_build_id = DataTypes.get_tilemap_id(new_building_type)
+	building_to_build_type = new_building_type
 	
 	construction_preview.initialize(
 		new_building_type,
 		network_manager,
-		DataTypes.get_ghost_texture(new_building_type)
+		DataTypes.get_ghost_texture(new_building_type),
+		ground_layer,
+		buildable_tile_id
 	)
 	construction_preview.visible = true
 
@@ -194,33 +210,43 @@ func _deselect_building_to_build() -> void:
 # ----------------------------------------------
 # Updates the active placement previews based on the current state.
 func _update_previews(new_position: Vector2i) -> void:
-	if ghost_tile_position == new_position:
+	# No need to update if the mouse hasn't moved to a new tile,
+	# unless we are in line construction mode, which needs continuous updates.
+	if ghost_tile_position == new_position and not is_line_construction_state:
 		return
 	ghost_tile_position = new_position
 	
-	# For single building construction or moves, update the main preview.
-	if is_construction_state or is_move_state:
+	# Update previews based on the current mode.
+	if is_line_construction_state:
+		_update_construction_line_previews()
+	elif is_construction_state or is_move_state:
 		construction_preview.update_position(local_tile_position)
-	# For group moves, update the array of previews.
 	elif is_group_move_state:
 		_update_move_previews()
+
 
 # Callback for when a preview's placement validity changes.
 func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPreview) -> void:
 	# If it's the main construction preview, update the global flag directly.
 	if preview == construction_preview:
 		is_building_placeable = is_valid
-	# If it's a group move preview, update its status in the dictionary.
+	# If it's a group move or line construction preview, update its status in the dictionary.
 	else:
-		move_previews_validity[preview] = is_valid
-		
+		if move_previews.has(preview):
+			move_previews_validity[preview] = is_valid
+		elif construction_line_previews.has(preview):
+			construction_previews_validity[preview] = is_valid
+
 		# The entire group is only placeable if all individual previews are valid.
 		var all_valid = true
-		for valid in move_previews_validity.values():
+		# Check the validity dictionary that is currently in use.
+		var validity_dict = move_previews_validity if is_group_move_state else construction_previews_validity
+		for valid in validity_dict.values():
 			if not valid:
 				all_valid = false
 				break
 		is_building_placeable = all_valid
+
 
 # -----------------------------------------
 # --- Moving State Placement / Signals ----
@@ -269,7 +295,9 @@ func _create_move_previews() -> void:
 			preview.initialize(
 				building.building_type,
 				network_manager,
-				DataTypes.get_landing_marker_texture(building.building_type)
+				DataTypes.get_landing_marker_texture(building.building_type),
+				ground_layer,
+				buildable_tile_id
 			)
 			move_previews.append(preview)
 			move_previews_validity[preview] = true # Assume valid at start
@@ -323,7 +351,9 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 	marker.initialize(
 		building.building_type,
 		network_manager,
-		DataTypes.get_landing_marker_texture(building.building_type)
+		DataTypes.get_landing_marker_texture(building.building_type),
+		ground_layer,
+		buildable_tile_id
 	)
 	marker.global_position = landing_position
 	landing_markers[building] = marker
@@ -333,6 +363,115 @@ func _on_building_move_completed(building: MovableBuilding) -> void:
 	if landing_markers.has(building):
 		landing_markers[building].queue_free()
 		landing_markers.erase(building)
+
+
+# --------------------------------------------------
+# --- Line Construction Preview and Placement ------
+# --------------------------------------------------
+# Calculates and updates the positions of previews in a construction line.
+func _update_construction_line_previews() -> void:
+	var start_pos_pixels = buildings_layer.map_to_local(line_construction_start_pos)
+	var end_pos_pixels = local_tile_position
+	
+	var distance_pixels = start_pos_pixels.distance_to(end_pos_pixels)
+	var building_type = building_to_build_type
+	var optimal_dist_pixels = DataTypes.get_optimal_building_distance(building_type)
+
+	var start_tile = line_construction_start_pos
+	var end_tile = tile_position
+	if building_to_build_type == DataTypes.BUILDING_TYPE.RELAY:
+		if start_tile.x != end_tile.x and start_tile.y != end_tile.y:
+			optimal_dist_pixels *= 0.95
+
+	# Avoid division by zero and handle single-point case.
+	if optimal_dist_pixels <= 0 or distance_pixels < optimal_dist_pixels:
+		# If only one building fits, just show one preview.
+		while construction_line_previews.size() > 1:
+			var p = construction_line_previews.pop_back()
+			if is_instance_valid(p): p.queue_free()
+		if construction_line_previews.is_empty():
+			var preview = placement_preview_scene.instantiate()
+			add_child(preview)
+			construction_line_previews.append(preview)
+			preview.is_placeable.connect(_on_placement_preview_is_placeable)
+		
+		var single_preview = construction_line_previews[0]
+		if not single_preview.is_initialized():
+			single_preview.initialize(
+				building_type,
+				network_manager,
+				DataTypes.get_ghost_texture(building_type),
+				ground_layer,
+				buildable_tile_id
+			)
+		# Position the single preview at the snapped start position.
+		single_preview.update_position(start_pos_pixels)
+		return
+
+	var num_buildings = int(distance_pixels / optimal_dist_pixels) + 1
+
+	# Create or remove previews to match the required number.
+	while construction_line_previews.size() < num_buildings:
+		var new_preview = placement_preview_scene.instantiate()
+		add_child(new_preview)
+		construction_line_previews.append(new_preview)
+		new_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+	
+	while construction_line_previews.size() > num_buildings:
+		var p = construction_line_previews.pop_back()
+		if is_instance_valid(p): p.queue_free()
+
+	# --- Direct position calculation to avoid cumulative floating-point errors ---
+	var direction = (end_pos_pixels - start_pos_pixels).normalized()
+	for i in range(num_buildings):
+		var preview = construction_line_previews[i]
+
+		# Calculate the ideal position for each building directly from the start.
+		var ideal_pos = start_pos_pixels + direction * optimal_dist_pixels * i
+		var current_snapped_pos = buildings_layer.map_to_local(buildings_layer.local_to_map(ideal_pos))
+
+		if not preview.is_initialized(): # Initialize only once.
+			preview.initialize(
+				building_type,
+				network_manager,
+				DataTypes.get_ghost_texture(building_type),
+				ground_layer,
+				buildable_tile_id
+			)
+		preview.update_position(current_snapped_pos)
+
+	# --- Relay line previews ---
+	for line in relay_line_previews:
+		line.queue_free()
+	relay_line_previews.clear()
+
+	if building_to_build_type == DataTypes.BUILDING_TYPE.RELAY and construction_line_previews.size() > 1:
+		for i in range(construction_line_previews.size() - 1):
+			var from_pos = construction_line_previews[i].global_position
+			var to_pos = construction_line_previews[i+1].global_position
+			
+			var dist = from_pos.distance_to(to_pos)
+			var connection_range = DataTypes.get_connection_range(DataTypes.BUILDING_TYPE.RELAY)
+			
+			if dist <= connection_range:
+				var line = Line2D.new()
+				line.points = [from_pos, to_pos]
+				line.width = 1.0
+				line.default_color = Color.GREEN
+				add_child(line)
+				relay_line_previews.append(line)
+
+# Clears and frees all previews used in line construction.
+func _clear_construction_line_previews() -> void:
+	for preview in construction_line_previews:
+		preview.queue_free()
+	construction_line_previews.clear()
+	construction_previews_validity.clear()
+
+	for line in relay_line_previews:
+		line.queue_free()
+	relay_line_previews.clear()
+
 
 # -----------------------------------------
 # --- Selection Logic ---------------------
@@ -350,7 +489,7 @@ func _on_building_clicked(clicked_building: Building) -> void:
 		last_clicked_building = null # Reset for the next click sequence.
 	# Otherwise, it's the first click of a potential double-click.
 	else:
-		double_click_timer.start(0.2) # 0.2 second window for a double-click.
+		double_click_timer.start(0.3) # 0.3-second window for a double-click.
 		last_clicked_building = clicked_building
 
 
@@ -420,19 +559,61 @@ func _draw() -> void:
 # --- Mouse and Keyboard Input Handling ---
 # -----------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
-	# --- Selection Box ---
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.is_pressed() and not is_construction_state and not is_move_state and not is_group_move_state:
+	# --- Line Construction --- 
+	if is_construction_state and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.is_pressed():
+			is_line_construction_state = true
+			line_construction_start_pos = tile_position
+			construction_preview.clear() # Hide and disable single preview
+			_update_construction_line_previews()
+		elif not event.is_pressed() and is_line_construction_state:
+			is_line_construction_state = false
+			if is_building_placeable:
+				# If it was just a click (no drag), place a single building.
+				if line_construction_start_pos == tile_position:
+					_place_building()
+				else:
+					_place_building_line()
+			_clear_construction_line_previews()
+			# Re-initialize the main preview for the next placement.
+			construction_preview.initialize(
+				building_to_build_type,
+				network_manager,
+				DataTypes.get_ghost_texture(building_to_build_type),
+				ground_layer,
+				buildable_tile_id
+			)
+			construction_preview.visible = true
+			return # Consume the event
+
+	# --- Mouse Motion ---
+	if event is InputEventMouseMotion:
+		if is_box_selecting_state:
+			selection_end_pos = get_global_mouse_position()
+			queue_redraw()
+			return # Consume the event
+
+	# --- Left Mouse Actions (that are not line construction) ---
+	if event.is_action_pressed("left_mouse"):
+		# This handles the move placement for single and group moves.
+		if is_move_state and is_building_placeable:
+			_move_building(current_building_to_move)
+		elif is_group_move_state and is_building_placeable:
+			_move_building_selection()
+		# This handles the start of a box selection.
+		elif not is_construction_state and not is_move_state and not is_group_move_state:
 			is_box_selecting_state = true
 			selection_start_pos = get_global_mouse_position()
 			selection_end_pos = selection_start_pos
 			clear_selection()
-		elif not event.is_pressed() and is_box_selecting_state:
-			is_box_selecting_state = false
-			if selection_start_pos.distance_to(selection_end_pos) > 5:
-				_select_weapons_in_box()
-			queue_redraw()
-	
+
+	# --- Left Mouse Release for Box Selection ---
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.is_pressed() and is_box_selecting_state:
+		is_box_selecting_state = false
+		if selection_start_pos.distance_to(selection_end_pos) > 5:
+			_select_weapons_in_box()
+		queue_redraw()
+
 	# --- Formation Scale Adjustment ---
 	# Adjust formation tightness if in group move state and the appropriate action is pressed.
 	if is_group_move_state:
@@ -448,20 +629,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			formation_angle = fmod(formation_angle + 90.0, 360.0)
 			_update_move_previews()
 
-
-	if event is InputEventMouseMotion and is_box_selecting_state:
-		selection_end_pos = get_global_mouse_position()
-		queue_redraw()
-
-	# --- Construction/Move placement ---
-	if event.is_action_pressed("left_mouse"):
-		if is_construction_state and is_building_placeable:
-			_place_building()
-		elif is_move_state and is_building_placeable:
-			_move_building(current_building_to_move)
-		elif is_group_move_state and is_building_placeable:
-			_move_building_selection()
-
 	# --- Selection: Building Hotkeys ---
 	if event.is_action_pressed("key_1"):
 		_select_building_to_build(DataTypes.BUILDING_TYPE.RELAY)
@@ -474,7 +641,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# --- Cancel Construction Mode or Building selection---
 	elif event.is_action_pressed("right_mouse"): # Cancel action
-		if is_construction_state:
+		if is_line_construction_state:
+			is_line_construction_state = false
+			_clear_construction_line_previews()
+			construction_preview.visible = true
+		elif is_construction_state:
 			_deselect_building_to_build()
 		elif is_move_state or is_group_move_state:
 			_cancel_move_state()
@@ -506,7 +677,9 @@ func _enter_move_mode() -> void:
 		construction_preview.initialize(
 			building_type,
 			network_manager,
-			DataTypes.get_ghost_texture(building_type)
+			DataTypes.get_ghost_texture(building_type),
+			ground_layer,
+			buildable_tile_id
 		)
 		construction_preview.visible = true
 	else:

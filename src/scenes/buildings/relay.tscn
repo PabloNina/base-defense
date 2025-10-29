@@ -12,7 +12,7 @@ size = Vector2(14, 14)
 
 [node name="Relay" type="Node2D"]
 script = ExtResource("1_mk7m4")
-connection_range = 125.0
+connection_range = 128.0
 cost_to_build = 2
 is_relay = true
 upkeep_cost = 0.5
