@@ -41,6 +41,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": true,
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 0,
+		# Command_Center class only
 	},
 	BUILDING_TYPE.RELAY: {
 		#"scene_path": "res://Scenes/Buildings/Relay.tscn",
@@ -52,6 +53,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": true,
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 8,
+		# Relay class only
 	},
 	BUILDING_TYPE.GENERATOR: {
 		#"scene_path": "res://Scenes/Buildings/Mine.tscn",
@@ -63,6 +65,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": false,
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 1,
+		# Generator class only
 	},
 	BUILDING_TYPE.GUN_TURRET: {
 		#"scene_path": "res://Scenes/Buildings/ResearchLab.tscn",

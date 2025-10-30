@@ -98,9 +98,9 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 # --- Visuals Updating ----------
 # -------------------------------
 func _updates_visuals():
-	# Color the sprite based on whether the relay is built
+	# Color the sprite based on whether the building is built
 	if is_built:
-		# Built relay: full color
+		# Built: full color
 		base_sprite.modulate = Color(1, 1, 1, 1)
 		turret_sprite.modulate = Color(1, 1, 1, 1)
 	else:

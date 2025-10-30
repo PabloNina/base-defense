@@ -50,9 +50,9 @@ func register_relay(new_building: Building):
 	_refresh_network_caches()
 	_update_network_integrity()
 
-	if new_building.is_built:
-		new_building.set_powered_state(true)
-		new_building._updates_visuals()
+	#if new_building.is_built:
+		#new_building.set_powered_state(true)
+		#new_building._updates_visuals()
 
 
 func unregister_relay(building: Building):

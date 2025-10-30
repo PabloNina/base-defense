@@ -37,7 +37,7 @@ func start_move(target_pos: Vector2) -> void:
 	move_started.emit(self, landing_target_position)
 	
 	is_moving = true
-	_updates_visuals()
+	#_updates_visuals()
 	reset_packets_in_flight()
 
 	# Unregister for clearing connections and packet demand/production during move 
