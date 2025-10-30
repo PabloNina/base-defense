@@ -71,19 +71,14 @@ func is_initialized() -> bool:
 	return _is_initialized
 
 
-func hide_range_and_connections() -> void:
-	show_visual_feedback = false
-	_clear_ghost_lines()
-	queue_redraw()
-
-
 # Initializes the preview's properties.
-func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int) -> void:
+func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
 	building_type = p_building_type
 	network_manager = p_network_manager
 	sprite.texture = p_texture
 	ground_layer = p_ground_layer
 	buildable_tile_id = p_buildable_tile_id
+	show_visual_feedback = p_show_feedback
 	
 	# Configure collision shape based on texture size
 	var shape_size = sprite.texture.get_size() * sprite.scale
@@ -93,10 +88,11 @@ func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: Net
 	collision_shape.set_deferred("disabled", false)
 	
 	# Force an immediate update of the connection lines and range indicator.
-	_update_connection_ghosts()
-	queue_redraw()
-	_is_initialized = true
+	if show_visual_feedback:
+		_update_connection_ghosts()
+		queue_redraw()
 	
+	_is_initialized = true
 	_update_validity()
 
 # Updates the preview's position and redraws connection lines.

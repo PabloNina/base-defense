@@ -350,10 +350,10 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 		network_manager,
 		DataTypes.get_landing_marker_texture(building.building_type),
 		ground_layer,
-		buildable_tile_id
+		buildable_tile_id,
+		false
 	)
 	marker.global_position = landing_position
-	marker.hide_range_and_connections()
 	landing_markers[building] = marker
 
 # Removes the static marker when a building's move is complete.
@@ -669,17 +669,12 @@ func _enter_move_mode() -> void:
 		return
 
 	if selected_buildings.size() == 1 and selected_buildings[0] is MovableBuilding:
-		is_move_state = true
-		current_building_to_move = selected_buildings[0]
-		var building_type = current_building_to_move.building_type
-		construction_preview.initialize(
-			building_type,
-			network_manager,
-			DataTypes.get_ghost_texture(building_type),
-			ground_layer,
-			buildable_tile_id
-		)
-		construction_preview.visible = true
+		is_group_move_state = true
+		buildings_to_move_group = selected_buildings.duplicate()
+		formation_offsets.clear()
+		formation_offsets.append(Vector2.ZERO)
+		construction_preview.clear()
+		_create_move_previews()
 	else:
 		is_group_move_state = true
 		buildings_to_move_group = selected_buildings.duplicate()

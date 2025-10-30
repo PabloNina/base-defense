@@ -21,6 +21,7 @@ var move_speed: float = 100.0
 # -----------------------------------------
 func _physics_process(delta: float) -> void:
 	if is_moving:
+		
 		_move_towards_target(delta)
 
 # -----------------------------------------
