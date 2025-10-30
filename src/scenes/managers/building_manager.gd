@@ -53,9 +53,7 @@ var relay_line_previews: Array[Line2D] = []
 # ---------------------------------------
 # --- Move State -----------------------
 # ---------------------------------------
-var current_building_to_move: MovableBuilding = null
 var is_move_state: bool = false
-var is_group_move_state: bool = false
 var buildings_to_move_group: Array[Building] = []
 var formation_offsets: Array[Vector2] = []
 # --- Formation Scaling ---
@@ -106,6 +104,7 @@ func _ready() -> void:
 	user_interface.building_button_pressed.connect(_on_ui_building_button_pressed)
 	user_interface.destroy_button_pressed.connect(_on_ui_destroy_button_pressed)
 	user_interface.move_selection_pressed.connect(_on_ui_move_selection_pressed)
+	user_interface.deactivate_button_pressed.connect(_on_ui_deactivate_button_pressed)
 	
 	# Connect to the construction preview's signal
 	construction_preview.is_placeable.connect(_on_placement_preview_is_placeable)
@@ -115,7 +114,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
-	if is_construction_state or is_move_state or is_group_move_state:
+	if is_construction_state or is_move_state:
 		_get_cell_under_mouse()
 		# The tile_position is passed to the update_previews function
 		_update_previews(tile_position)
@@ -181,7 +180,7 @@ func _place_building_line() -> void:
 # -----------------------------------------
 func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> void:
 	# If the player was in a move state, cancel it before entering construction state.
-	if is_move_state or is_group_move_state:
+	if is_move_state:
 		_cancel_move_state()
 
 	is_construction_state = true
@@ -216,13 +215,13 @@ func _update_previews(new_position: Vector2i) -> void:
 	# Update previews based on the current mode.
 	if is_line_construction_state:
 		_update_construction_line_previews()
-	elif is_construction_state or is_move_state:
+	elif is_construction_state:
 		construction_preview.update_position(local_tile_position)
-	elif is_group_move_state:
+	elif is_move_state:
 		_update_move_previews()
 
 
-# Callback for when a preview's placement validity changes.
+# Called when a preview's placement validity changes.
 func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPreview) -> void:
 	# If it's the main construction preview, update the global flag directly.
 	if preview == construction_preview:
@@ -237,7 +236,7 @@ func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPrevie
 		# The entire group is only placeable if all individual previews are valid.
 		var all_valid = true
 		# Check the validity dictionary that is currently in use.
-		var validity_dict = move_previews_validity if is_group_move_state else construction_previews_validity
+		var validity_dict = move_previews_validity if is_move_state else construction_previews_validity
 		for valid in validity_dict.values():
 			if not valid:
 				all_valid = false
@@ -248,17 +247,6 @@ func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPrevie
 # -----------------------------------------
 # --- Moving State Placement / Signals ----
 # -----------------------------------------
-func _move_building(building_to_move: MovableBuilding) -> void:
-	building_to_move.start_move(local_tile_position)
-	is_move_state = false
-	current_building_to_move = null
-	construction_preview.clear()
-	clear_selection()
-	
-	# Remove tile from map so it can be used again
-	var tile_coords = buildings_layer.local_to_map(building_to_move.global_position)
-	buildings_layer.erase_cell(tile_coords)
-
 func _move_building_selection() -> void:
 	var new_centroid = local_tile_position
 	
@@ -277,7 +265,7 @@ func _move_building_selection() -> void:
 		if building is MovableBuilding:
 			building.start_move(snapped_pos)
 
-	is_group_move_state = false
+	is_move_state = false
 	buildings_to_move_group.clear()
 	formation_offsets.clear()
 	_clear_move_previews()
@@ -327,8 +315,6 @@ func _clear_move_previews() -> void:
 # Cancels the current single or group move state, resetting all related variables and clearing previews.
 func _cancel_move_state() -> void:
 	is_move_state = false
-	is_group_move_state = false
-	current_building_to_move = null
 	buildings_to_move_group.clear()
 	formation_offsets.clear()
 	# Reset the formation scale and angle to their default values.
@@ -595,11 +581,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("left_mouse"):
 		# This handles the move placement for single and group moves.
 		if is_move_state and is_building_placeable:
-			_move_building(current_building_to_move)
-		elif is_group_move_state and is_building_placeable:
 			_move_building_selection()
 		# This handles the start of a box selection.
-		elif not is_construction_state and not is_move_state and not is_group_move_state:
+		elif not is_construction_state and not is_move_state:
 			is_box_selecting_state = true
 			selection_start_pos = get_global_mouse_position()
 			selection_end_pos = selection_start_pos
@@ -614,7 +598,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# --- Formation Scale Adjustment ---
 	# Adjust formation tightness if in group move state and the appropriate action is pressed.
-	if is_group_move_state:
+	if is_move_state:
 		if event.is_action_pressed("formation_tighter"):
 			# Decrease scale to make the formation tighter
 			formation_scale = clamp(formation_scale - FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
@@ -645,7 +629,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			construction_preview.visible = true
 		elif is_construction_state:
 			_deselect_building_to_build()
-		elif is_move_state or is_group_move_state:
+		elif is_move_state:
 			_cancel_move_state()
 		else:
 			clear_selection()
@@ -661,22 +645,27 @@ func _on_ui_building_button_pressed(building: DataTypes.BUILDING_TYPE) -> void:
 func _on_ui_destroy_button_pressed(building_to_destroy: Building) -> void:
 	building_to_destroy.destroy()
 
+func _on_ui_deactivate_button_pressed(building_to_deactivate: Building) -> void:
+	#building_to_deactivate.deactivate()
+	pass
+	
 func _on_ui_move_selection_pressed() -> void:
 	_enter_move_mode()
 
+#####################
 func _enter_move_mode() -> void:
 	if selected_buildings.is_empty():
 		return
 
 	if selected_buildings.size() == 1 and selected_buildings[0] is MovableBuilding:
-		is_group_move_state = true
+		is_move_state = true
 		buildings_to_move_group = selected_buildings.duplicate()
 		formation_offsets.clear()
 		formation_offsets.append(Vector2.ZERO)
 		construction_preview.clear()
 		_create_move_previews()
 	else:
-		is_group_move_state = true
+		is_move_state = true
 		buildings_to_move_group = selected_buildings.duplicate()
 		formation_offsets.clear()
 		

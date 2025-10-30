@@ -21,6 +21,7 @@ var building_manager: BuildingManager
 # Listener: BuildingManager
 signal building_button_pressed(building_to_build: DataTypes.BUILDING_TYPE)
 signal destroy_button_pressed(building_to_destroy: Building)
+signal deactivate_button_pressed(building_to_deactivate: Building)
 signal move_selection_pressed()
 # -----------------------------------------
 # --- ???????????? -----------------------
@@ -97,7 +98,7 @@ func show_building_actions_panel(selected_buildings: Array[Building]) -> void:
 		available_actions = building.get_available_actions()
 	else:
 		# Multiple buildings selected - actions are the same for all
-		building_actions_label.text = "%s Weapons Selected" % current_selection.size()
+		building_actions_label.text = "%s Buildings Selected" % current_selection.size()
 		available_actions = current_selection[0].get_available_actions()
 
 	# Create a button for each common action
@@ -124,6 +125,12 @@ func _on_destroy_button_pressed() -> void:
 func _on_move_button_pressed() -> void:
 	if not current_selection.is_empty():
 		move_selection_pressed.emit()
+		hide_building_actions_panel()
+		
+func _on_deactivate_button_pressed() -> void:
+	if not current_selection.is_empty():
+		for building in current_selection:
+			deactivate_button_pressed.emit(building)
 		hide_building_actions_panel()
 
 # -----------------------------------------

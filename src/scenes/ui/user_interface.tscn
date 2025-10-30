@@ -31,15 +31,18 @@ theme_override_constants/margin_bottom = 16
 layout_mode = 2
 
 [node name="Panel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
-custom_minimum_size = Vector2(137, 100)
+custom_minimum_size = Vector2(140, 140)
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 8
 
 [node name="BuildingActionsPanel" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/Panel"]
-layout_mode = 0
-offset_right = 137.0
-offset_bottom = 4.0
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -68.5
+offset_right = 68.5
+offset_bottom = 136.0
+grow_horizontal = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
@@ -54,6 +57,7 @@ text = "Building Actions:"
 
 [node name="ButtonsContainer" type="VBoxContainer" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer"]
 layout_mode = 2
+alignment = 1
 
 [node name="DestroyButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer"]
 layout_mode = 2
@@ -62,6 +66,10 @@ text = "Destroy"
 [node name="MoveButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer"]
 layout_mode = 2
 text = "Move"
+
+[node name="DeactivateButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer"]
+layout_mode = 2
+text = "Deactivate"
 
 [node name="BuildingConstructionPanel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
 custom_minimum_size = Vector2(260, 100)
@@ -97,6 +105,7 @@ text = "Base"
 
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/DestroyButton" to="." method="_on_destroy_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/MoveButton" to="." method="_on_move_button_pressed"]
+[connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/DeactivateButton" to="." method="_on_deactivate_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/RelayButton" to="." method="_on_relay_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/TurretButton" to="." method="_on_turret_button_pressed"]
 [connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/GeneratorButton" to="." method="_on_generator_button_pressed"]

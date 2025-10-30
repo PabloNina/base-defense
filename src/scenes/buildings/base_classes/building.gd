@@ -71,7 +71,7 @@ func _ready():
 	# Starts hidden is activated after receiving the first building packet
 	construction_progress_bar.visible = false
 	# hide exclamation mark sprite
-	exclamation_mark_sprite.visible = false
+	#exclamation_mark_sprite.visible = false
 	
 	# Register with Managers
 	network_manager = get_tree().get_first_node_in_group("network_manager")

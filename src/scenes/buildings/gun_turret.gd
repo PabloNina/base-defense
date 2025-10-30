@@ -3,6 +3,7 @@ class_name Weapon extends MovableBuilding
 @onready var base_sprite: Sprite2D = $BaseSprite
 @onready var turret_sprite: Sprite2D = $TurretSprite
 @onready var ammo_stock_bar: ProgressBar = $AmmoStockBar
+@onready var out_of_ammo_sprite: Sprite2D = $OutOfAmmoSprite
 
 @export var max_ammo_storage: int = 10
 @export var cost_per_shot: float = 0.25
@@ -25,6 +26,8 @@ func _ready():
 	ammo_stock_bar.value = 0
 	# Starts hidden is activated after receiving the first ammo packet
 	ammo_stock_bar.visible = false
+	# hide Out of ammo sprite
+	#out_of_ammo_sprite.visible = false
 
 # -------------------------------
 # --- Packet In Flight ----------
@@ -76,7 +79,10 @@ func _set_ammo(new_ammo: float) -> void:
 	if current_ammo >= max_ammo_storage:
 		is_full_ammo = true
 	#prints("Current ammo:", current_ammo, "Full ammo:", is_full_ammo)
-
+	if current_ammo <= 0.0:
+		out_of_ammo_sprite.visible = true
+	else:
+		out_of_ammo_sprite.visible = false
 # -------------------------------
 # --- Packet Demand Query -------
 # -------------------------------
