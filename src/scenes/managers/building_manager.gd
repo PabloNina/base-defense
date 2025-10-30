@@ -353,6 +353,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 		buildable_tile_id
 	)
 	marker.global_position = landing_position
+	marker.hide_range_and_connections()
 	landing_markers[building] = marker
 
 # Removes the static marker when a building's move is complete.

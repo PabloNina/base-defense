@@ -45,6 +45,7 @@ var is_on_buildable_tile: bool = true
 var _ghost_lines: Array[Line2D] = []
 # Tracks if the preview has been configured.
 var _is_initialized: bool = false
+var show_visual_feedback: bool = true
 
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
@@ -56,6 +57,8 @@ func _ready() -> void:
 
 # Draws the weapon's fire range if applicable.
 func _draw() -> void:
+	if not show_visual_feedback:
+		return
 	var fire_range = DataTypes.get_fire_range(building_type)
 	if fire_range > 0:
 		draw_circle(Vector2.ZERO, fire_range, RANGE_COLOR)
@@ -66,6 +69,12 @@ func _draw() -> void:
 # Returns whether the preview has been initialized.
 func is_initialized() -> bool:
 	return _is_initialized
+
+
+func hide_range_and_connections() -> void:
+	show_visual_feedback = false
+	_clear_ghost_lines()
+	queue_redraw()
 
 
 # Initializes the preview's properties.
@@ -146,6 +155,9 @@ func _set_valid_color(is_valid: bool) -> void:
 # --------------------------------------------
 # Updates the visibility and position of connection lines to nearby buildings.
 func _update_connection_ghosts() -> void:
+	if not show_visual_feedback:
+		_clear_ghost_lines()
+		return
 	if building_type == DataTypes.BUILDING_TYPE.NULL or not is_visible():
 		_clear_ghost_lines()
 		return
