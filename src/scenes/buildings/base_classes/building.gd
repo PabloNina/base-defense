@@ -14,6 +14,8 @@ signal clicked(building: Building)
 ## Emited when building is built
 ## Connected to NetWorkManager
 signal finish_building()
+## Emited when building is (de)activated.
+signal deactivated(is_deactivated: bool)
 
 # -------------------------------
 # --- Editor Settings ----------- 
@@ -34,11 +36,13 @@ var connection_range: float = 0.0
 @onready var building_hurt_box: Area2D = $BuildingHurtBox
 @onready var construction_progress_bar: ProgressBar = $ConstructionProgressBar
 @onready var exclamation_mark_sprite: Sprite2D = $ExclamationMarkSprite
+@onready var deactivated_sprite: Sprite2D = $DeactivatedSprite
 # -------------------------------
-# --- Runtime State -------------
+# --- Runtime States ------------
 # -------------------------------
 var is_built: bool = false: set = set_built_state
 var is_powered: bool = false: set = set_powered_state
+var is_deactivated: bool = false: set = set_deactivated_state
 var is_scheduled_to_build: bool = false
 var is_selected: bool = false
 
@@ -72,6 +76,8 @@ func _ready():
 	construction_progress_bar.visible = false
 	# hide exclamation mark sprite
 	#exclamation_mark_sprite.visible = false
+	# hide deactivated sprite
+	deactivated_sprite.visible = false
 	
 	# Register with Managers
 	network_manager = get_tree().get_first_node_in_group("network_manager")
@@ -146,6 +152,16 @@ func set_built_state(new_state: bool) -> void:
 	finish_building.emit()
 	_updates_visuals()
 
+# Sets the deactivated state of the building.
+func set_deactivated_state(deactivate: bool) -> void:
+	is_deactivated = deactivate
+	deactivated.emit(is_deactivated)
+	if is_deactivated:
+		deactivated_sprite.visible = true
+	else:
+		deactivated_sprite.visible = false
+	#_updates_visuals()
+	
 # -------------------------------
 # --- Packet In Flight ----------
 # -------------------------------
@@ -224,15 +240,19 @@ func destroy():
 # -----------------------------------------
 # Called by command center on tick
 func get_upkeep_cost() -> float:
-	if not is_built or not is_powered:
+	if not is_built or not is_powered or is_deactivated:
 		return 0.0
 	return upkeep_cost
 # -----------------------------------------
 # ------ Building Actions -----------------
 # -----------------------------------------
 func get_available_actions() -> Array[DataTypes.BUILDING_ACTIONS]:
-# By default, every building can be destroyed.
-	return [DataTypes.BUILDING_ACTIONS.DESTROY]
+	# By default every building can be destroyed 
+	var actions: Array[DataTypes.BUILDING_ACTIONS] = [DataTypes.BUILDING_ACTIONS.DESTROY]
+	# Only relays and CC cant be deactivated every other building can
+	if not is_relay:
+		actions.append(DataTypes.BUILDING_ACTIONS.DEACTIVATE)
+	return actions
 
 # -------------------------------
 # --- Visuals Updating ----------

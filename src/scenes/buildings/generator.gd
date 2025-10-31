@@ -21,6 +21,8 @@ func _ready():
 
 # Called by CC on tick used to calc total packet production
 func get_packet_production_bonus() -> float:
+	if is_deactivated:
+		return 0.0
 	return packet_production_bonus
 
 

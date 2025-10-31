@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://73yv02e6ghqj"]
+[gd_scene load_steps=9 format=3 uid="uid://73yv02e6ghqj"]
 
 [ext_resource type="Texture2D" uid="uid://cegj3a117b1o0" path="res://assets/sprites/buildings/energy_relay.png" id="1_2cyx4"]
 [ext_resource type="Script" uid="uid://bmteaistl3cx7" path="res://src/scenes/buildings/relay.gd" id="1_mk7m4"]
 [ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/building_hurt_box.tscn" id="2_oxjp3"]
 [ext_resource type="Texture2D" uid="uid://c8e1wx4o47i3l" path="res://assets/sprites/icons/exclamation_mark.png" id="3_nvwo5"]
 [ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/construction_progress_bar.tscn" id="4_kufgs"]
+[ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="4_x077y"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_2cyx4"]
 atlas = ExtResource("1_2cyx4")
@@ -22,6 +23,9 @@ texture = SubResource("AtlasTexture_2cyx4")
 [node name="ExclamationMarkSprite" type="Sprite2D" parent="."]
 position = Vector2(-9, -14)
 texture = ExtResource("3_nvwo5")
+
+[node name="DeactivatedSprite" type="Sprite2D" parent="."]
+texture = ExtResource("4_x077y")
 
 [node name="BuildingHurtBox" parent="." instance=ExtResource("2_oxjp3")]
 

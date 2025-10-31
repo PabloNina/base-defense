@@ -29,6 +29,12 @@ func _ready():
 	# hide Out of ammo sprite
 	#out_of_ammo_sprite.visible = false
 
+func _process(delta: float) -> void:
+	if is_deactivated:
+		return
+	# Add shooting logic here
+	pass
+
 # -------------------------------
 # --- Packet In Flight ----------
 # -------------------------------
@@ -95,7 +101,7 @@ func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
 	match packet_type:
 		DataTypes.PACKETS.AMMO:
 			## Needs ammo if built, powered, not fully stocked and not scheduled to full
-			return is_built and is_powered and not is_full_ammo and not is_scheduled_to_full_ammo
+			return is_built and is_powered and not is_deactivated and not is_full_ammo and not is_scheduled_to_full_ammo
 
 		_:
 			return false

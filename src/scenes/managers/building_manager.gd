@@ -646,8 +646,8 @@ func _on_ui_destroy_button_pressed(building_to_destroy: Building) -> void:
 	building_to_destroy.destroy()
 
 func _on_ui_deactivate_button_pressed(building_to_deactivate: Building) -> void:
-	#building_to_deactivate.deactivate()
-	pass
+	building_to_deactivate.set_deactivated_state(not building_to_deactivate.is_deactivated)
+	building_to_deactivate.deselect()
 	
 func _on_ui_move_selection_pressed() -> void:
 	_enter_move_mode()

@@ -21,7 +21,6 @@ var move_speed: float = 100.0
 # -----------------------------------------
 func _physics_process(delta: float) -> void:
 	if is_moving:
-		
 		_move_towards_target(delta)
 
 # -----------------------------------------
@@ -66,8 +65,8 @@ func _complete_move() -> void:
 	
 
 func get_available_actions() -> Array[DataTypes.BUILDING_ACTIONS]:
-	# Start with the parent class's actions (DESTROY)
-	var actions = super.get_available_actions()
+	# Start with the parent class's actions
+	var actions: Array[DataTypes.BUILDING_ACTIONS] = super.get_available_actions()
 	# Add the actions specific to this class
 	actions.append(DataTypes.BUILDING_ACTIONS.MOVE)
 	return actions
