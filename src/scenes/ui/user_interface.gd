@@ -32,7 +32,7 @@ var default_max_storage: float = 50.0
 const ACTION_DEFINITIONS = {
 	DataTypes.BUILDING_ACTIONS.DESTROY: {"text": "Destroy", "method": "_on_destroy_button_pressed"},
 	DataTypes.BUILDING_ACTIONS.MOVE: {"text": "Move", "method": "_on_move_button_pressed"},
-	DataTypes.BUILDING_ACTIONS.DEACTIVATE: {"text": "Deactivate", "method": "_on_deactivate_button_pressed"},
+	DataTypes.BUILDING_ACTIONS.DEACTIVATE: {"text": "De/activate", "method": "_on_deactivate_button_pressed"},
 }
 # -----------------------------------------
 # --- Engine Callbacks --------------------

@@ -46,6 +46,7 @@ var _ghost_lines: Array[Line2D] = []
 # Tracks if the preview has been configured.
 var _is_initialized: bool = false
 var show_visual_feedback: bool = true
+var is_valid: bool = true
 
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
@@ -62,6 +63,14 @@ func _draw() -> void:
 	var fire_range = DataTypes.get_fire_range(building_type)
 	if fire_range > 0:
 		draw_circle(Vector2.ZERO, fire_range, RANGE_COLOR)
+
+	var texture = sprite.texture
+	if texture:
+		var rect: Rect2
+		rect.size = texture.get_size()
+		rect.position = -rect.size / 2
+		var color = Color.GREEN if is_valid else Color.RED
+		draw_rect(rect.grow(4), color, false, 2.0)
 
 # --------------------------------------------
 # --- Public Methods -------------------------
@@ -138,9 +147,10 @@ func _on_area_exited(area: Area2D) -> void:
 # --- Visual Feedback ------------------------
 # --------------------------------------------
 func _update_validity() -> void:
-	var is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
+	is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
 	_set_valid_color(is_valid)
 	is_placeable.emit(is_valid, self)
+	queue_redraw()
 
 # Tints the preview sprite based on placement validity.
 func _set_valid_color(is_valid: bool) -> void:
