@@ -213,39 +213,33 @@ func _get_reachable_relays(base: Building) -> Array:
 # Recalculates which buildings are powered, updates connection line colors, and handles cluster power state.
 # Call this after any change to the network topology or after caches are refreshed.
 func _update_network_integrity():
-	var visited := {}
-	var powered_map := {}
+	var powered_buildings := {}
 
+	# Pass 1: Find all powered buildings by traversing from Command Centers
 	for building in registered_buildings:
-		if building in visited:
-			continue
+		if building is Command_Center:
+			var queue := [building]
+			var visited_in_pass1 := {building: true}
+			powered_buildings[building] = true
 
-		var cluster := []
-		var queue := [building]
-		var cluster_has_cc := false
+			while queue.size() > 0:
+				var current = queue.pop_front()
+				for neighbor in current.connected_buildings:
+					if is_instance_valid(neighbor) and neighbor.is_built and not visited_in_pass1.has(neighbor):
+						visited_in_pass1[neighbor] = true
+						powered_buildings[neighbor] = true
+						queue.append(neighbor)
 
-		while queue.size() > 0:
-			var r = queue.pop_front()
-			if r in visited:
-				continue
-			visited[r] = true
-			cluster.append(r)
-			if r is Command_Center:
-				cluster_has_cc = true
-			for n in r.connected_buildings:
-				if is_instance_valid(n) and n not in visited:
-					queue.append(n)
-
-		# Reset construction progress if cluster is isolated
-		if not cluster_has_cc:
-			_reset_isolated_construction(cluster)
-
-		# Set power state for cluster
-		for r in cluster:
-			# Only built buildings can be powered. An unbuilt relay should not appear powered.
-			var powered_state = cluster_has_cc and r.is_built
-			r.set_powered_state(powered_state)
-			powered_map[r] = powered_state
+	# Pass 2: Set power state for all buildings and update visuals
+	var powered_map := {}
+	for building in registered_buildings:
+		var is_powered = powered_buildings.has(building)
+		building.set_powered_state(is_powered)
+		powered_map[building] = is_powered
+		
+		# Reset packets in flight if building is isolated
+		if not is_powered:
+			building.reset_packets_in_flight()
 
 	# Update connection visuals
 	for c in connections:
@@ -253,12 +247,7 @@ func _update_network_integrity():
 			continue
 		var a_powered = powered_map.get(c.relay_a, false)
 		var b_powered = powered_map.get(c.relay_b, false)
-		# Valid (blue) if either endpoint is powered, invalid (red) only if both are unpowered
 		c.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
-
-func _reset_isolated_construction(cluster: Array):
-	for building in cluster:
-		building.reset_packets_in_flight()
 
 # -----------------------------------------
 # --- Pathfinding -------------------------
