@@ -5,7 +5,7 @@ class_name PacketManager extends Node
 @export var current_packet_speed: int = 150
 @export var enable_packed_debug: bool = false
 
-@onready var active_packets_container: Node = $ActivePacketsContainer
+@onready var packets_container: Node = $PacketsContainer
 @onready var packet_pool: PacketPool = $PacketPool
 
 func _ready() -> void:
@@ -124,74 +124,69 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 # -----------------------------------------
 # --- Packet spawning ---------------------
 # -----------------------------------------
-func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACKETS, delay_offset :float = 0.0) -> void:
-	# Safety checks
+func _is_path_traversable(path: Array[Building], packet_type: DataTypes.PACKETS) -> bool:
+	# A path must have at least a start and an end.
 	if path.size() < 2:
-		return
-	# Prevent packets from traversing through unbuilt relays **except** allow the final target
-	# to be unbuilt when sending BUILDING packets (so CC can send building packets to construct new buildings).
-	if path.size() >= 2:
-		# Check intermediate nodes only (exclude last node)
-		for i in range(path.size() - 1):
-			var inter = path[i]
-			if not is_instance_valid(inter) or not inter.is_built:
-				return
-	if not network_manager.are_connected(path[0], path[-1]):
-		return
+		return false
 
-	# Additionally ensure each edge in the path is traversable.
-	# An edge between path[i] and path[i+1] is traversable if both nodes are built
-	# and at least one of the two endpoints is powered.
+	# The start and end nodes must be connected in the network.
+	if not network_manager.are_connected(path[0], path[-1]):
+		return false
+
+	# Check the validity of each edge in the path.
 	for i in range(path.size() - 1):
 		var a = path[i]
 		var b = path[i+1]
-		# If this edge is the final edge and packet_type == BUILDING, allow b to be unbuilt
+
+		# Both nodes in an edge must be valid instances.
+		if not is_instance_valid(a) or not is_instance_valid(b):
+			return false
+
+		# Check if the nodes are built. There's a special case for building packets.
 		var is_final_edge = (i == path.size() - 2)
 		if is_final_edge and packet_type == DataTypes.PACKETS.BUILDING:
-			if not (is_instance_valid(a) and is_instance_valid(b) and a.is_built):
-				return
+			# For the final edge of a building packet, only the source (a) must be built.
+			if not a.is_built:
+				return false
 		else:
-			if not (is_instance_valid(a) and is_instance_valid(b) and a.is_built and b.is_built):
-				return
-		# Determine powered map from current network integrity (best-effort). If either is powered allow traversal.
-		var a_powered := false
-		var b_powered := false
-		# powered_map may not be directly accessible here; check building state as a fallback
-		if a.has_method("is_powered"):
-			a_powered = a.is_powered
-		else:
-			a_powered = a.is_powered
-		if b.has_method("is_powered"):
-			b_powered = b.is_powered
-		else:
-			b_powered = b.is_powered
-		if not (a_powered or b_powered):
-			# both endpoints unpowered -> edge not traversable
-			return
-	
-	# small per-packet delay to avoid packet stacking
-	if delay_offset > 0.0:
-		await get_tree().create_timer(delay_offset).timeout
-	
-	# Instance and setup the packet
-	var packet: Packet = _acquire_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
-	# Check if packet was created successfully
-	if not is_instance_valid(packet):
-		# Decrement packets_on_flight since we failed to spawn
+			# For all other cases, both nodes must be built.
+			if not a.is_built or not b.is_built:
+				return false
+
+		# At least one of the two nodes in an edge must be powered.
+		if not a.is_powered and not b.is_powered:
+			return false
+			
+	return true
+
+func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACKETS, delay_offset :float = 0.0) -> void:
+	# First, check if the path is traversable.
+	if not _is_path_traversable(path, packet_type):
+		# If the path is not traversable, decrement the in-flight counter and return.
 		if path.size() > 0 and is_instance_valid(path[-1]):
 			path[-1].decrement_packets_in_flight()
 		return
-		
-	# Connect signals
+
+	# Use a small delay to prevent packets from stacking on top of each other.
+	if delay_offset > 0.0:
+		await get_tree().create_timer(delay_offset).timeout
+	
+	# Acquire a new packet from the pool and set it up.
+	var packet: Packet = _acquire_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
+	
+	# Connect to the packet's signals to manage its lifecycle.
 	if not packet.packet_arrived.is_connected(_on_packet_arrived):
 		packet.packet_arrived.connect(_on_packet_arrived)
-	if not packet.path_broken.is_connected(_on_path_broken):
-		packet.path_broken.connect(_on_path_broken)
-	# Add to container
-	packet.reparent(active_packets_container)
+
+	# Add the packet to the scene tree.
+	packet.reparent(packets_container)
 
 
 func _on_packet_arrived(packet: Packet):
+	if packet.is_cleaned_up:
+		return
+	packet.is_cleaned_up = true
+
 	var target_building = packet.path[-1]
 	var packet_type = packet.packet_type
 
@@ -206,12 +201,4 @@ func _on_packet_arrived(packet: Packet):
 	release_packet(packet)
 
 func _on_path_broken(packet: Packet):
-	var target_building = packet.path[-1]
-
-	# Safety check: ensure building is still valid
-	if not is_instance_valid(target_building):
-		return
-	# Decrement in-flight packet count safely
-	target_building.decrement_packets_in_flight()
-	# Release the packet
-	release_packet(packet)
+	packet._cleanup_packet()

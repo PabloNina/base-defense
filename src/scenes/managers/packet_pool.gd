@@ -1,5 +1,5 @@
 # packet_pool.gd
-# Manages a pool of reusable packet objects to optimize performance
+# Singleton that manages a pool of reusable packet objects to optimize performance
 # by avoiding frequent instantiation and destruction.
 class_name PacketPool extends Node
 
@@ -47,6 +47,7 @@ func acquire_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array
 	
 	# Reset internal state
 	packet.current_index = 0
+	packet.is_cleaned_up = false
 	packet._set_sprite()
 
 	# Enable the packet for processing and visibility

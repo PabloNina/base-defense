@@ -4,7 +4,18 @@ This document provides guidelines for using the Gemini Code Assistant with this 
 
 ## Project Overview
 
-This project is a base defense game built with the Godot Engine. The player must build and defend their base from waves of enemies.
+This project is a real-time strategy base defense game built with the Godot Engine, heavily inspired by the mechanics of Creeper World 3. The core gameplay revolves around building and maintaining a power grid to defend against waves of enemies.
+
+**Core Mechanics:**
+
+*   **Energy Network:** The central nervous system of your base is the energy network. The **Command Center**, the heart of your base, generates energy that is distributed through a network of **Relays**. All buildings must be connected to the Command Center through an unbroken chain of built relays to be powered.
+*   **Resource Management:** Energy is the primary resource, but defensive structures like **Gun Turrets** also require **Ammo**. Both resources are transported across the network in the form of packets. Players must balance energy production and consumption to keep their base operational.
+*   **Building and Defense:** Players can build various structures:
+    *   **Command Center:** The starting point and core of your base.
+    *   **Relays:** Extend the reach of your energy network.
+    *   **Generators:** Boost your energy production.
+    *   **Gun Turrets:** Automatically defend against enemies, consuming ammo in the process.
+*   **Objective:** The goal is to strategically expand your network, manage your resources, and build up your defenses to survive increasingly difficult waves of enemies.
 
 ## Getting Started
 

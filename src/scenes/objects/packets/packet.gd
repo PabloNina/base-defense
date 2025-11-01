@@ -13,17 +13,18 @@ var path: Array[Building] = [] # full path: base → ... → target
 var current_index: int = 0
 var speed: int = 0
 var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
+var is_cleaned_up: bool = false
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
 # Signals
 signal packet_arrived(packet: Packet)
-signal path_broken(packet: Packet)
 
 # -------------------------------
 # --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
+	is_cleaned_up = false
 	if path.size() < 2:
 		return
 	global_position = path[0].global_position
@@ -32,6 +33,19 @@ func _ready():
 
 func _process(delta: float):
 	_follow_path(delta)
+
+# -------------------------------
+# --- Public Methods ------------
+# -------------------------------
+func _cleanup_packet() -> void:
+	if is_cleaned_up:
+		return
+	is_cleaned_up = true
+
+	if path.size() > 0 and is_instance_valid(path[-1]):
+		path[-1].decrement_packets_in_flight()
+
+	get_tree().get_first_node_in_group("packet_manager").release_packet(self)
 
 # -------------------------------
 # --- Movement Logic -----------
@@ -44,7 +58,7 @@ func _follow_path(delta: float) -> void:
 
 	# Cancel packet if next relay is destroyed
 	if not is_instance_valid(next_relay):
-		path_broken.emit(self)
+		_cleanup_packet()
 		return
 
 	var direction = (next_relay.global_position - global_position).normalized()
@@ -60,7 +74,7 @@ func _follow_path(delta: float) -> void:
 			if is_instance_valid(path[-1]):
 				packet_arrived.emit(self)
 			else:
-				path_broken.emit(self)
+				_cleanup_packet()
 
 # -----------------------
 # --- Visuals -----------
