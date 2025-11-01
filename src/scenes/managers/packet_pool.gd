@@ -1,7 +1,7 @@
 # packet_pool.gd
-# Singleton that manages a pool of reusable packet objects to optimize performance
+# Manages a pool of reusable packet objects to optimize performance
 # by avoiding frequent instantiation and destruction.
-extends Node
+class_name PacketPool extends Node
 
 # The packet scene to be used for creating the pool.
 const PACKET_SCENE: PackedScene = preload("res://src/scenes/objects/packets/base_packet.tscn")

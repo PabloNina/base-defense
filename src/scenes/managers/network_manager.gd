@@ -55,10 +55,6 @@ func unregister_relay(building: Building):
 	if building not in registered_buildings:
 		return
 
-	# Remove all packets referencing this building
-	for packet in get_tree().get_nodes_in_group("packets"):
-		if packet is Packet and building in packet.path:
-			packet._cleanup_packet()
 
 	# Remove building from network
 	registered_buildings.erase(building)

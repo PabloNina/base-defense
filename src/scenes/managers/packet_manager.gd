@@ -5,12 +5,23 @@ class_name PacketManager extends Node
 @export var current_packet_speed: int = 150
 @export var enable_packed_debug: bool = false
 
-@onready var packets_container: Node = $PacketsContainer
-
-
+@onready var active_packets_container: Node = $ActivePacketsContainer
+@onready var packet_pool: PacketPool = $PacketPool
 
 func _ready() -> void:
 	add_to_group("packet_manager")
+
+# -----------------------------------------
+# --- Packet Spawning / Releasing ---------
+# -----------------------------------------
+func _acquire_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
+	var packet: Packet = packet_pool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
+	if is_instance_valid(packet) and not packet.is_in_group("packets"):
+		packet.add_to_group("packets")
+	return packet
+
+func release_packet(packet: Packet) -> void:
+	packet_pool.release_packet(packet)
 
 # -----------------------------------------
 # --- Packet Propagation ------------------
@@ -163,7 +174,7 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 		await get_tree().create_timer(delay_offset).timeout
 	
 	# Instance and setup the packet
-	var packet: Packet = Packet.new_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
+	var packet: Packet = _acquire_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
 	# Check if packet was created successfully
 	if not is_instance_valid(packet):
 		# Decrement packets_on_flight since we failed to spawn
@@ -174,11 +185,16 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACK
 	# Connect signals
 	if not packet.packet_arrived.is_connected(_on_packet_arrived):
 		packet.packet_arrived.connect(_on_packet_arrived)
+	if not packet.path_broken.is_connected(_on_path_broken):
+		packet.path_broken.connect(_on_path_broken)
 	# Add to container
-	packet.reparent(packets_container)
+	packet.reparent(active_packets_container)
 
 
-func _on_packet_arrived(target_building: Building, packet_type: DataTypes.PACKETS):
+func _on_packet_arrived(packet: Packet):
+	var target_building = packet.path[-1]
+	var packet_type = packet.packet_type
+
 	# Safety check: ensure building is still valid
 	if not is_instance_valid(target_building):
 		return
@@ -186,3 +202,16 @@ func _on_packet_arrived(target_building: Building, packet_type: DataTypes.PACKET
 	target_building.received_packet(packet_type)
 	# Decrement in-flight packet count safely
 	target_building.decrement_packets_in_flight()
+	# Release the packet
+	release_packet(packet)
+
+func _on_path_broken(packet: Packet):
+	var target_building = packet.path[-1]
+
+	# Safety check: ensure building is still valid
+	if not is_instance_valid(target_building):
+		return
+	# Decrement in-flight packet count safely
+	target_building.decrement_packets_in_flight()
+	# Release the packet
+	release_packet(packet)

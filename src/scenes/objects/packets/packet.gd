@@ -16,8 +16,9 @@ var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
-# Listener: NetworkManager
-signal packet_arrived(target: Building, packet_type: DataTypes.PACKETS)  
+# Signals
+signal packet_arrived(packet: Packet)
+signal path_broken(packet: Packet)
 
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -32,20 +33,6 @@ func _ready():
 func _process(delta: float):
 	_follow_path(delta)
 
-# ------------------------------------
-# --- Public Methods / Constructor ---
-# ------------------------------------
-# Packet Constructor - uses the packet_pool singleton
-static func new_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
-	# Acquire a packet from the global pool.
-	var packet: Packet = PacketPool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
-	
-	# The group is useful for debugging or broad interactions, so we add it here.
-	if is_instance_valid(packet) and not packet.is_in_group("packets"):
-		packet.add_to_group("packets")
-		
-	return packet
-
 # -------------------------------
 # --- Movement Logic -----------
 # -------------------------------
@@ -57,7 +44,7 @@ func _follow_path(delta: float) -> void:
 
 	# Cancel packet if next relay is destroyed
 	if not is_instance_valid(next_relay):
-		_cleanup_packet()
+		path_broken.emit(self)
 		return
 
 	var direction = (next_relay.global_position - global_position).normalized()
@@ -71,10 +58,9 @@ func _follow_path(delta: float) -> void:
 		# Final relay reached
 		if current_index >= path.size() - 1:
 			if is_instance_valid(path[-1]):
-				packet_arrived.emit(path[-1], packet_type)
-				PacketPool.release_packet(self)
+				packet_arrived.emit(self)
 			else:
-				_cleanup_packet()
+				path_broken.emit(self)
 
 # -----------------------
 # --- Visuals -----------
@@ -90,15 +76,3 @@ func _set_sprite() -> void:
 			sprite_2d.texture = BLUE_TEXTURE
 		_:
 			return  # Unsupported packet type
-
-# -------------------------------
-# --- Helper: Cleanup ----------
-# -------------------------------
-# Called when packet cant reach the final destination
-func _cleanup_packet() -> void:
-	# Decrement packets_on_flight for the target building safely
-	if path.size() > 0 and is_instance_valid(path[-1]):
-		path[-1].decrement_packets_in_flight()
-	
-	# Release packet back to the pool
-	PacketPool.release_packet(self)
