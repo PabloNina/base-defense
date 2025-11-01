@@ -56,14 +56,15 @@ var is_valid: bool = true
 	#area_entered.connect(_on_area_entered)
 	#area_exited.connect(_on_area_exited)
 
-# Draws the weapon's fire range if applicable.
 func _draw() -> void:
 	if not show_visual_feedback:
 		return
+	# Draws the weapon's fire range if applicable.
 	var fire_range = DataTypes.get_fire_range(building_type)
 	if fire_range > 0:
 		draw_circle(Vector2.ZERO, fire_range, RANGE_COLOR)
-
+	
+	# Draws the validity box around the building
 	var texture = sprite.texture
 	if texture:
 		var rect: Rect2

@@ -1,40 +1,45 @@
 # =========================================
-# DataTypes.gd
+# GlobalData.gd
 # =========================================
 # Centralized global consts, enums and metadata tables for consistency across systems
 class_name DataTypes extends Node
+# --------------------------------------------
+# --- Constants ------------------------------
+# --------------------------------------------
+const TILE_SIZE: int = 16
 # --------------------------------------------
 # --- Enumerations ---------------------------
 # --------------------------------------------
 # Packet types
 enum PACKETS {NULL, BUILDING, ENERGY, AMMO, ORE, TECH}
-# Player Buildings
-enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, GENERATOR, GUN_TURRET}
+# Player Buildings 
+enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, GENERATOR, GUN_TURRET, MORTAR, ORE_MINE, FACTORY, RESEARCH_CENTER}
+# Buildings categories
+enum BUILDING_CATEGORY {NULL, BASE, INFRASTRUCTURE, WEAPON, RESEARCH}
 # Buildings actions
 enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE} 
+
 # Enemy Structures
 # TO DO
 # Enemy types
 # TO DO
 
 # --------------------------------------------
-# --- Buildings Metadata ---------------------
+# --- Buildings Metadata Dictionary ----------
 # --------------------------------------------
 # Each building entry stores:
 # - scene: packed scene for placement
-# - ghost_texture: preview ghost sprite
+# - ghost_texture: preview placement sprite
 # - tilemap_id: ID used in tilemap collections
 # - display_name: for UI labels
 # - cost: for resource logic
 # - optimal_building_distance_tiles: in tile units
 # - connection_range_tiles: in tile units
 # - add more and comment
-const TILE_SIZE: int = 16
-const BUILDINGS_DATA: Dictionary = {
+const BUILDINGS_METADATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
-		"scene": preload("res://src/scenes/buildings/command_center.tscn"),
+		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/command_center.png"),
-		"tilemap_id": 3,
 		"display_name": "Command Center",
 		"cost_to_build": 0,
 		"connection_range_tiles": 8,
@@ -42,11 +47,11 @@ const BUILDINGS_DATA: Dictionary = {
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 0,
 		# Command_Center class only
+		# default packet prod
 	},
 	BUILDING_TYPE.RELAY: {
-		"scene": preload("res://src/scenes/buildings/relay.tscn"),
+		"packed_scene": preload("res://src/scenes/buildings/relay.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/energy_relay.png"),
-		"tilemap_id": 5,
 		"display_name": "Relay",
 		"cost_to_build": 2,
 		"connection_range_tiles": 8,
@@ -56,9 +61,8 @@ const BUILDINGS_DATA: Dictionary = {
 		# Relay class only
 	},
 	BUILDING_TYPE.GENERATOR: {
-		"scene": preload("res://src/scenes/buildings/generator.tscn"),
+		"packed_scene": preload("res://src/scenes/buildings/generator.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/energy_generator.png"),
-		"tilemap_id": 4,
 		"display_name": "Generator",
 		"cost_to_build": 5,
 		"connection_range_tiles": 5,
@@ -66,11 +70,11 @@ const BUILDINGS_DATA: Dictionary = {
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 1,
 		# Generator class only
+		# packet bonus
 	},
 	BUILDING_TYPE.GUN_TURRET: {
-		"scene": preload("res://src/scenes/buildings/gun_turret.tscn"),
+		"packed_scene": preload("res://src/scenes/buildings/gun_turret.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/cannon_base.png"),
-		"tilemap_id": 6,
 		"display_name": "Gun Turret",
 		"cost_to_build": 3,
 		"connection_range_tiles": 6,
@@ -88,18 +92,14 @@ const BUILDINGS_DATA: Dictionary = {
 
 
 # --------------------------------------------
-# --- Utility Accessors ----------------------
+# --- Buildings Metadata Accessors ---------------
 # --------------------------------------------
 static func get_building_data(building_type: int) -> Dictionary:
-	return BUILDINGS_DATA.get(building_type, {})
+	return BUILDINGS_METADATA.get(building_type, {})
 
 static func get_ghost_texture(building_type: int) -> Texture2D:
 	var data = get_building_data(building_type)
 	return data.get("ghost_texture", null)
-
-static func get_tilemap_id(building_type: DataTypes.BUILDING_TYPE) -> int:
-	var data = get_building_data(building_type)
-	return data.get("tilemap_id", -1)
 
 static func get_display_name(building_type: int) -> String:
 	var data = get_building_data(building_type)
@@ -135,6 +135,6 @@ static func get_upkeep_cost(building_type: DataTypes.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
 	return data.get("upkeep_cost", -1.0)
 
-static func get_scene(building_type: int) -> PackedScene:
+static func get_packed_scene(building_type: int) -> PackedScene:
 	var data = get_building_data(building_type)
-	return data.get("scene", null)
+	return data.get("packed_scene", null)

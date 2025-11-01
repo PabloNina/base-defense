@@ -37,7 +37,6 @@ var is_command_center_placed: bool = false
 # -----------------------------------------
 var is_construction_state: bool = false
 var is_building_placeable: bool = true
-#var building_to_build_id: int = 0
 var building_to_build_type: DataTypes.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
@@ -165,7 +164,7 @@ func _get_cell_under_mouse() -> void:
 # --- Construction State / Placement --------
 # -----------------------------------------
 func _place_building() -> void:
-	var building_scene: PackedScene = DataTypes.get_scene(building_to_build_type)
+	var building_scene: PackedScene = DataTypes.get_packed_scene(building_to_build_type)
 	if not building_scene:
 		print("Error: Scene not found for building type ", building_to_build_type)
 		return
@@ -184,7 +183,7 @@ func _place_building() -> void:
 
 # Places a line of buildings based on the final positions of the construction previews.
 func _place_building_line() -> void:
-	var building_scene: PackedScene = DataTypes.get_scene(building_to_build_type)
+	var building_scene: PackedScene = DataTypes.get_packed_scene(building_to_build_type)
 	if not building_scene:
 		print("Error: Scene not found for building type ", building_to_build_type)
 		return
@@ -210,7 +209,6 @@ func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> vo
 		_cancel_move_state()
 
 	is_construction_state = true
-	#building_to_build_id = DataTypes.get_tilemap_id(new_building_type)
 	building_to_build_type = new_building_type
 	
 	construction_preview.initialize(
