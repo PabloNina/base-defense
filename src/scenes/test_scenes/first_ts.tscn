@@ -11,9 +11,10 @@
 
 [node name="FirstTestScene" type="Node2D"]
 
-[node name="BuildingManager" parent="." node_paths=PackedStringArray("ground_layer", "buildings_layer", "user_interface", "network_manager") instance=ExtResource("1_e8kqi")]
+[node name="BuildingManager" parent="." node_paths=PackedStringArray("ground_layer", "buildings_layer", "buildings_container", "user_interface", "network_manager") instance=ExtResource("1_e8kqi")]
 ground_layer = NodePath("../TileMap/GroundLayer")
 buildings_layer = NodePath("../TileMap/BuildingsLayer")
+buildings_container = NodePath("../BuildingsContainer")
 user_interface = NodePath("../UserInterface")
 network_manager = NodePath("../NetworkManager")
 
@@ -31,6 +32,8 @@ tile_set = ExtResource("2_a3jph")
 
 [node name="BuildingsLayer" type="TileMapLayer" parent="TileMap"]
 tile_set = ExtResource("2_a3jph")
+
+[node name="BuildingsContainer" type="Node2D" parent="."]
 
 [node name="Camera2D" parent="." instance=ExtResource("3_1nbkg")]
 

@@ -21,7 +21,7 @@ enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE}
 # --- Buildings Metadata ---------------------
 # --------------------------------------------
 # Each building entry stores:
-# - scene_path: packed scene for placement
+# - scene: packed scene for placement
 # - ghost_texture: preview ghost sprite
 # - tilemap_id: ID used in tilemap collections
 # - display_name: for UI labels
@@ -32,7 +32,7 @@ enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE}
 const TILE_SIZE: int = 16
 const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
-		#"scene_path": "res://Scenes/Buildings/CommandCenter.tscn",
+		"scene": preload("res://src/scenes/buildings/command_center.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/command_center.png"),
 		"tilemap_id": 3,
 		"display_name": "Command Center",
@@ -44,7 +44,7 @@ const BUILDINGS_DATA: Dictionary = {
 		# Command_Center class only
 	},
 	BUILDING_TYPE.RELAY: {
-		#"scene_path": "res://Scenes/Buildings/Relay.tscn",
+		"scene": preload("res://src/scenes/buildings/relay.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/energy_relay.png"),
 		"tilemap_id": 5,
 		"display_name": "Relay",
@@ -56,7 +56,7 @@ const BUILDINGS_DATA: Dictionary = {
 		# Relay class only
 	},
 	BUILDING_TYPE.GENERATOR: {
-		#"scene_path": "res://Scenes/Buildings/Mine.tscn",
+		"scene": preload("res://src/scenes/buildings/generator.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/energy_generator.png"),
 		"tilemap_id": 4,
 		"display_name": "Generator",
@@ -68,7 +68,7 @@ const BUILDINGS_DATA: Dictionary = {
 		# Generator class only
 	},
 	BUILDING_TYPE.GUN_TURRET: {
-		#"scene_path": "res://Scenes/Buildings/ResearchLab.tscn",
+		"scene": preload("res://src/scenes/buildings/gun_turret.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/cannon_base.png"),
 		"tilemap_id": 6,
 		"display_name": "Gun Turret",
@@ -135,6 +135,6 @@ static func get_upkeep_cost(building_type: DataTypes.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
 	return data.get("upkeep_cost", -1.0)
 
-#static func get_scene_path(building_type: int) -> String:
-	#var data = get_building_data(building_type)
-	#return data.get("scene_path", "")
+static func get_scene(building_type: int) -> PackedScene:
+	var data = get_building_data(building_type)
+	return data.get("scene", null)

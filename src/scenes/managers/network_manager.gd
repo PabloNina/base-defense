@@ -58,6 +58,8 @@ func unregister_relay(building: Building):
 	# Remove all packets referencing this building
 	for packet in get_tree().get_nodes_in_group("packets"):
 		if packet is Packet and building in packet.path:
+			#if is_instance_valid(packet.path[-1]):
+				#packet.path[-1].decrement_packets_in_flight()
 			packet_pool.release_packet(packet)
 
 	# Remove building from network

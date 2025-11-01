@@ -43,7 +43,6 @@ func start_move(target_pos: Vector2) -> void:
 	# Unregister for clearing connections and packet demand/production during move 
 	network_manager.unregister_relay(self)
 
-
 func _move_towards_target(delta: float) -> void:
 	var dir = (landing_target_position - global_position)
 	var dist = dir.length()

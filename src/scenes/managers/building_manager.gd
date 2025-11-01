@@ -13,6 +13,7 @@ const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/
 # -----------------------------------------
 @export var ground_layer: TileMapLayer
 @export var buildings_layer: TileMapLayer
+@export var buildings_container: Node2D
 @export var user_interface: UserInterface
 @export var network_manager: NetworkManager
 # -----------------------------------------
@@ -137,9 +138,6 @@ func unregister_building(destroyed_building: Building) -> void:
 	
 	# Erase from buildings list
 	buildings.erase(destroyed_building)
-	# Remove tile from map so it can be used again
-	var tile_coords = buildings_layer.local_to_map(destroyed_building.global_position)
-	buildings_layer.erase_cell(tile_coords)
 
 # -----------------------------------------
 # --- Mouse Tile Tracking -----------------
@@ -154,25 +152,40 @@ func _get_cell_under_mouse() -> void:
 # --- Construction State / Placement --------
 # -----------------------------------------
 func _place_building() -> void:
+	var building_scene: PackedScene = DataTypes.get_scene(building_to_build_type)
+	if not building_scene:
+		print("Error: Scene not found for building type ", building_to_build_type)
+		return
+
 	# --- Command Center Logic ---
-	if not is_command_center_placed and building_to_build_id == command_center_id:
+	if not is_command_center_placed and building_to_build_type == DataTypes.BUILDING_TYPE.COMMAND_CENTER:
 		is_command_center_placed = true
-		buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, building_to_build_id)
+		_instance_and_place_building(building_scene, local_tile_position)
 		is_construction_state = false
-	elif is_command_center_placed and building_to_build_id == command_center_id:
+	elif is_command_center_placed and building_to_build_type == DataTypes.BUILDING_TYPE.COMMAND_CENTER:
 		print("You can only have 1 Command Center!")
-	elif is_command_center_placed and building_to_build_id != command_center_id:
+	elif is_command_center_placed and building_to_build_type != DataTypes.BUILDING_TYPE.COMMAND_CENTER:
 		# Place regular building
-		buildings_layer.set_cell(tile_position, 2, Vector2i.ZERO, building_to_build_id)
+		_instance_and_place_building(building_scene, local_tile_position)
 
 
 # Places a line of buildings based on the final positions of the construction previews.
 func _place_building_line() -> void:
+	var building_scene: PackedScene = DataTypes.get_scene(building_to_build_type)
+	if not building_scene:
+		print("Error: Scene not found for building type ", building_to_build_type)
+		return
+		
 	for preview in construction_line_previews:
 		# Ensure the preview is visible and its position is valid before placing.
 		if preview.visible and construction_previews_validity.get(preview, false):
-			var building_tile_pos = buildings_layer.local_to_map(preview.global_position)
-			buildings_layer.set_cell(building_tile_pos, 2, Vector2i.ZERO, building_to_build_id)
+			_instance_and_place_building(building_scene, preview.global_position)
+
+
+func _instance_and_place_building(building_scene: PackedScene, building_position: Vector2) -> void:
+	var new_building = building_scene.instantiate()
+	new_building.global_position = building_position
+	buildings_container.add_child(new_building)
 
 
 # -----------------------------------------
@@ -263,6 +276,7 @@ func _move_building_selection() -> void:
 		var snapped_pos = buildings_layer.map_to_local(target_tile)
 		
 		if building is MovableBuilding:
+			# Start move
 			building.start_move(snapped_pos)
 
 	is_move_state = false

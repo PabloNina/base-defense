@@ -153,8 +153,8 @@ func _update_validity() -> void:
 	queue_redraw()
 
 # Tints the preview sprite based on placement validity.
-func _set_valid_color(is_valid: bool) -> void:
-	sprite.modulate = VALID_COLOR if is_valid else INVALID_COLOR
+func _set_valid_color(s_is_valid: bool) -> void:
+	sprite.modulate = VALID_COLOR if s_is_valid else INVALID_COLOR
 
 # --------------------------------------------
 # --- Connection Previews --------------------
