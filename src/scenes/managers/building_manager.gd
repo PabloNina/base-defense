@@ -14,7 +14,7 @@ const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/
 @export var ground_layer: TileMapLayer
 @export var buildings_container: Node2D
 @export var user_interface: UserInterface
-@export var network_manager: NetworkManager
+@export var grid_manager: GridManager
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
@@ -213,7 +213,7 @@ func _select_building_to_build(new_building_type: GlobalData.BUILDING_TYPE) -> v
 	
 	construction_preview.initialize(
 		new_building_type,
-		network_manager,
+		grid_manager,
 		GlobalData.get_ghost_texture(new_building_type),
 		ground_layer,
 		buildable_tile_id
@@ -304,7 +304,7 @@ func _create_move_previews() -> void:
 			add_child(preview)
 			preview.initialize(
 				building.building_type,
-				network_manager,
+				grid_manager,
 				GlobalData.get_landing_marker_texture(building.building_type),
 				ground_layer,
 				buildable_tile_id
@@ -358,7 +358,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 	add_child(marker)
 	marker.initialize(
 		building.building_type,
-		network_manager,
+		grid_manager,
 		GlobalData.get_landing_marker_texture(building.building_type),
 		ground_layer,
 		buildable_tile_id,
@@ -408,7 +408,7 @@ func _update_construction_line_previews() -> void:
 		if not single_preview.is_initialized():
 			single_preview.initialize(
 				building_type,
-				network_manager,
+				grid_manager,
 				GlobalData.get_ghost_texture(building_type),
 				ground_layer,
 				buildable_tile_id
@@ -442,7 +442,7 @@ func _update_construction_line_previews() -> void:
 		if not preview.is_initialized(): # Initialize only once.
 			preview.initialize(
 				building_type,
-				network_manager,
+				grid_manager,
 				GlobalData.get_ghost_texture(building_type),
 				ground_layer,
 				buildable_tile_id
@@ -592,7 +592,7 @@ func _on_InputManager_map_left_released(release_position: Vector2i):
 		_clear_construction_line_previews()
 		construction_preview.initialize(
 			building_to_build_type,
-			network_manager,
+			grid_manager,
 			GlobalData.get_ghost_texture(building_to_build_type),
 			ground_layer,
 			buildable_tile_id

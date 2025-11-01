@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=4 uid="uid://dfstbgurxnd7l"]
 
 [ext_resource type="PackedScene" uid="uid://b343w2e4y27v" path="res://src/scenes/managers/building_manager.tscn" id="1_e8kqi"]
-[ext_resource type="PackedScene" uid="uid://cjr2r4qtmpky6" path="res://src/scenes/managers/network_manager.tscn" id="2_1nbkg"]
+[ext_resource type="PackedScene" uid="uid://cjr2r4qtmpky6" path="res://src/scenes/managers/grid_manager.tscn" id="2_1nbkg"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="2_a3jph"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="3_1nbkg"]
 [ext_resource type="PackedScene" uid="uid://dosdc7ctbrr8g" path="res://src/scenes/ui/user_interface.tscn" id="6_4mpmm"]
@@ -11,16 +11,16 @@
 
 [node name="FirstTestScene" type="Node2D"]
 
-[node name="BuildingManager" parent="." node_paths=PackedStringArray("ground_layer", "buildings_container", "user_interface", "network_manager") instance=ExtResource("1_e8kqi")]
+[node name="BuildingManager" parent="." node_paths=PackedStringArray("ground_layer", "buildings_container", "user_interface", "grid_manager") instance=ExtResource("1_e8kqi")]
 ground_layer = NodePath("../TileMap/GroundLayer")
 buildings_container = NodePath("../BuildingsContainer")
 user_interface = NodePath("../UserInterface")
-network_manager = NodePath("../NetworkManager")
+grid_manager = NodePath("../GridManager")
 
-[node name="NetworkManager" parent="." instance=ExtResource("2_1nbkg")]
+[node name="GridManager" parent="." instance=ExtResource("2_1nbkg")]
 
-[node name="PacketManager" parent="." node_paths=PackedStringArray("network_manager") instance=ExtResource("6_v2v25")]
-network_manager = NodePath("../NetworkManager")
+[node name="PacketManager" parent="." node_paths=PackedStringArray("grid_manager") instance=ExtResource("6_v2v25")]
+grid_manager = NodePath("../GridManager")
 
 [node name="TileMap" type="Node2D" parent="."]
 

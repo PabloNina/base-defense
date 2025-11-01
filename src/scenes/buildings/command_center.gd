@@ -62,12 +62,12 @@ func _on_timer_tick():
 	var packets_allowed: int = MIN_PACKETS_PER_TICK 
 	
 	# --- Stage 1: Add all active buildings per tick upkeep packet consumption ---
-	for building in network_manager.registered_buildings:
+	for building in grid_manager.registered_buildings:
 		if building.is_powered and building.is_built:
 			packets_consumed += building.get_upkeep_cost()
 	
 	# --- Stage 2: Add Generator bonuses to Command Center ---
-	for generator in network_manager.registered_buildings:
+	for generator in grid_manager.registered_buildings:
 		if generator is EnergyGenerator and generator.is_powered and generator.is_built:
 			generators_accumulated_bonus += generator.get_packet_production_bonus()
 
@@ -155,7 +155,7 @@ func _compute_packet_quota() -> int:
 	var throttle_ratio := pow(energy_ratio, throttle_exponent) if energy_ratio > critical_threshold else 0.5 * energy_ratio
 
 	# 3. Scale the max packet limit by network size (network_size_factor).
-	var network_size_factor := sqrt(float(network_manager.registered_buildings.size()) / 20.0)  # Adjust divisor as needed
+	var network_size_factor := sqrt(float(grid_manager.registered_buildings.size()) / 20.0)  # Adjust divisor as needed
 	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
 	
 	# 4. Determine the max number of packets that can be afforded (max_affordable).

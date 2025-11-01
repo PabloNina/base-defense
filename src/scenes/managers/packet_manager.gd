@@ -1,6 +1,6 @@
 class_name PacketManager extends Node
 
-@export var network_manager: NetworkManager
+@export var grid_manager: GridManager
 @export_group("Packets")
 @export var current_packet_speed: int = 150
 @export var enable_packed_debug: bool = false
@@ -28,11 +28,11 @@ func release_packet(packet: Packet) -> void:
 # -----------------------------------------
 func start_packet_propagation(command_center: Command_Center, quota: int, packet_type: GlobalData.PACKETS) -> int:
 	var packets_sent := 0
-	if quota <= 0 or not network_manager.reachable_cache.has(command_center):
+	if quota <= 0 or not grid_manager.reachable_cache.has(command_center):
 		return 0
 
 	var targets := []
-	for building in network_manager.reachable_cache[command_center]:
+	for building in grid_manager.reachable_cache[command_center]:
 		if building == command_center or not is_instance_valid(building):
 			continue
 
@@ -62,7 +62,7 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		return 0
 
 	# Round-robin selection over the filtered targets
-	var index = network_manager.last_target_index.get(command_center, 0)
+	var index = grid_manager.last_target_index.get(command_center, 0)
 	var n = targets.size()
 	
 	#
@@ -92,14 +92,14 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 
 
 		var key = str(command_center.get_instance_id()) + "_" + str(building.get_instance_id())
-		if not network_manager.path_cache.has(key):
+		if not grid_manager.path_cache.has(key):
 			continue
 
-		var path = network_manager.path_cache[key]
+		var path = grid_manager.path_cache[key]
 		if path.size() <= 1 or path.any(func(r): return not is_instance_valid(r)):
 			continue
 
-		if not network_manager.are_connected(path[0], path[-1]):
+		if not grid_manager.are_connected(path[0], path[-1]):
 			continue
 
 		# Increment in-flight AFTER the final checks and BEFORE spawning the packet.
@@ -118,7 +118,7 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		delay_accum += spawn_delay_step
 		packets_sent += 1
 
-	network_manager.last_target_index[command_center] = index % n
+	grid_manager.last_target_index[command_center] = index % n
 	return packets_sent
 
 # -----------------------------------------
@@ -130,7 +130,7 @@ func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS
 		return false
 
 	# The start and end nodes must be connected in the network.
-	if not network_manager.are_connected(path[0], path[-1]):
+	if not grid_manager.are_connected(path[0], path[-1]):
 		return false
 
 	# Check the validity of each edge in the path.

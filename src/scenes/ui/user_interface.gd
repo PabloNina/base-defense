@@ -13,7 +13,7 @@ class_name UserInterface extends CanvasLayer
 # -----------------------------------------
 # --- Managers References ---------------
 # -----------------------------------------
-var network_manager: NetworkManager
+var grid_manager: GridManager
 var building_manager: BuildingManager
 # -----------------------------------------
 # --- Signals ------------------------------
@@ -39,9 +39,9 @@ const ACTION_DEFINITIONS = {
 # -----------------------------------------
 func _ready() -> void:
 	# Subscribe to network signals
-	network_manager = get_tree().get_first_node_in_group("network_manager")
-	if network_manager:
-		network_manager.ui_update_packets.connect(on_update_packets)
+	grid_manager = get_tree().get_first_node_in_group("grid_manager")
+	if grid_manager:
+		grid_manager.ui_update_packets.connect(on_update_packets)
 
 	# Subscribe to building manager signals
 	building_manager = get_tree().get_first_node_in_group("building_manager")

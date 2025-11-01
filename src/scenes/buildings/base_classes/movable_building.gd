@@ -41,7 +41,7 @@ func start_move(target_pos: Vector2) -> void:
 	reset_packets_in_flight()
 
 	# Unregister for clearing connections and packet demand/production during move 
-	network_manager.unregister_relay(self)
+	grid_manager.unregister_relay(self)
 
 func _move_towards_target(delta: float) -> void:
 	var dir = (landing_target_position - global_position)
@@ -57,7 +57,7 @@ func _complete_move() -> void:
 	is_moving = false
 	is_built = true
 	# re-register to managers if needed
-	network_manager.register_relay(self)
+	grid_manager.register_relay(self)
 	#land
 	move_completed.emit(self)
 	#_updates_visuals()

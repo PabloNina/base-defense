@@ -23,8 +23,8 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 # --------------------------------------------
 # The type of building this preview represents.
 var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
-# Reference to the NetworkManager to check for connections.
-var network_manager: NetworkManager
+# Reference to the GridManager to check for connections.
+var grid_manager: GridManager
 var ground_layer: TileMapLayer
 var buildable_tile_id: int = 0
 
@@ -82,9 +82,9 @@ func is_initialized() -> bool:
 
 
 # Initializes the preview's properties.
-func initialize(p_building_type: GlobalData.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
+func initialize(p_building_type: GlobalData.BUILDING_TYPE, p_grid_manager: GridManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
 	building_type = p_building_type
-	network_manager = p_network_manager
+	grid_manager = p_grid_manager
 	sprite.texture = p_texture
 	ground_layer = p_ground_layer
 	buildable_tile_id = p_buildable_tile_id
@@ -171,14 +171,14 @@ func _update_connection_ghosts() -> void:
 	if building_type == GlobalData.BUILDING_TYPE.NULL or not is_visible():
 		_clear_ghost_lines()
 		return
-	if not network_manager:
+	if not grid_manager:
 		return
 
 	var targets: Array = []
-	for other in network_manager.registered_buildings:
+	for other in grid_manager.registered_buildings:
 		if not is_instance_valid(other):
 			continue
-		if NetworkManager.can_buildings_connect(
+		if GridManager.can_buildings_connect(
 			building_type,
 			global_position,
 			GlobalData.get_is_relay(building_type),

@@ -1,7 +1,7 @@
 # =========================================
-# NetworkManager.gd
+# GridManager.gd
 # =========================================
-class_name NetworkManager extends Node
+class_name GridManager extends Node
 # -----------------------------------------
 # --- Onready Variables -------------------
 # -----------------------------------------
@@ -26,8 +26,8 @@ signal ui_update_packets(pkt_stored: float, max_pkt_capacity: float , pkt_produc
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready():
-	add_to_group("network_manager")
-	initialize_network()
+	add_to_group("grid_manager")
+	_rebuild_all_connections()
 
 # -----------------------------------------
 # --- Buildings Registration ------------------
@@ -76,9 +76,6 @@ func unregister_relay(building: Building):
 # -----------------------------------------
 # --- Network Construction ----------------
 # -----------------------------------------
-func initialize_network():
-	_rebuild_all_connections()
-
 # Fully clears and rebuilds all physical connections in the network.
 # This is more expensive and is only needed after mass changes or a full reset.
 # Usually you only need to call _refresh_network_caches and _update_network_integrity for incremental changes.

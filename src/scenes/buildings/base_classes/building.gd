@@ -12,7 +12,7 @@ class_name Building extends Node2D
 ## Connected to BuildingManager
 signal clicked(building: Building)
 ## Emited when building is built
-## Connected to NetWorkManager
+## Connected to GridManager
 signal finish_building()
 ## Emited when building is (de)activated.
 signal deactivated(is_deactivated: bool)
@@ -49,7 +49,7 @@ var is_selected: bool = false
 var packets_in_flight: int = 0
 var construction_progress: int = 0
 var connected_buildings: Array[Building] = []
-var network_manager: NetworkManager
+var grid_manager: GridManager
 var building_manager: BuildingManager
 
 
@@ -80,9 +80,9 @@ func _ready():
 	deactivated_sprite.visible = false
 	
 	# Register with Managers
-	network_manager = get_tree().get_first_node_in_group("network_manager")
-	if network_manager:
-		network_manager.register_relay(self)
+	grid_manager = get_tree().get_first_node_in_group("grid_manager")
+	if grid_manager:
+		grid_manager.register_relay(self)
 
 	building_manager = get_tree().get_first_node_in_group("building_manager")
 	if building_manager:
@@ -222,8 +222,8 @@ func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 # -------------------------------
 func destroy():
 	# Unregister from managers
-	if network_manager:
-		network_manager.unregister_relay(self)
+	if grid_manager:
+		grid_manager.unregister_relay(self)
 	if building_manager:
 		building_manager.unregister_building(self)
 
