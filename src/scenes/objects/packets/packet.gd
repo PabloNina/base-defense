@@ -72,8 +72,9 @@ func _follow_path(delta: float) -> void:
 		if current_index >= path.size() - 1:
 			if is_instance_valid(path[-1]):
 				packet_arrived.emit(path[-1], packet_type)
-			# Release packet back to the pool
-			packet_pool.release_packet(self)
+				packet_pool.release_packet(self)
+			else:
+				_cleanup_packet()
 
 # -----------------------
 # --- Visuals -----------
@@ -94,7 +95,7 @@ func _set_sprite() -> void:
 # --- Helper: Cleanup ----------
 # -------------------------------
 # Called when packet cant reach the final destination
-func _cleanup_packet():
+func _cleanup_packet() -> void:
 	# Decrement packets_on_flight for the target building safely
 	if path.size() > 0 and is_instance_valid(path[-1]):
 		path[-1].decrement_packets_in_flight()
