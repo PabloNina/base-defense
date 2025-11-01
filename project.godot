@@ -16,7 +16,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-packet_pool="*res://src/scenes/autoloaded/packet_pool.gd"
+InputManager="*res://src/scenes/autoloaded/input_manager.gd"
+PacketPool="*res://src/scenes/autoloaded/packet_pool.tscn"
 
 [display]
 

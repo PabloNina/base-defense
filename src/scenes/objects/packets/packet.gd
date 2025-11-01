@@ -38,7 +38,7 @@ func _process(delta: float):
 # Packet Constructor - uses the packet_pool singleton
 static func new_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
 	# Acquire a packet from the global pool.
-	var packet: Packet = packet_pool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
+	var packet: Packet = PacketPool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
 	
 	# The group is useful for debugging or broad interactions, so we add it here.
 	if is_instance_valid(packet) and not packet.is_in_group("packets"):
@@ -72,7 +72,7 @@ func _follow_path(delta: float) -> void:
 		if current_index >= path.size() - 1:
 			if is_instance_valid(path[-1]):
 				packet_arrived.emit(path[-1], packet_type)
-				packet_pool.release_packet(self)
+				PacketPool.release_packet(self)
 			else:
 				_cleanup_packet()
 
@@ -101,4 +101,4 @@ func _cleanup_packet() -> void:
 		path[-1].decrement_packets_in_flight()
 	
 	# Release packet back to the pool
-	packet_pool.release_packet(self)
+	PacketPool.release_packet(self)

@@ -31,9 +31,6 @@ var local_tile_position: Vector2
 # -----------------------------------------
 # --- Building Tile IDs -------------------
 # -----------------------------------------
-# TileSet SceneCollection ID is 2
-# Each building inside has an alternate ID used for placement
-var command_center_id: int = 3
 var is_command_center_placed: bool = false
 # -----------------------------------------
 # --- Construction State ------------------
@@ -109,6 +106,23 @@ func _ready() -> void:
 	# Connect to the construction preview's signal
 	construction_preview.is_placeable.connect(_on_placement_preview_is_placeable)
 	
+	# Set ground_layer in InputManager
+	InputManager.ground_layer = ground_layer
+	
+	# Connect to InputManager signals
+	InputManager.map_left_clicked.connect(_on_InputManager_map_left_clicked)
+	InputManager.map_left_released.connect(_on_InputManager_map_left_released)
+	InputManager.map_right_clicked.connect(_on_InputManager_map_right_clicked)
+	InputManager.box_selection_started.connect(_on_InputManager_box_selection_started)
+	InputManager.box_selection_ended.connect(_on_InputManager_box_selection_ended)
+	InputManager.build_relay_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.RELAY))
+	InputManager.build_gun_turret_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.GUN_TURRET))
+	InputManager.build_generator_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.GENERATOR))
+	InputManager.build_command_center_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER))
+	InputManager.formation_tighter_pressed.connect(_on_InputManager_formation_tighter_pressed)
+	InputManager.formation_looser_pressed.connect(_on_InputManager_formation_looser_pressed)
+	InputManager.formation_rotate_pressed.connect(_on_InputManager_formation_rotate_pressed)
+
 	# Start with Command Center selected 
 	_select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
 
@@ -553,99 +567,83 @@ func _draw() -> void:
 		draw_rect(rect, Color(0, 0.5, 1, 1), false, 1.0)
 
 # -----------------------------------------
-# --- Mouse and Keyboard Input Handling ---
+# --- InputManager Signal Handlers ------
 # -----------------------------------------
-func _unhandled_input(event: InputEvent) -> void:
-	# --- Line Construction --- 
-	if is_construction_state and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.is_pressed():
-			is_line_construction_state = true
-			line_construction_start_pos = tile_position
-			construction_preview.clear() # Hide and disable single preview
-			_update_construction_line_previews()
-		elif not event.is_pressed() and is_line_construction_state:
-			is_line_construction_state = false
-			if is_building_placeable:
-				# If it was just a click (no drag), place a single building.
-				if line_construction_start_pos == tile_position:
-					_place_building()
-				else:
-					_place_building_line()
-			_clear_construction_line_previews()
-			# Re-initialize the main preview for the next placement.
-			construction_preview.initialize(
-				building_to_build_type,
-				network_manager,
-				DataTypes.get_ghost_texture(building_to_build_type),
-				ground_layer,
-				buildable_tile_id
-			)
-			construction_preview.visible = true
-			return # Consume the event
+func _on_InputManager_map_left_clicked(click_position: Vector2i):
+	if is_construction_state:
+		is_line_construction_state = true
+		line_construction_start_pos = click_position
+		construction_preview.clear() # Hide and disable single preview
+		_update_construction_line_previews()
+	elif is_move_state and is_building_placeable:
+		_move_building_selection()
+	elif not is_construction_state and not is_move_state:
+		is_box_selecting_state = true
+		selection_start_pos = get_global_mouse_position()
+		selection_end_pos = selection_start_pos
+		clear_selection()
 
-	# --- Mouse Motion ---
-	if event is InputEventMouseMotion:
-		if is_box_selecting_state:
-			selection_end_pos = get_global_mouse_position()
-			queue_redraw()
-			return # Consume the event
-
-	# --- Left Mouse Actions (that are not line construction) ---
-	if event.is_action_pressed("left_mouse"):
-		# This handles the move placement for single and group moves.
-		if is_move_state and is_building_placeable:
-			_move_building_selection()
-		# This handles the start of a box selection.
-		elif not is_construction_state and not is_move_state:
-			is_box_selecting_state = true
-			selection_start_pos = get_global_mouse_position()
-			selection_end_pos = selection_start_pos
-			clear_selection()
-
-	# --- Left Mouse Release for Box Selection ---
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.is_pressed() and is_box_selecting_state:
+func _on_InputManager_map_left_released(release_position: Vector2i):
+	if is_line_construction_state:
+		is_line_construction_state = false
+		if is_building_placeable:
+			if line_construction_start_pos == release_position:
+				_place_building()
+			else:
+				_place_building_line()
+		_clear_construction_line_previews()
+		construction_preview.initialize(
+			building_to_build_type,
+			network_manager,
+			DataTypes.get_ghost_texture(building_to_build_type),
+			ground_layer,
+			buildable_tile_id
+		)
+		construction_preview.visible = true
+	elif is_box_selecting_state:
 		is_box_selecting_state = false
 		if selection_start_pos.distance_to(selection_end_pos) > 5:
 			_select_weapons_in_box()
 		queue_redraw()
 
-	# --- Formation Scale Adjustment ---
-	# Adjust formation tightness if in group move state and the appropriate action is pressed.
+func _on_InputManager_map_right_clicked(_click_position: Vector2i):
+	if is_line_construction_state:
+		is_line_construction_state = false
+		_clear_construction_line_previews()
+		construction_preview.visible = true
+	elif is_construction_state:
+		_deselect_building_to_build()
+	elif is_move_state:
+		_cancel_move_state()
+	else:
+		clear_selection()
+
+func _on_InputManager_box_selection_started(start_position: Vector2):
+	if not is_construction_state and not is_move_state:
+		is_box_selecting_state = true
+		selection_start_pos = start_position
+		selection_end_pos = start_position
+		clear_selection()
+
+func _on_InputManager_box_selection_ended(end_position: Vector2):
+	if is_box_selecting_state:
+		selection_end_pos = end_position
+		queue_redraw()
+
+func _on_InputManager_formation_tighter_pressed():
 	if is_move_state:
-		if event.is_action_pressed("formation_tighter"):
-			# Decrease scale to make the formation tighter
-			formation_scale = clamp(formation_scale - FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
-			_update_move_previews()
-		elif event.is_action_pressed("formation_looser"):
-			# Increase scale to make the formation looser.
-			formation_scale = clamp(formation_scale + FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
-			_update_move_previews()
-		elif event.is_action_pressed("formation_rotate"):
-			formation_angle = fmod(formation_angle + 90.0, 360.0)
-			_update_move_previews()
+		formation_scale = clamp(formation_scale - FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
+		_update_move_previews()
 
-	# --- Selection: Building Hotkeys ---
-	if event.is_action_pressed("key_1"):
-		_select_building_to_build(DataTypes.BUILDING_TYPE.RELAY)
-	elif event.is_action_pressed("key_2"):
-		_select_building_to_build(DataTypes.BUILDING_TYPE.GUN_TURRET)
-	elif event.is_action_pressed("key_3"):
-		_select_building_to_build(DataTypes.BUILDING_TYPE.GENERATOR)
-	elif event.is_action_pressed("key_4"):
-		_select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
+func _on_InputManager_formation_looser_pressed():
+	if is_move_state:
+		formation_scale = clamp(formation_scale + FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
+		_update_move_previews()
 
-	# --- Cancel Construction Mode or Building selection---
-	elif event.is_action_pressed("right_mouse"): # Cancel action
-		if is_line_construction_state:
-			is_line_construction_state = false
-			_clear_construction_line_previews()
-			construction_preview.visible = true
-		elif is_construction_state:
-			_deselect_building_to_build()
-		elif is_move_state:
-			_cancel_move_state()
-		else:
-			clear_selection()
+func _on_InputManager_formation_rotate_pressed():
+	if is_move_state:
+		formation_angle = fmod(formation_angle + 90.0, 360.0)
+		_update_move_previews()
 
 # -----------------------------------------
 # --- User Interface Input Handling ------
