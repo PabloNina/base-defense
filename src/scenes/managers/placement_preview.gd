@@ -3,7 +3,7 @@
 # =========================================
 # Displays a semi-transparent preview of a building and its potential network connections.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
-class_name PlacementPreview extends Area2D
+class_name PlacementPreview extends Node2D
 
 # --------------------------------------------
 # --- Signals --------------------------------
@@ -15,7 +15,7 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 # --- Onready References ---------------------
 # --------------------------------------------
 @onready var sprite: Sprite2D = $Sprite2D
-@onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var collision_shape: CollisionShape2D = $Area2D/CollisionShape2D
 @onready var lines_container: Node2D = $LinesContainer
 
 # --------------------------------------------
@@ -51,10 +51,10 @@ var is_valid: bool = true
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
 # --------------------------------------------
-func _ready() -> void:
-	# Connect signals for area overlap detection
-	area_entered.connect(_on_area_entered)
-	area_exited.connect(_on_area_exited)
+#func _ready() -> void:
+	## Connect signals for area overlap detection
+	#area_entered.connect(_on_area_entered)
+	#area_exited.connect(_on_area_exited)
 
 # Draws the weapon's fire range if applicable.
 func _draw() -> void:
@@ -88,6 +88,9 @@ func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: Net
 	ground_layer = p_ground_layer
 	buildable_tile_id = p_buildable_tile_id
 	show_visual_feedback = p_show_feedback
+	
+	# Set z_index to ensure it's drawn on top
+	#z_index = 1
 	
 	# Configure collision shape based on texture size
 	var shape_size = sprite.texture.get_size() * sprite.scale

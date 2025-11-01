@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://c8t5w2j2qg3j" path="res://src/scenes/managers/placement_preview.tscn" id="2_6ga8u"]
 
 [node name="BuildingManager" type="Node2D"]
+z_index = 1
 script = ExtResource("1_t5t3c")
 
 [node name="PlacementPreview" parent="." instance=ExtResource("2_6ga8u")]

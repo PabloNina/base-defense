@@ -37,7 +37,7 @@ var is_command_center_placed: bool = false
 # -----------------------------------------
 var is_construction_state: bool = false
 var is_building_placeable: bool = true
-var building_to_build_id: int = 0
+#var building_to_build_id: int = 0
 var building_to_build_type: DataTypes.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
@@ -210,7 +210,7 @@ func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> vo
 		_cancel_move_state()
 
 	is_construction_state = true
-	building_to_build_id = DataTypes.get_tilemap_id(new_building_type)
+	#building_to_build_id = DataTypes.get_tilemap_id(new_building_type)
 	building_to_build_type = new_building_type
 	
 	construction_preview.initialize(
@@ -225,7 +225,7 @@ func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> vo
 func _deselect_building_to_build() -> void:
 	is_construction_state = false
 	construction_preview.clear()
-	building_to_build_id = 0
+	#building_to_build_id = 0
 
 # ----------------------------------------------
 # ------ Preview Feedback ----------------------
