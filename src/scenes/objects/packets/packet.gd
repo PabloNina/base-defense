@@ -3,7 +3,6 @@
 # =========================================
 class_name Packet extends Node2D
 
-const PACKET_SCENE: PackedScene = preload("res://src/scenes/objects/packets/base_packet.tscn")
 const GREEN_TEXTURE: Texture2D = preload("res://assets/sprites/objects/energy_packet.png")
 const RED_TEXTURE:Texture2D = preload("res://assets/sprites/objects/ammo_packet.png")
 const BLUE_TEXTURE:Texture2D = preload("res://assets/sprites/objects/building_packet.png")

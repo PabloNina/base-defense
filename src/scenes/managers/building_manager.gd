@@ -12,7 +12,6 @@ const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/
 # --- Editor Exports ----------------------
 # -----------------------------------------
 @export var ground_layer: TileMapLayer
-@export var buildings_layer: TileMapLayer
 @export var buildings_container: Node2D
 @export var user_interface: UserInterface
 @export var network_manager: NetworkManager
@@ -272,8 +271,8 @@ func _move_building_selection() -> void:
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
-		var target_tile = buildings_layer.local_to_map(target_pos)
-		var snapped_pos = buildings_layer.map_to_local(target_tile)
+		var target_tile = ground_layer.local_to_map(target_pos)
+		var snapped_pos = ground_layer.map_to_local(target_tile)
 		
 		if building is MovableBuilding:
 			# Start move
@@ -314,8 +313,8 @@ func _update_move_previews() -> void:
 		var target_pos = new_centroid + offset
 		
 		# Snap to the grid
-		var target_tile = buildings_layer.local_to_map(target_pos)
-		var snapped_pos = buildings_layer.map_to_local(target_tile)
+		var target_tile = ground_layer.local_to_map(target_pos)
+		var snapped_pos = ground_layer.map_to_local(target_tile)
 		preview.update_position(snapped_pos)
 
 # Clears and frees all previews used in a group move.
@@ -368,7 +367,7 @@ func _on_building_move_completed(building: MovableBuilding) -> void:
 # --------------------------------------------------
 # Calculates and updates the positions of previews in a construction line.
 func _update_construction_line_previews() -> void:
-	var start_pos_pixels = buildings_layer.map_to_local(line_construction_start_pos)
+	var start_pos_pixels = ground_layer.map_to_local(line_construction_start_pos)
 	var end_pos_pixels = local_tile_position
 	
 	var distance_pixels = start_pos_pixels.distance_to(end_pos_pixels)
@@ -426,7 +425,7 @@ func _update_construction_line_previews() -> void:
 
 		# Calculate the ideal position for each building directly from the start.
 		var ideal_pos = start_pos_pixels + direction * optimal_dist_pixels * i
-		var current_snapped_pos = buildings_layer.map_to_local(buildings_layer.local_to_map(ideal_pos))
+		var current_snapped_pos = ground_layer.map_to_local(ground_layer.local_to_map(ideal_pos))
 
 		if not preview.is_initialized(): # Initialize only once.
 			preview.initialize(
@@ -686,7 +685,7 @@ func _enter_move_mode() -> void:
 		# When moving a group, calculate a compact line formation instead of preserving original spacing.
 		# The formation can be adjusted by the player using the formation_tighter/formation_looser actions.
 		var num_buildings = buildings_to_move_group.size()
-		var tile_size = buildings_layer.tile_set.tile_size
+		var tile_size = ground_layer.tile_set.tile_size
 		
 		for i in range(num_buildings):
 			# Calculate position in a horizontal line formation. The offsets are centered around (0,0).
