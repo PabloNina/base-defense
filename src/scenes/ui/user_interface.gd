@@ -19,7 +19,7 @@ var building_manager: BuildingManager
 # --- Signals ------------------------------
 # -----------------------------------------
 # Listener: BuildingManager
-signal building_button_pressed(building_to_build: DataTypes.BUILDING_TYPE)
+signal building_button_pressed(building_to_build: GlobalData.BUILDING_TYPE)
 signal destroy_button_pressed(building_to_destroy: Building)
 signal deactivate_button_pressed(building_to_deactivate: Building)
 signal move_selection_pressed()
@@ -30,9 +30,9 @@ var current_selection: Array[Building] = []
 var default_max_storage: float = 50.0
 # A dictionary to map actions to button text and methods
 const ACTION_DEFINITIONS = {
-	DataTypes.BUILDING_ACTIONS.DESTROY: {"text": "Destroy", "method": "_on_destroy_button_pressed"},
-	DataTypes.BUILDING_ACTIONS.MOVE: {"text": "Move", "method": "_on_move_button_pressed"},
-	DataTypes.BUILDING_ACTIONS.DEACTIVATE: {"text": "De/activate", "method": "_on_deactivate_button_pressed"},
+	GlobalData.BUILDING_ACTIONS.DESTROY: {"text": "Destroy", "method": "_on_destroy_button_pressed"},
+	GlobalData.BUILDING_ACTIONS.MOVE: {"text": "Move", "method": "_on_move_button_pressed"},
+	GlobalData.BUILDING_ACTIONS.DEACTIVATE: {"text": "De/activate", "method": "_on_deactivate_button_pressed"},
 }
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -90,12 +90,12 @@ func show_building_actions_panel(selected_buildings: Array[Building]) -> void:
 	for child in buttons_container.get_children():
 		child.queue_free()
 
-	var available_actions: Array[DataTypes.BUILDING_ACTIONS]
+	var available_actions: Array[GlobalData.BUILDING_ACTIONS]
 
 	if current_selection.size() == 1:
 		# Single building selected
 		var building = current_selection[0]
-		building_actions_label.text = DataTypes.get_display_name(building.building_type)
+		building_actions_label.text = GlobalData.get_display_name(building.building_type)
 		available_actions = building.get_available_actions()
 	else:
 		# Multiple buildings selected - actions are the same for all
@@ -138,16 +138,16 @@ func _on_deactivate_button_pressed() -> void:
 # --- Building Selection Panel -------------
 # -----------------------------------------
 func _on_relay_button_pressed() -> void:
-	building_button_pressed.emit(DataTypes.BUILDING_TYPE.RELAY)
+	building_button_pressed.emit(GlobalData.BUILDING_TYPE.RELAY)
 
 
 func _on_turret_button_pressed() -> void:
-	building_button_pressed.emit(DataTypes.BUILDING_TYPE.GUN_TURRET)
+	building_button_pressed.emit(GlobalData.BUILDING_TYPE.GUN_TURRET)
 
 
 func _on_generator_button_pressed() -> void:
-	building_button_pressed.emit(DataTypes.BUILDING_TYPE.GENERATOR)
+	building_button_pressed.emit(GlobalData.BUILDING_TYPE.GENERATOR)
 
 
 func _on_base_button_pressed() -> void:
-	building_button_pressed.emit(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
+	building_button_pressed.emit(GlobalData.BUILDING_TYPE.COMMAND_CENTER)

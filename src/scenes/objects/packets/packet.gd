@@ -12,7 +12,7 @@ const BLUE_TEXTURE:Texture2D = preload("res://assets/sprites/objects/building_pa
 var path: Array[Building] = [] # full path: base → ... → target
 var current_index: int = 0
 var speed: int = 0
-var packet_type: DataTypes.PACKETS = DataTypes.PACKETS.NULL
+var packet_type: GlobalData.PACKETS = GlobalData.PACKETS.NULL
 var is_cleaned_up: bool = false
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
@@ -82,11 +82,11 @@ func _follow_path(delta: float) -> void:
 # Set sprite texture base on packet type
 func _set_sprite() -> void:
 	match packet_type:
-		DataTypes.PACKETS.BUILDING:
+		GlobalData.PACKETS.BUILDING:
 			sprite_2d.texture = GREEN_TEXTURE
-		DataTypes.PACKETS.AMMO:
+		GlobalData.PACKETS.AMMO:
 			sprite_2d.texture = RED_TEXTURE
-		DataTypes.PACKETS.ENERGY:
+		GlobalData.PACKETS.ENERGY:
 			sprite_2d.texture = BLUE_TEXTURE
 		_:
 			return  # Unsupported packet type

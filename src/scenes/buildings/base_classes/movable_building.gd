@@ -63,9 +63,9 @@ func _complete_move() -> void:
 	#_updates_visuals()
 	
 
-func get_available_actions() -> Array[DataTypes.BUILDING_ACTIONS]:
+func get_available_actions() -> Array[GlobalData.BUILDING_ACTIONS]:
 	# Start with the parent class's actions
-	var actions: Array[DataTypes.BUILDING_ACTIONS] = super.get_available_actions()
+	var actions: Array[GlobalData.BUILDING_ACTIONS] = super.get_available_actions()
 	# Add the actions specific to this class
-	actions.append(DataTypes.BUILDING_ACTIONS.MOVE)
+	actions.append(GlobalData.BUILDING_ACTIONS.MOVE)
 	return actions

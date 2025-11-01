@@ -102,11 +102,11 @@ func _on_timer_tick():
 
 	# --- Stage 4: Command Center starts packet propagation ---
 	var packet_types := [
-		DataTypes.PACKETS.BUILDING,
-		DataTypes.PACKETS.ENERGY,
-		DataTypes.PACKETS.AMMO,
-		DataTypes.PACKETS.ORE,
-		DataTypes.PACKETS.TECH
+		GlobalData.PACKETS.BUILDING,
+		GlobalData.PACKETS.ENERGY,
+		GlobalData.PACKETS.AMMO,
+		GlobalData.PACKETS.ORE,
+		GlobalData.PACKETS.TECH
 	]
 
 	for pkt_type in packet_types:

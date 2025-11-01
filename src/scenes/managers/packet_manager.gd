@@ -14,7 +14,7 @@ func _ready() -> void:
 # -----------------------------------------
 # --- Packet Spawning / Releasing ---------
 # -----------------------------------------
-func _acquire_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
+func _acquire_packet(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
 	var packet: Packet = packet_pool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
 	if is_instance_valid(packet) and not packet.is_in_group("packets"):
 		packet.add_to_group("packets")
@@ -26,7 +26,7 @@ func release_packet(packet: Packet) -> void:
 # -----------------------------------------
 # --- Packet Propagation ------------------
 # -----------------------------------------
-func start_packet_propagation(command_center: Command_Center, quota: int, packet_type: DataTypes.PACKETS) -> int:
+func start_packet_propagation(command_center: Command_Center, quota: int, packet_type: GlobalData.PACKETS) -> int:
 	var packets_sent := 0
 	if quota <= 0 or not network_manager.reachable_cache.has(command_center):
 		return 0
@@ -43,13 +43,13 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		# Prevent over-queuing: skip building that already have enough packets on the way
 		# use the correct target limit depending on packet type
 		match packet_type:
-			DataTypes.PACKETS.BUILDING:
+			GlobalData.PACKETS.BUILDING:
 				if building.is_scheduled_to_build or building.is_built:
 					continue
-			DataTypes.PACKETS.ENERGY:
+			GlobalData.PACKETS.ENERGY:
 				if building.packets_in_flight >= building.cost_to_supply:
 					continue
-			DataTypes.PACKETS.AMMO:
+			GlobalData.PACKETS.AMMO:
 				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
 					continue
 			# other packet types
@@ -80,13 +80,13 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		if not is_instance_valid(building):
 			continue
 		match packet_type:
-			DataTypes.PACKETS.BUILDING:
+			GlobalData.PACKETS.BUILDING:
 				if building.is_scheduled_to_build or building.is_built:
 					continue
-			DataTypes.PACKETS.ENERGY:
+			GlobalData.PACKETS.ENERGY:
 				if building.packets_in_flight >= building.cost_to_supply:
 					continue
-			DataTypes.PACKETS.AMMO:
+			GlobalData.PACKETS.AMMO:
 				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
 					continue
 
@@ -124,7 +124,7 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 # -----------------------------------------
 # --- Packet spawning ---------------------
 # -----------------------------------------
-func _is_path_traversable(path: Array[Building], packet_type: DataTypes.PACKETS) -> bool:
+func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS) -> bool:
 	# A path must have at least a start and an end.
 	if path.size() < 2:
 		return false
@@ -144,7 +144,7 @@ func _is_path_traversable(path: Array[Building], packet_type: DataTypes.PACKETS)
 
 		# Check if the nodes are built. There's a special case for building packets.
 		var is_final_edge = (i == path.size() - 2)
-		if is_final_edge and packet_type == DataTypes.PACKETS.BUILDING:
+		if is_final_edge and packet_type == GlobalData.PACKETS.BUILDING:
 			# For the final edge of a building packet, only the source (a) must be built.
 			if not a.is_built:
 				return false
@@ -159,7 +159,7 @@ func _is_path_traversable(path: Array[Building], packet_type: DataTypes.PACKETS)
 			
 	return true
 
-func _spawn_packet_along_path(path: Array[Building], packet_type: DataTypes.PACKETS, delay_offset :float = 0.0) -> void:
+func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PACKETS, delay_offset :float = 0.0) -> void:
 	# First, check if the path is traversable.
 	if not _is_path_traversable(path, packet_type):
 		# If the path is not traversable, decrement the in-flight counter and return.

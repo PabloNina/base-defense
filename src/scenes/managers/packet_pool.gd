@@ -26,7 +26,7 @@ func _ready() -> void:
 # Acquires a packet from the pool.
 # Initializes the packet with the provided parameters.
 # Returns the configured packet.
-func acquire_packet(pkt_type: DataTypes.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
+func acquire_packet(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
 	var packet: Packet
 	if _pool.is_empty():
 		# Pool is empty, so we create a new packet on the fly.

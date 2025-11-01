@@ -27,7 +27,7 @@ var is_relay: bool = false
 # Amount of Packets this building consumes per tick
 var upkeep_cost: float = 0.0
 ## Type of building that is using this class for Ui labeling
-@export var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
+@export var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
 # Max range for connection lines to be created
 var connection_range: float = 0.0
 # -------------------------------
@@ -57,11 +57,11 @@ var building_manager: BuildingManager
 # --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
-	# Config building with data from DataTypes
-	connection_range = DataTypes.get_connection_range(building_type)
-	cost_to_build = DataTypes.get_cost_to_build(building_type)
-	is_relay = DataTypes.get_is_relay(building_type)
-	upkeep_cost = DataTypes.get_upkeep_cost(building_type)
+	# Config building with data from GlobalData
+	connection_range = GlobalData.get_connection_range(building_type)
+	cost_to_build = GlobalData.get_cost_to_build(building_type)
+	is_relay = GlobalData.get_is_relay(building_type)
+	upkeep_cost = GlobalData.get_upkeep_cost(building_type)
 
 	# Setup Click Detection
 	building_hurt_box.area_clicked.connect(on_hurtbox_clicked)
@@ -96,7 +96,7 @@ func _ready():
 func _draw() -> void:                                                                                                                                   
 	if is_selected:                                                                                                                                     
 		# Find the building texture to determine the size of the selection box
-		var texture = DataTypes.get_ghost_texture(building_type)
+		var texture = GlobalData.get_ghost_texture(building_type)
 		if texture:
 			var rect: Rect2 
 			rect.size = texture.get_size()
@@ -182,9 +182,9 @@ func reset_packets_in_flight() -> void:
 # -------------------------------
 # --- Packet Reception ----------
 # -------------------------------
-func received_packet(packet_type: DataTypes.PACKETS):
+func received_packet(packet_type: GlobalData.PACKETS):
 	match packet_type:
-		DataTypes.PACKETS.BUILDING:
+		GlobalData.PACKETS.BUILDING:
 			_handle_received_building_packet()
 		_:
 			push_warning("Unknown packet type received: %s" % str(packet_type))
@@ -204,13 +204,13 @@ func _handle_received_building_packet() -> void:
 # -------------------------------
 # --- Packet Demand Query -------
 # -------------------------------
-func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
+func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 	match packet_type:
-		DataTypes.PACKETS.BUILDING:
+		GlobalData.PACKETS.BUILDING:
 			# Needs building packets if not yet built and not fully scheduled to build
 			return not is_built and not is_scheduled_to_build
 
-		#DataTypes.PACKETS.AMMO:
+		#GlobalData.PACKETS.AMMO:
 			## Needs ammo if built, powered, and not fully stocked
 			#return false
 
@@ -246,12 +246,12 @@ func get_upkeep_cost() -> float:
 # -----------------------------------------
 # ------ Building Actions -----------------
 # -----------------------------------------
-func get_available_actions() -> Array[DataTypes.BUILDING_ACTIONS]:
+func get_available_actions() -> Array[GlobalData.BUILDING_ACTIONS]:
 	# By default every building can be destroyed 
-	var actions: Array[DataTypes.BUILDING_ACTIONS] = [DataTypes.BUILDING_ACTIONS.DESTROY]
+	var actions: Array[GlobalData.BUILDING_ACTIONS] = [GlobalData.BUILDING_ACTIONS.DESTROY]
 	# Only relays and CC cant be deactivated every other building can
 	if not is_relay:
-		actions.append(DataTypes.BUILDING_ACTIONS.DEACTIVATE)
+		actions.append(GlobalData.BUILDING_ACTIONS.DEACTIVATE)
 	return actions
 
 # -------------------------------

@@ -55,15 +55,15 @@ func reset_packets_in_flight() -> void:
 # -------------------------------
 # --- Packet Reception ----------
 # -------------------------------
-func received_packet(packet_type: DataTypes.PACKETS):
+func received_packet(packet_type: GlobalData.PACKETS):
 	# Let parent handle the standard packet types
-	if packet_type in [DataTypes.PACKETS.BUILDING, DataTypes.PACKETS.ENERGY]:
+	if packet_type in [GlobalData.PACKETS.BUILDING, GlobalData.PACKETS.ENERGY]:
 		super.received_packet(packet_type)
 		return
 	
 	# Handle ammo separately
 	match packet_type:
-		DataTypes.PACKETS.AMMO:
+		GlobalData.PACKETS.AMMO:
 			_handle_received_ammo_packet()
 		_:
 			push_warning("Unknown packet type received: %s" % str(packet_type))
@@ -92,14 +92,14 @@ func _set_ammo(new_ammo: float) -> void:
 # -------------------------------
 # --- Packet Demand Query -------
 # -------------------------------
-func needs_packet(packet_type: DataTypes.PACKETS) -> bool:
+func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 	# If parent class needs this packet let it handle it
 	if super.needs_packet(packet_type):
 		return true
 	
 	# Handle ammo separately
 	match packet_type:
-		DataTypes.PACKETS.AMMO:
+		GlobalData.PACKETS.AMMO:
 			## Needs ammo if built, powered, not fully stocked and not scheduled to full
 			return is_built and is_powered and not is_deactivated and not is_full_ammo and not is_scheduled_to_full_ammo
 

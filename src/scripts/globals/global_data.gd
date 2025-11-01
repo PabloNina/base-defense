@@ -2,7 +2,7 @@
 # GlobalData.gd
 # =========================================
 # Centralized global consts, enums and metadata tables for consistency across systems
-class_name DataTypes extends Node
+class_name GlobalData extends Node
 # --------------------------------------------
 # --- Constants ------------------------------
 # --------------------------------------------
@@ -92,7 +92,7 @@ const BUILDINGS_METADATA: Dictionary = {
 
 
 # --------------------------------------------
-# --- Buildings Metadata Accessors ---------------
+# --- Buildings Metadata Accessors -----------
 # --------------------------------------------
 static func get_building_data(building_type: int) -> Dictionary:
 	return BUILDINGS_METADATA.get(building_type, {})
@@ -118,20 +118,20 @@ static func get_landing_marker_texture(building_type: int) -> Texture2D:
 	var data = get_building_data(building_type)
 	return data.get("landing_marker_texture", null)
 
-static func get_fire_range(building_type: DataTypes.BUILDING_TYPE) -> int:
+static func get_fire_range(building_type: GlobalData.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
 	return data.get("fire_range", -1)
 
-static func get_optimal_building_distance(building_type: DataTypes.BUILDING_TYPE) -> float:
+static func get_optimal_building_distance(building_type: GlobalData.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
 	var distance_in_tiles = data.get("optimal_building_distance_tiles", 0)
 	return float(distance_in_tiles * TILE_SIZE)
 
-static func get_cost_to_build(building_type: DataTypes.BUILDING_TYPE) -> int:
+static func get_cost_to_build(building_type: GlobalData.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
 	return data.get("cost_to_build", -1)
 
-static func get_upkeep_cost(building_type: DataTypes.BUILDING_TYPE) -> float:
+static func get_upkeep_cost(building_type: GlobalData.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
 	return data.get("upkeep_cost", -1.0)
 

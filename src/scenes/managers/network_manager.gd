@@ -131,8 +131,8 @@ func are_connected(a: Building, b: Building) -> bool:
 static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
 	if not is_relay_a and not is_relay_b:
 		return false
-	var range_a = DataTypes.get_connection_range(type_a)
-	var range_b = DataTypes.get_connection_range(type_b)
+	var range_a = GlobalData.get_connection_range(type_a)
+	var range_b = GlobalData.get_connection_range(type_b)
 	var dist = pos_a.distance_to(pos_b)
 	return dist <= min(range_a, range_b)
 

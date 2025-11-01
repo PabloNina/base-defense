@@ -22,7 +22,7 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 # --- Preview Configuration ------------------
 # --------------------------------------------
 # The type of building this preview represents.
-var building_type: DataTypes.BUILDING_TYPE = DataTypes.BUILDING_TYPE.NULL
+var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
 # Reference to the NetworkManager to check for connections.
 var network_manager: NetworkManager
 var ground_layer: TileMapLayer
@@ -60,7 +60,7 @@ func _draw() -> void:
 	if not show_visual_feedback:
 		return
 	# Draws the weapon's fire range if applicable.
-	var fire_range = DataTypes.get_fire_range(building_type)
+	var fire_range = GlobalData.get_fire_range(building_type)
 	if fire_range > 0:
 		draw_circle(Vector2.ZERO, fire_range, RANGE_COLOR)
 	
@@ -82,7 +82,7 @@ func is_initialized() -> bool:
 
 
 # Initializes the preview's properties.
-func initialize(p_building_type: DataTypes.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
+func initialize(p_building_type: GlobalData.BUILDING_TYPE, p_network_manager: NetworkManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
 	building_type = p_building_type
 	network_manager = p_network_manager
 	sprite.texture = p_texture
@@ -122,7 +122,7 @@ func update_position(new_position: Vector2) -> void:
 
 # Hides and resets the preview.
 func clear() -> void:
-	building_type = DataTypes.BUILDING_TYPE.NULL
+	building_type = GlobalData.BUILDING_TYPE.NULL
 	sprite.texture = null
 	visible = false
 	overlapping_areas.clear()
@@ -168,7 +168,7 @@ func _update_connection_ghosts() -> void:
 	if not show_visual_feedback:
 		_clear_ghost_lines()
 		return
-	if building_type == DataTypes.BUILDING_TYPE.NULL or not is_visible():
+	if building_type == GlobalData.BUILDING_TYPE.NULL or not is_visible():
 		_clear_ghost_lines()
 		return
 	if not network_manager:
@@ -181,7 +181,7 @@ func _update_connection_ghosts() -> void:
 		if NetworkManager.can_buildings_connect(
 			building_type,
 			global_position,
-			DataTypes.get_is_relay(building_type),
+			GlobalData.get_is_relay(building_type),
 			other.building_type,
 			other.global_position,
 			other.is_relay

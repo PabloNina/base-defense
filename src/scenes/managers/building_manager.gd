@@ -37,7 +37,7 @@ var is_command_center_placed: bool = false
 # -----------------------------------------
 var is_construction_state: bool = false
 var is_building_placeable: bool = true
-var building_to_build_type: DataTypes.BUILDING_TYPE
+var building_to_build_type: GlobalData.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
 # --- Line Construction ---
@@ -114,16 +114,16 @@ func _ready() -> void:
 	InputManager.map_right_clicked.connect(_on_InputManager_map_right_clicked)
 	InputManager.box_selection_started.connect(_on_InputManager_box_selection_started)
 	InputManager.box_selection_ended.connect(_on_InputManager_box_selection_ended)
-	InputManager.build_relay_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.RELAY))
-	InputManager.build_gun_turret_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.GUN_TURRET))
-	InputManager.build_generator_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.GENERATOR))
-	InputManager.build_command_center_pressed.connect(func(): _select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER))
+	InputManager.build_relay_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.RELAY))
+	InputManager.build_gun_turret_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.GUN_TURRET))
+	InputManager.build_generator_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.GENERATOR))
+	InputManager.build_command_center_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.COMMAND_CENTER))
 	InputManager.formation_tighter_pressed.connect(_on_InputManager_formation_tighter_pressed)
 	InputManager.formation_looser_pressed.connect(_on_InputManager_formation_looser_pressed)
 	InputManager.formation_rotate_pressed.connect(_on_InputManager_formation_rotate_pressed)
 
 	# Start with Command Center selected 
-	_select_building_to_build(DataTypes.BUILDING_TYPE.COMMAND_CENTER)
+	_select_building_to_build(GlobalData.BUILDING_TYPE.COMMAND_CENTER)
 
 func _process(_delta: float) -> void:
 	# If construction or move state are active update building ghost position and track mouse
@@ -164,26 +164,26 @@ func _get_cell_under_mouse() -> void:
 # --- Construction State / Placement --------
 # -----------------------------------------
 func _place_building() -> void:
-	var building_scene: PackedScene = DataTypes.get_packed_scene(building_to_build_type)
+	var building_scene: PackedScene = GlobalData.get_packed_scene(building_to_build_type)
 	if not building_scene:
 		print("Error: Scene not found for building type ", building_to_build_type)
 		return
 
 	# --- Command Center Logic ---
-	if not is_command_center_placed and building_to_build_type == DataTypes.BUILDING_TYPE.COMMAND_CENTER:
+	if not is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		is_command_center_placed = true
 		_instance_and_place_building(building_scene, local_tile_position)
 		is_construction_state = false
-	elif is_command_center_placed and building_to_build_type == DataTypes.BUILDING_TYPE.COMMAND_CENTER:
+	elif is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		print("You can only have 1 Command Center!")
-	elif is_command_center_placed and building_to_build_type != DataTypes.BUILDING_TYPE.COMMAND_CENTER:
+	elif is_command_center_placed and building_to_build_type != GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		# Place regular building
 		_instance_and_place_building(building_scene, local_tile_position)
 
 
 # Places a line of buildings based on the final positions of the construction previews.
 func _place_building_line() -> void:
-	var building_scene: PackedScene = DataTypes.get_packed_scene(building_to_build_type)
+	var building_scene: PackedScene = GlobalData.get_packed_scene(building_to_build_type)
 	if not building_scene:
 		print("Error: Scene not found for building type ", building_to_build_type)
 		return
@@ -203,7 +203,7 @@ func _instance_and_place_building(building_scene: PackedScene, building_position
 # -----------------------------------------
 # --- Construction State / Helpers --------
 # -----------------------------------------
-func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> void:
+func _select_building_to_build(new_building_type: GlobalData.BUILDING_TYPE) -> void:
 	# If the player was in a move state, cancel it before entering construction state.
 	if is_move_state:
 		_cancel_move_state()
@@ -214,7 +214,7 @@ func _select_building_to_build(new_building_type: DataTypes.BUILDING_TYPE) -> vo
 	construction_preview.initialize(
 		new_building_type,
 		network_manager,
-		DataTypes.get_ghost_texture(new_building_type),
+		GlobalData.get_ghost_texture(new_building_type),
 		ground_layer,
 		buildable_tile_id
 	)
@@ -305,7 +305,7 @@ func _create_move_previews() -> void:
 			preview.initialize(
 				building.building_type,
 				network_manager,
-				DataTypes.get_landing_marker_texture(building.building_type),
+				GlobalData.get_landing_marker_texture(building.building_type),
 				ground_layer,
 				buildable_tile_id
 			)
@@ -359,7 +359,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 	marker.initialize(
 		building.building_type,
 		network_manager,
-		DataTypes.get_landing_marker_texture(building.building_type),
+		GlobalData.get_landing_marker_texture(building.building_type),
 		ground_layer,
 		buildable_tile_id,
 		false
@@ -384,11 +384,11 @@ func _update_construction_line_previews() -> void:
 	
 	var distance_pixels = start_pos_pixels.distance_to(end_pos_pixels)
 	var building_type = building_to_build_type
-	var optimal_dist_pixels = DataTypes.get_optimal_building_distance(building_type)
+	var optimal_dist_pixels = GlobalData.get_optimal_building_distance(building_type)
 
 	var start_tile = line_construction_start_pos
 	var end_tile = tile_position
-	if building_to_build_type == DataTypes.BUILDING_TYPE.RELAY:
+	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY:
 		if start_tile.x != end_tile.x and start_tile.y != end_tile.y:
 			optimal_dist_pixels *= 0.95
 
@@ -409,7 +409,7 @@ func _update_construction_line_previews() -> void:
 			single_preview.initialize(
 				building_type,
 				network_manager,
-				DataTypes.get_ghost_texture(building_type),
+				GlobalData.get_ghost_texture(building_type),
 				ground_layer,
 				buildable_tile_id
 			)
@@ -443,7 +443,7 @@ func _update_construction_line_previews() -> void:
 			preview.initialize(
 				building_type,
 				network_manager,
-				DataTypes.get_ghost_texture(building_type),
+				GlobalData.get_ghost_texture(building_type),
 				ground_layer,
 				buildable_tile_id
 			)
@@ -454,13 +454,13 @@ func _update_construction_line_previews() -> void:
 		line.queue_free()
 	relay_line_previews.clear()
 
-	if building_to_build_type == DataTypes.BUILDING_TYPE.RELAY and construction_line_previews.size() > 1:
+	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY and construction_line_previews.size() > 1:
 		for i in range(construction_line_previews.size() - 1):
 			var from_pos = construction_line_previews[i].global_position
 			var to_pos = construction_line_previews[i+1].global_position
 			
 			var dist = from_pos.distance_to(to_pos)
-			var connection_range = DataTypes.get_connection_range(DataTypes.BUILDING_TYPE.RELAY)
+			var connection_range = GlobalData.get_connection_range(GlobalData.BUILDING_TYPE.RELAY)
 			
 			if dist <= connection_range:
 				var line = Line2D.new()
@@ -520,7 +520,7 @@ func _on_double_click_timer_timeout() -> void:
 
 
 # Finds and selects all buildings of a specific type from the manager's list.
-func _select_all_by_type(type: DataTypes.BUILDING_TYPE) -> void:
+func _select_all_by_type(type: GlobalData.BUILDING_TYPE) -> void:
 	clear_selection()
 	# Filter all registered buildings to find ones that match the given type.
 	var all_of_type = buildings.filter(func(b): return b.building_type == type)
@@ -593,7 +593,7 @@ func _on_InputManager_map_left_released(release_position: Vector2i):
 		construction_preview.initialize(
 			building_to_build_type,
 			network_manager,
-			DataTypes.get_ghost_texture(building_to_build_type),
+			GlobalData.get_ghost_texture(building_to_build_type),
 			ground_layer,
 			buildable_tile_id
 		)
@@ -647,7 +647,7 @@ func _on_InputManager_formation_rotate_pressed():
 # --- User Interface Input Handling ------
 # -----------------------------------------
 # Signals from UI BuildingsPanel
-func _on_ui_building_button_pressed(building: DataTypes.BUILDING_TYPE) -> void:
+func _on_ui_building_button_pressed(building: GlobalData.BUILDING_TYPE) -> void:
 	_select_building_to_build(building)
 
 # Signals from UI BuildingActionPanel Buttons
