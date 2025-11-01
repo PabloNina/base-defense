@@ -258,8 +258,7 @@ func _update_network_integrity():
 
 func _reset_isolated_construction(cluster: Array):
 	for building in cluster:
-		if not building.is_built:
-			building.reset_packets_in_flight()
+		building.reset_packets_in_flight()
 
 # -----------------------------------------
 # --- Pathfinding -------------------------
