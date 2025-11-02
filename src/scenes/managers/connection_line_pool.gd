@@ -5,20 +5,17 @@
 # instantiation and freeing, which can cause performance issues.
 class_name ConnectionLinePool extends Node
 
-const ConnectionLineScene: PackedScene = preload("res://src/scenes/objects/connection_lines/connection_line.tscn")
-
 var _pool: Array[ConnectionLine] = []
-
 
 # Pre-warms the pool with a specified number of instances.
 func _ready() -> void:
 	_prewarm_pool(20)
 
-
 # Pre-instantiates a number of lines to have them ready for use.
 func _prewarm_pool(size: int) -> void:
 	for i in range(size):
-		var line: ConnectionLine = ConnectionLineScene.instantiate()
+		#var line: ConnectionLine = ConnectionLineScene.instantiate()
+		var line: ConnectionLine = GlobalData.CONNECTION_LINE_SCENE.instantiate()
 		line.visible = false
 		add_child(line)
 		_pool.append(line)

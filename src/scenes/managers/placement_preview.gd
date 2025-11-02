@@ -166,7 +166,7 @@ func _update_connection_ghosts() -> void:
 	for other in grid_manager.registered_buildings:
 		if not is_instance_valid(other):
 			continue
-		if GridManager.can_buildings_connect(
+		if grid_manager.can_buildings_connect(
 			building_type,
 			global_position,
 			GlobalData.get_is_relay(building_type),

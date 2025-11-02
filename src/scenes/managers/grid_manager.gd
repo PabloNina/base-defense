@@ -141,16 +141,16 @@ func _are_buildings_in_range(building_a: Building, building_b: Building) -> bool
 	distance_cache[key] = dist
 	return dist <= min(building_a.connection_range, building_b.connection_range)
 	
-# Helper for packet manager
+# Helper for packet manager:
 # Checks if building is connected to the grid
 func are_connected(base: Command_Center, building: Building) -> bool:
 	if not reachable_from_base_cache.has(base):
 		return false
 	return building in reachable_from_base_cache[base]
 	
-# Public static-like helper for placement preview: 
+# Helper for placement preview: 
 # checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
-static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
+func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
 	if not is_relay_a and not is_relay_b:
 		return false
 	var range_a = GlobalData.get_connection_range(type_a)

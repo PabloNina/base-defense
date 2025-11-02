@@ -5,9 +5,6 @@
 # Manages construction, selection, movement and other buildings actions(to be implemented)
 # Comunicates with PlacementPreview for placement validity
 class_name BuildingManager extends Node2D
-
-const placement_preview_scene: PackedScene = preload("res://src/scenes/managers/placement_preview.tscn")
-
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
@@ -301,7 +298,7 @@ func _create_move_previews() -> void:
 	move_previews_validity.clear()
 	for building in buildings_to_move_group:
 		if building is MovableBuilding:
-			var preview = placement_preview_scene.instantiate() as PlacementPreview
+			var preview = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate() as PlacementPreview
 			add_child(preview)
 			preview.initialize(
 				building.building_type,
@@ -355,7 +352,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 	if landing_markers.has(building):
 		landing_markers[building].queue_free()
 
-	var marker = placement_preview_scene.instantiate() as PlacementPreview
+	var marker = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate() as PlacementPreview
 	add_child(marker)
 	marker.initialize(
 		building.building_type,
@@ -400,7 +397,7 @@ func _update_construction_line_previews() -> void:
 			var p = construction_line_previews.pop_back()
 			if is_instance_valid(p): p.queue_free()
 		if construction_line_previews.is_empty():
-			var preview = placement_preview_scene.instantiate()
+			var preview = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate()
 			add_child(preview)
 			construction_line_previews.append(preview)
 			preview.is_placeable.connect(_on_placement_preview_is_placeable)
@@ -422,7 +419,7 @@ func _update_construction_line_previews() -> void:
 
 	# Create or remove previews to match the required number.
 	while construction_line_previews.size() < num_buildings:
-		var new_preview = placement_preview_scene.instantiate()
+		var new_preview = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate()
 		add_child(new_preview)
 		construction_line_previews.append(new_preview)
 		new_preview.is_placeable.connect(_on_placement_preview_is_placeable)
