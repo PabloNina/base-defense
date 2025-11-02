@@ -42,7 +42,7 @@ var is_line_construction_state: bool = false
 var line_construction_start_pos: Vector2i
 var construction_line_previews: Array[PlacementPreview] = []
 var construction_previews_validity: Dictionary = {}
-var relay_line_previews: Array[Line2D] = []
+var relay_line_previews: Array[ConnectionLine] = []
 # ---------------------------------------
 # --- Move State -----------------------
 # ---------------------------------------
@@ -90,7 +90,7 @@ signal building_deselected()
 # -----------------------------------------
 func _ready() -> void:
 	add_to_group("building_manager")
-	
+	# Connect timer signal for double click detection
 	double_click_timer.timeout.connect(_on_double_click_timer_timeout)
 	
 	# Subscribe to Ui signals
@@ -449,23 +449,24 @@ func _update_construction_line_previews() -> void:
 
 	# --- Relay line previews ---
 	for line in relay_line_previews:
-		line.queue_free()
+		grid_manager.return_line(line)
 	relay_line_previews.clear()
 
 	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY and construction_line_previews.size() > 1:
 		for i in range(construction_line_previews.size() - 1):
-			var from_pos = construction_line_previews[i].global_position
-			var to_pos = construction_line_previews[i+1].global_position
+			var preview_a = construction_line_previews[i]
+			var preview_b = construction_line_previews[i+1]
+			var from_pos = preview_a.global_position
+			var to_pos = preview_b.global_position
 			
 			var dist = from_pos.distance_to(to_pos)
 			var connection_range = GlobalData.get_connection_range(GlobalData.BUILDING_TYPE.RELAY)
 			
 			if dist <= connection_range:
-				var line = Line2D.new()
-				line.points = [from_pos, to_pos]
-				line.width = 1.0
-				line.default_color = Color.GREEN
+				var line: ConnectionLine = grid_manager.get_line()
 				add_child(line)
+				var is_line_valid = construction_previews_validity.get(preview_a, false) and construction_previews_validity.get(preview_b, false)
+				line.setup_preview(from_pos, to_pos, is_line_valid)
 				relay_line_previews.append(line)
 
 # Clears and frees all previews used in line construction.
@@ -476,7 +477,7 @@ func _clear_construction_line_previews() -> void:
 	construction_previews_validity.clear()
 
 	for line in relay_line_previews:
-		line.queue_free()
+		grid_manager.return_line(line)
 	relay_line_previews.clear()
 
 
