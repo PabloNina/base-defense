@@ -3,8 +3,6 @@
 # =========================================
 class_name GridManager extends Node
 
-const ConnectionLineScene = preload("res://src/scenes/objects/connection_lines/connection_line.tscn")
-
 # -----------------------------------------
 # --- Onready Variables -------------------
 # -----------------------------------------
@@ -154,9 +152,10 @@ func _connect_buildings(building_a: Building, building_b: Building):
 	building_a.connect_to(building_b)
 	building_b.connect_to(building_a)
 	if not _connection_exists(building_a, building_b):
+		var ConnectionLineScene = load("res://src/scenes/objects/connection_lines/connection_line.tscn")
 		var connection_line: ConnectionLine = ConnectionLineScene.instantiate()
 		lines_2d_container.add_child(connection_line)
-		connection_line.setup(building_a, building_b)
+		connection_line.setup_connection(building_a, building_b)
 		current_connections.append(connection_line)
 
 # Checks if a visual connection line already exists between two buildings.

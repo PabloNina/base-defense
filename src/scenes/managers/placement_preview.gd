@@ -4,6 +4,7 @@
 # Displays a semi-transparent preview of a building and its potential grid connections.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
 class_name PlacementPreview extends Node2D
+
 # --------------------------------------------
 # --- Signals --------------------------------
 # --------------------------------------------
@@ -29,9 +30,6 @@ var buildable_tile_id: int = 0
 # --- Visuals ---
 const VALID_COLOR: Color = Color(1.0, 1.0, 1.0, 0.5)
 const INVALID_COLOR: Color = Color(1.0, 0.0, 0.0, 0.5)
-const LINE_WIDTH: float = 1.0
-const LINE_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)
-const LINE_INVALID_COLOR: Color = Color(1.0, 0.2, 0.2, 0.6)
 # Color for the weapon range visualization circle.
 const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 
@@ -40,7 +38,7 @@ const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 var overlapping_areas: Array[Area2D] = []
 var is_on_buildable_tile: bool = true
 # Pool of Line2D nodes for drawing connection previews.
-var _ghost_lines: Array[Line2D] = []
+var _ghost_lines: Array[ConnectionLine] = []
 # Tracks if the preview has been configured.
 var _is_initialized: bool = false
 var show_visual_feedback: bool = true
@@ -179,19 +177,17 @@ func _update_connection_ghosts() -> void:
 			targets.append(other)
 
 	while _ghost_lines.size() < targets.size():
-		var line := Line2D.new()
-		line.width = LINE_WIDTH
-		line.default_color = LINE_COLOR
+		var ConnectionLineScene = load("res://src/scenes/objects/connection_lines/connection_line.tscn")
+		var line: ConnectionLine = ConnectionLineScene.instantiate()
 		lines_container.add_child(line)
 		_ghost_lines.append(line)
 
 	for i in range(_ghost_lines.size()):
-		var line: Line2D = _ghost_lines[i]
+		var line: ConnectionLine = _ghost_lines[i]
 		if i < targets.size():
 			var target = targets[i]
-			line.points = [global_position, target.global_position]
-			line.global_position = Vector2.ZERO
-			line.default_color = LINE_COLOR if overlapping_areas.is_empty() and is_on_buildable_tile else LINE_INVALID_COLOR
+			var is_line_valid = overlapping_areas.is_empty() and is_on_buildable_tile
+			line.setup_preview(global_position, target.global_position, is_line_valid)
 			line.visible = true
 		else:
 			line.visible = false
