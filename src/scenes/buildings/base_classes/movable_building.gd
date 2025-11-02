@@ -1,8 +1,8 @@
 # -------------------------------
 # MovableBuilding.gd
 # -------------------------------
-# Base class for movable buildings connected to the network.
-# Extends building for network integration.
+# Base class for movable buildings connected to the grid.
+# Extends building for grid integration.
 class_name MovableBuilding extends Building
 # -----------------------------------------
 # -------- Signals -----------------------
@@ -41,7 +41,7 @@ func start_move(target_pos: Vector2) -> void:
 	reset_packets_in_flight()
 
 	# Unregister for clearing connections and packet demand/production during move 
-	grid_manager.unregister_relay(self)
+	grid_manager.unregister_to_grid(self)
 
 func _move_towards_target(delta: float) -> void:
 	var dir = (landing_target_position - global_position)
@@ -57,7 +57,7 @@ func _complete_move() -> void:
 	is_moving = false
 	is_built = true
 	# re-register to managers if needed
-	grid_manager.register_relay(self)
+	grid_manager.register_to_grid(self)
 	#land
 	move_completed.emit(self)
 	#_updates_visuals()

@@ -144,7 +144,7 @@ func _on_timer_tick():
 
 
 # Calculates how many packets the Command Center can send this tick.
-# This is based on available stored packets, network size, and throttling for low energy.
+# This is based on available stored packets, grid size, and throttling for low energy.
 func _compute_packet_quota() -> int:
 	# 1. Compute the ratio of available packets to max capacity (energy_ratio).
 	# Use the smoothed energy ratio (single CC) or fall back to raw
@@ -154,9 +154,9 @@ func _compute_packet_quota() -> int:
 	# More aggressive throttling at low energy. Uses exported parameters for tuning.
 	var throttle_ratio := pow(energy_ratio, throttle_exponent) if energy_ratio > critical_threshold else 0.5 * energy_ratio
 
-	# 3. Scale the max packet limit by network size (network_size_factor).
-	var network_size_factor := sqrt(float(grid_manager.registered_buildings.size()) / 20.0)  # Adjust divisor as needed
-	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * network_size_factor
+	# 3. Scale the max packet limit by grid size (grid_size_factor).
+	var grid_size_factor := sqrt(float(grid_manager.registered_buildings.size()) / 20.0)  # Adjust divisor as needed
+	var dynamic_packet_limit := MAX_PACKETS_PER_TICK * grid_size_factor
 	
 	# 4. Determine the max number of packets that can be afforded (max_affordable).
 	var max_affordable := int(floor(float(stored_packets) / 1.0 )) # 1 = packet cost

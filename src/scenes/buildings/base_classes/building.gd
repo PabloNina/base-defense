@@ -1,7 +1,7 @@
 # -------------------------------
 # --------- Building.gd ---------
 # -------------------------------
-# Base building class for all player structures, weapons and network nodes.
+# Base building class for all player structures, weapons and grid nodes.
 # Other types (CommandCenter, relays, Generator, etc.) extend this.
 @abstract
 class_name Building extends Node2D
@@ -82,7 +82,7 @@ func _ready():
 	# Register with Managers
 	grid_manager = get_tree().get_first_node_in_group("grid_manager")
 	if grid_manager:
-		grid_manager.register_relay(self)
+		grid_manager.register_to_grid(self)
 
 	building_manager = get_tree().get_first_node_in_group("building_manager")
 	if building_manager:
@@ -123,7 +123,7 @@ func on_hurtbox_clicked() -> void:
 	clicked.emit(self)
 
 # -------------------------------
-# --- Network Linking -----------
+# --- grid Linking -----------
 # -------------------------------
 func connect_to(other_building: Building):
 	if not connected_buildings.has(other_building):
@@ -223,7 +223,7 @@ func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 func destroy():
 	# Unregister from managers
 	if grid_manager:
-		grid_manager.unregister_relay(self)
+		grid_manager.unregister_to_grid(self)
 	if building_manager:
 		building_manager.unregister_building(self)
 

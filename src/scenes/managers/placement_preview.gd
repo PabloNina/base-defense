@@ -1,7 +1,7 @@
 # =========================================
 # PlacementPreview.gd
 # =========================================
-# Displays a semi-transparent preview of a building and its potential network connections.
+# Displays a semi-transparent preview of a building and its potential grid connections.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
 class_name PlacementPreview extends Node2D
 

@@ -28,11 +28,11 @@ func release_packet(packet: Packet) -> void:
 # -----------------------------------------
 func start_packet_propagation(command_center: Command_Center, quota: int, packet_type: GlobalData.PACKETS) -> int:
 	var packets_sent := 0
-	if quota <= 0 or not grid_manager.reachable_cache.has(command_center):
+	if quota <= 0 or not grid_manager.reachable_from_base_cache.has(command_center):
 		return 0
 
 	var targets := []
-	for building in grid_manager.reachable_cache[command_center]:
+	for building in grid_manager.reachable_from_base_cache[command_center]:
 		if building == command_center or not is_instance_valid(building):
 			continue
 
@@ -129,7 +129,7 @@ func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS
 	if path.size() < 2:
 		return false
 
-	# The start and end nodes must be connected in the network.
+	# The start and end nodes must be connected in the grid.
 	if not grid_manager.are_connected(path[0], path[-1]):
 		return false
 

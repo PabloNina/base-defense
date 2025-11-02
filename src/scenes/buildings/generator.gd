@@ -2,7 +2,7 @@
 # Generator.gd
 # -------------------------------
 # Small generator that produces extra energy for the command center
-# Network-only: only connects to normal relays, never moves
+# grid-only: only connects to normal relays, never moves
 class_name EnergyGenerator extends Building
 
 @onready var sprite_2d: Sprite2D = $Sprite2D

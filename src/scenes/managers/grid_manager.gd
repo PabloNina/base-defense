@@ -9,15 +9,15 @@ class_name GridManager extends Node
 # -----------------------------------------
 # --- Runtime Data ------------------------
 # -----------------------------------------
-var registered_buildings: Array[Building] = [] # All active buildings in the network
-var connections: Array = []                 # Connection visuals between buildings
+var registered_buildings: Array[Building] = [] # All active buildings in the grid
+var connections: Array = []                    # Connection visuals between buildings
 # -----------------------------------------
 # --- Cached Data for Optimization --------
 # -----------------------------------------
-var path_cache: Dictionary = {}             # { "aID_bID": [Relay path] } cached buildings paths
-var distance_cache: Dictionary = {}         # { "aID_bID": float } cached buildings distances
-var reachable_cache: Dictionary = {}        # { base: [reachable_relays] } which buildings a base can reach
-var last_target_index: Dictionary = {}      # { base: int } tracks incremental target selection
+var path_cache: Dictionary = {}                 # { "aID_bID": [Relay path] } cached buildings paths
+var distance_cache: Dictionary = {}             # { "aID_bID": float } cached buildings distances
+var reachable_from_base_cache: Dictionary = {}  # { base: [reachable_relays] } which buildings a base can reach
+var last_target_index: Dictionary = {}          # { base: int } tracks incremental target selection
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -32,7 +32,7 @@ func _ready():
 # -----------------------------------------
 # --- Buildings Registration ------------------
 # -----------------------------------------
-func register_relay(new_building: Building):
+func register_to_grid(new_building: Building):
 	if new_building in registered_buildings:
 		return
 	
@@ -40,18 +40,21 @@ func register_relay(new_building: Building):
 	if not new_building.finish_building.is_connected(_on_building_built):
 		new_building.finish_building.connect(_on_building_built)
 	
+	# Add building to grid and update connections
 	registered_buildings.append(new_building)
 	_update_connections_for(new_building)
 
+	# If is CC start powered and connect signals
 	if new_building is Command_Center:
 		new_building.set_powered_state(true)
 		new_building.update_packets.connect(_on_cc_update_packets)
 
-	_refresh_network_caches()
-	_update_network_integrity()
+	# Update grid state (order is important)
+	_refresh_grid_caches() # clears all cached data Dictionaries
+	_update_grid_integrity()
 
 
-func unregister_relay(building: Building):
+func unregister_to_grid(building: Building):
 	if building not in registered_buildings:
 		return
 
@@ -60,7 +63,7 @@ func unregister_relay(building: Building):
 		if packet is Packet and building in packet.path:
 			packet._cleanup_packet()
 
-	# Remove building from network
+	# Remove building from grid
 	registered_buildings.erase(building)
 	
 	# Clear connections first
@@ -68,17 +71,17 @@ func unregister_relay(building: Building):
 	for other in registered_buildings:
 		other.connected_buildings.erase(building)
 
-	# Update network state (order is important)
-	_refresh_network_caches() # clears all cached data Dictionaries
+	# Update grid state (order is important)
+	_refresh_grid_caches() # clears all cached data Dictionaries
 	_rebuild_all_connections() # handles both connections and power states 
 
 
 # -----------------------------------------
-# --- Network Construction ----------------
+# --- Grid Construction ----------------
 # -----------------------------------------
-# Fully clears and rebuilds all physical connections in the network.
+# Fully clears and rebuilds all physical connections in the grid.
 # This is more expensive and is only needed after mass changes or a full reset.
-# Usually you only need to call _refresh_network_caches and _update_network_integrity for incremental changes.
+# Usually you only need to call _refresh_grid_caches and _update_grid_integrity for incremental changes.
 func _rebuild_all_connections():
 	_clear_all_connections()
 	for building in registered_buildings:
@@ -88,40 +91,40 @@ func _rebuild_all_connections():
 		for j in range(i + 1, registered_buildings.size()):
 			var a = registered_buildings[i]
 			var b = registered_buildings[j]
-			if _are_relays_in_range(a, b):
-				_connect_relays(a, b)
+			if _are_buildings_in_range(a, b):
+				_connect_buildings(a, b)
 	# Update caches and power states after rebuilding
-	_refresh_network_caches()
-	_update_network_integrity() 
+	_refresh_grid_caches() # clears all cached data Dictionaries
+	_update_grid_integrity() 
 
 
 # Connects the newly registered building to all other buildings in range.
-# Called only when a building is registered (added to the network).
+# Called only when a building is registered (added to the grid).
 # This ensures new buildings are physically connected to all valid neighbors.
 func _update_connections_for(new_building: Building):
 	for building in registered_buildings:
 		if building == new_building:
 			continue
-		if _are_relays_in_range(building, new_building):
-			_connect_relays(building, new_building)
+		if _are_buildings_in_range(building, new_building):
+			_connect_buildings(building, new_building)
 
-func _are_relays_in_range(a: Building, b: Building) -> bool:
-	if not a.is_relay and not b.is_relay:
+func _are_buildings_in_range(building_a: Building, building_b: Building) -> bool:
+	if not building_a.is_relay and not building_b.is_relay:
 		return false
 
-	var key = str(a.get_instance_id()) + "_" + str(b.get_instance_id())
+	var key = str(building_a.get_instance_id()) + "_" + str(building_b.get_instance_id())
 	if distance_cache.has(key):
-		return distance_cache[key] <= min(a.connection_range, b.connection_range)
+		return distance_cache[key] <= min(building_a.connection_range, building_b.connection_range)
 
-	var dist = a.global_position.distance_to(b.global_position)
+	var dist = building_a.global_position.distance_to(building_b.global_position)
 	distance_cache[key] = dist
-	return dist <= min(a.connection_range, b.connection_range)
+	return dist <= min(building_a.connection_range, building_b.connection_range)
 	
 # Helper for packet manager and generators
 func are_connected(a: Building, b: Building) -> bool:
-	if not reachable_cache.has(a):
+	if not reachable_from_base_cache.has(a):
 		return false
-	return b in reachable_cache[a]
+	return b in reachable_from_base_cache[a]
 	
 # Public static-like helper for ghost preview: 
 # checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
@@ -133,15 +136,15 @@ static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool,
 	var dist = pos_a.distance_to(pos_b)
 	return dist <= min(range_a, range_b)
 
-func _connect_relays(a: Building, b: Building):
-	a.connect_to(b)
-	b.connect_to(a)
-	if not _connection_exists(a, b):
-		_create_connection_line(a, b)
+func _connect_buildings(building_a: Building, building_b: Building):
+	building_a.connect_to(building_b)
+	building_b.connect_to(building_a)
+	if not _connection_exists(building_a, building_b):
+		_create_connection_line(building_a, building_b)
 
-func _connection_exists(a: Building, b: Building) -> bool:
+func _connection_exists(building_a: Building, building_b: Building) -> bool:
 	for c in connections:
-		if (c.relay_a == a and c.relay_b == b) or (c.relay_a == b and c.relay_b == a):
+		if (c.relay_a == building_a and c.relay_b == building_b) or (c.relay_a == building_b and c.relay_b == building_a):
 			return true
 	return false
 
@@ -168,22 +171,22 @@ func _create_connection_line(a: Building, b: Building):
 	connections.append({"relay_a": a, "relay_b": b, "connection_line": line})
 
 # -----------------------------------------
-# --- Network Cache -----------------------
+# --- grid Cache -----------------------
 # -----------------------------------------
-# Updates all pathfinding, reachability, and distance caches for the network.
+# Updates all pathfinding, reachability, and distance caches for the grid.
 # Call this after adding/removing buildings or when a relay is built/destroyed.
-func _refresh_network_caches():
+func _refresh_grid_caches():
 	path_cache.clear()
 	distance_cache.clear()
-	reachable_cache.clear()
+	reachable_from_base_cache.clear()
 	last_target_index.clear()
 
 	for base in registered_buildings:
 		if base is Command_Center:
-			reachable_cache[base] = _get_reachable_relays(base)
+			reachable_from_base_cache[base] = _get_reachable_buildings_from_base(base)
 			last_target_index[base] = 0
 
-func _get_reachable_relays(base: Building) -> Array:
+func _get_reachable_buildings_from_base(base: Building) -> Array:
 	var visited: Array = [base]
 	var queue: Array = [base]
 
@@ -205,11 +208,11 @@ func _get_reachable_relays(base: Building) -> Array:
 	return visited
 
 # -----------------------------------------
-# --- Network Integrity -------------------
+# --- Grid Integrity -------------------
 # -----------------------------------------
 # Recalculates which buildings are powered, updates connection line colors, and handles cluster power state.
-# Call this after any change to the network topology or after caches are refreshed.
-func _update_network_integrity():
+# Call this after any change to the grid topology or after caches are refreshed.
+func _update_grid_integrity():
 	var powered_buildings := {}
 
 	# Pass 1: Find all powered buildings by traversing from Command Centers
@@ -274,8 +277,8 @@ func _find_path(start: Building, goal: Building) -> Array[Building]:
 # -----------------------------------------
 # Called when a registered building is built
 func _on_building_built() -> void:
-	_refresh_network_caches()
-	_update_network_integrity()
+	_refresh_grid_caches()
+	_update_grid_integrity()
 
 # Called when cc finishes timer tick calculations and updates packets values
 func _on_cc_update_packets(pkt_stored: float, max_pkt_capacity: float , pkt_produced: float, pkt_consumed: float, net_balance: float) -> void:

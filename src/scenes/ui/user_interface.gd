@@ -38,7 +38,7 @@ const ACTION_DEFINITIONS = {
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
-	# Subscribe to network signals
+	# Subscribe to grid signals
 	grid_manager = get_tree().get_first_node_in_group("grid_manager")
 	if grid_manager:
 		grid_manager.ui_update_packets.connect(on_update_packets)
