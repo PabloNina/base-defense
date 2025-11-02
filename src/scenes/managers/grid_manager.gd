@@ -32,6 +32,9 @@ func _ready():
 # -----------------------------------------
 # --- Buildings Registration ------------------
 # -----------------------------------------
+# Registers a new building to the grid.
+# This connects the building to the grid management system, updates connections to nearby buildings,
+# and refreshes the grid's overall state, including power and pathfinding caches.
 func register_to_grid(new_building: Building):
 	if new_building in registered_buildings:
 		return
@@ -53,7 +56,9 @@ func register_to_grid(new_building: Building):
 	_refresh_grid_caches() # clears all cached data Dictionaries
 	_update_grid_integrity()
 
-
+# Unregisters a building from the grid, typically when it's destroyed.
+# This involves cleaning up any active packets targeting the building, removing it from the list of registered buildings,
+# and then rebuilding the grid connections and caches to reflect the change.
 func unregister_to_grid(building: Building):
 	if building not in registered_buildings:
 		return
@@ -109,6 +114,9 @@ func _update_connections_for(new_building: Building):
 		if _are_buildings_in_range(building, new_building):
 			_connect_buildings(building, new_building)
 
+# Checks if two buildings are within each other's connection range.
+# For a connection to be possible, at least one of the buildings must be a relay.
+# The result is cached to avoid repeated distance calculations.
 func _are_buildings_in_range(building_a: Building, building_b: Building) -> bool:
 	if not building_a.is_relay and not building_b.is_relay:
 		return false
@@ -138,12 +146,14 @@ static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool,
 	var dist = pos_a.distance_to(pos_b)
 	return dist <= min(range_a, range_b)
 
+# Establishes a bidirectional connection between two buildings and creates the visual line for it.
 func _connect_buildings(building_a: Building, building_b: Building):
 	building_a.connect_to(building_b)
 	building_b.connect_to(building_a)
 	if not _connection_exists(building_a, building_b):
 		_create_connection_line(building_a, building_b)
 
+# Checks if a visual connection line already exists between two buildings.
 func _connection_exists(building_a: Building, building_b: Building) -> bool:
 	for connection in current_connections:
 		if (connection.building_a == building_a and connection.building_b == building_b) or (connection.building_a == building_b and connection.building_b == building_a):
@@ -158,12 +168,14 @@ func _clear_connections_for(building: Building):
 				connection.connection_line.queue_free()
 	current_connections = current_connections.filter(func(connection): return connection.building_a != building and connection.building_b != building)
 
+# Removes all connection visuals and clears the list of current connections.
 func _clear_all_connections():
 	for connection in current_connections:
 		if is_instance_valid(connection.connection_line):
 			connection.connection_line.queue_free()
 	current_connections.clear()
 
+# Creates a Line2D node to visually represent a connection between two buildings.
 func _create_connection_line(building_a: Building, building_b: Building):
 	var line := Line2D.new()
 	line.width = 1
@@ -265,11 +277,6 @@ func _update_grid_integrity():
 		var a_powered = powered_map.get(connection.building_a, false)
 		var b_powered = powered_map.get(connection.building_b, false)
 		connection.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
-
-# -----------------------------------------
-# --- Pathfinding -------------------------
-# -----------------------------------------
-
 
 # -----------------------------------------
 # --- Signals Handling --------------------
