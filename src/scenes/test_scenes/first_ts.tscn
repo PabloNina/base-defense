@@ -30,18 +30,19 @@ tile_set = ExtResource("2_a3jph")
 
 [node name="BuildingsContainer" type="Node2D" parent="."]
 
+[node name="EnergyGenerator" parent="BuildingsContainer" instance=ExtResource("7_vpigq")]
+position = Vector2(264, 456)
+
+[node name="EnergyGenerator2" parent="BuildingsContainer" instance=ExtResource("7_vpigq")]
+position = Vector2(296, 456)
+
+[node name="GunTurret" parent="BuildingsContainer" instance=ExtResource("8_ce3it")]
+position = Vector2(264, 296)
+
+[node name="GunTurret2" parent="BuildingsContainer" instance=ExtResource("8_ce3it")]
+position = Vector2(296, 296)
+
 [node name="Camera2D" parent="." instance=ExtResource("3_1nbkg")]
+position = Vector2(643, 480)
 
 [node name="UserInterface" parent="." instance=ExtResource("6_4mpmm")]
-
-[node name="EnergyGenerator" parent="." instance=ExtResource("7_vpigq")]
-position = Vector2(280, 168)
-
-[node name="EnergyGenerator2" parent="." instance=ExtResource("7_vpigq")]
-position = Vector2(312, 168)
-
-[node name="GunTurret" parent="." instance=ExtResource("8_ce3it")]
-position = Vector2(280, 8)
-
-[node name="GunTurret2" parent="." instance=ExtResource("8_ce3it")]
-position = Vector2(312, 8)
