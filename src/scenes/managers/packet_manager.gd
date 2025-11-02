@@ -5,7 +5,7 @@ class_name PacketManager extends Node
 @export var current_packet_speed: int = 150
 @export var enable_packed_debug: bool = false
 
-@onready var packets_container: Node = $PacketsContainer
+@onready var active_packets_container: Node = $ActivePacketsContainer
 @onready var packet_pool: PacketPool = $PacketPool
 
 func _ready() -> void:
@@ -179,7 +179,7 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PAC
 		packet.packet_arrived.connect(_on_packet_arrived)
 
 	# Add the packet to the scene tree.
-	packet.reparent(packets_container)
+	packet.reparent(active_packets_container)
 
 
 func _on_packet_arrived(packet: Packet):

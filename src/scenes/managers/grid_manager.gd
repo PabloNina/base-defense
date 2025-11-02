@@ -59,9 +59,11 @@ func unregister_to_grid(building: Building):
 		return
 
 	# Clean up any packets that were using the destroyed relay
-	for packet in get_tree().get_nodes_in_group("packets"):
-		if packet is Packet and building in packet.path:
-			packet._cleanup_packet()
+	var packet_manager = get_tree().get_first_node_in_group("packet_manager")
+	if packet_manager:
+		for packet in packet_manager.active_packets_container.get_children():
+			if packet is Packet and building in packet.path:
+				packet._cleanup_packet()
 
 	# Remove building from grid
 	registered_buildings.erase(building)
@@ -72,7 +74,6 @@ func unregister_to_grid(building: Building):
 		other.connected_buildings.erase(building)
 
 	# Update grid state (order is important)
-	_refresh_grid_caches() # clears all cached data Dictionaries
 	_rebuild_all_connections() # handles both connections and power states 
 
 
