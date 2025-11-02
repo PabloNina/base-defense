@@ -120,16 +120,17 @@ func _are_buildings_in_range(building_a: Building, building_b: Building) -> bool
 	distance_cache[key] = dist
 	return dist <= min(building_a.connection_range, building_b.connection_range)
 	
-# Helper for packet manager and generators
-func are_connected(a: Building, b: Building) -> bool:
-	if not reachable_from_base_cache.has(a):
+# Helper for packet manager
+# Checks if building is connected to the grid
+func are_connected(base: Command_Center, building: Building) -> bool:
+	if not reachable_from_base_cache.has(base):
 		return false
-	return b in reachable_from_base_cache[a]
+	return building in reachable_from_base_cache[base]
 	
-# Public static-like helper for ghost preview: 
+# Public static-like helper for placement preview: 
 # checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
-static func can_buildings_connect(type_a: int, pos_a: Vector2, is_building_a: bool, type_b: int, pos_b: Vector2, is_building_b: bool) -> bool:
-	if not is_building_a and not is_building_b:
+static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
+	if not is_relay_a and not is_relay_b:
 		return false
 	var range_a = GlobalData.get_connection_range(type_a)
 	var range_b = GlobalData.get_connection_range(type_b)
@@ -171,7 +172,7 @@ func _create_connection_line(building_a: Building, building_b: Building):
 	current_connections.append({"building_a": building_a, "building_b": building_b, "connection_line": line})
 
 # -----------------------------------------
-# --- grid Cache -----------------------
+# --- Grid Cache -----------------------
 # -----------------------------------------
 # Updates all pathfinding, reachability, and distance caches for the grid.
 # Call this after adding/removing buildings or when a relay is built/destroyed.
@@ -230,7 +231,7 @@ func _update_grid_integrity():
 						powered_buildings[neighbor] = true
 						queue.append(neighbor)
 
-	# Pass 2: Set power state for all buildings and update visuals
+	# Pass 2: Set power state for all buildings and update connection visuals
 	var powered_map := {}
 	for building in registered_buildings:
 		var is_powered = powered_buildings.has(building)
@@ -242,12 +243,12 @@ func _update_grid_integrity():
 			building.reset_packets_in_flight()
 
 	# Update connection visuals
-	for c in current_connections:
-		if not is_instance_valid(c.connection_line):
+	for connection in current_connections:
+		if not is_instance_valid(connection.connection_line):
 			continue
-		var a_powered = powered_map.get(c.building_a, false)
-		var b_powered = powered_map.get(c.building_b, false)
-		c.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
+		var a_powered = powered_map.get(connection.building_a, false)
+		var b_powered = powered_map.get(connection.building_b, false)
+		connection.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
 
 # -----------------------------------------
 # --- Pathfinding -------------------------
