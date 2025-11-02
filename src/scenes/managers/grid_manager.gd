@@ -188,25 +188,40 @@ func _refresh_grid_caches():
 			reachable_from_base_cache[base] = _get_reachable_buildings_from_base(base)
 			last_target_index[base] = 0
 
+# Performs a breadth-first search starting from a base building to find all reachable buildings.
+# This function simultaneously calculates the shortest path (in terms of number of hops) to each reachable building
+# and caches these paths for later use by the PacketManager.
+# The traversal for pathfinding only considers built buildings as intermediate nodes.
+# Unbuilt buildings can only be the final node in a path, making them reachable for construction packets.
 func _get_reachable_buildings_from_base(base: Building) -> Array:
 	var visited: Array = [base]
-	var queue: Array = [base]
+	# The queue stores an array of paths. Each path is an array of buildings.
+	var queue: Array = [[base]] 
 
 	while queue.size() > 0:
-		var current: Building = queue.pop_front()
+		var path: Array = queue.pop_front()
+		var current: Building = path[-1]
+
 		for neighbor in current.connected_buildings:
 			if not is_instance_valid(neighbor):
 				continue
-			# Always add neighbor to visited so unbuilt targets are discoverable
+
 			if neighbor not in visited:
 				visited.append(neighbor)
-				# Only traverse through built neighbors (enqueue) so paths don't go through unbuilt relays
-				if neighbor.is_built:
-					queue.append(neighbor)
+				var new_path = path.duplicate()
+				new_path.append(neighbor)
 
-				# Cache path to neighbor (path may include unbuilt neighbor as final node)
+				# Cache the path from the base to the neighbor.
 				var key = str(base.get_instance_id()) + "_" + str(neighbor.get_instance_id())
-				path_cache[key] = _find_path(base, neighbor)
+				
+				var typed_path: Array[Building] = []
+				for node in new_path:
+					typed_path.append(node as Building)
+				path_cache[key] = typed_path
+
+				# Only built buildings can be intermediate nodes in a path, so we only add paths ending in a built building to the queue.
+				if neighbor.is_built:
+					queue.append(new_path)
 	return visited
 
 # -----------------------------------------
@@ -254,25 +269,7 @@ func _update_grid_integrity():
 # -----------------------------------------
 # --- Pathfinding -------------------------
 # -----------------------------------------
-func _find_path(start: Building, goal: Building) -> Array[Building]:
-	var queue: Array = [[start]]
-	var visited: Array[Building] = [start]
 
-	while queue.size() > 0:
-		var path: Array = queue.pop_front()
-		var current: Building = path[-1]
-		if current == goal:
-			var typed_path: Array[Building] = []
-			for node in path:
-				typed_path.append(node as Building)
-			return typed_path
-		for neighbor in current.connected_buildings:
-			if is_instance_valid(neighbor) and neighbor not in visited:
-				visited.append(neighbor)
-				var new_path = path.duplicate()
-				new_path.append(neighbor)
-				queue.append(new_path)
-	return []
 
 # -----------------------------------------
 # --- Signals Handling --------------------
