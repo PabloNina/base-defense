@@ -10,13 +10,13 @@ class_name GridManager extends Node
 # --- Runtime Data ------------------------
 # -----------------------------------------
 var registered_buildings: Array[Building] = [] # All active buildings in the grid
-var connections: Array = []                    # Connection visuals between buildings
+var current_connections: Array = []             # Connection visuals between buildings
 # -----------------------------------------
 # --- Cached Data for Optimization --------
 # -----------------------------------------
 var path_cache: Dictionary = {}                 # { "aID_bID": [Relay path] } cached buildings paths
 var distance_cache: Dictionary = {}             # { "aID_bID": float } cached buildings distances
-var reachable_from_base_cache: Dictionary = {}  # { base: [reachable_relays] } which buildings a base can reach
+var reachable_from_base_cache: Dictionary = {}  # { base: [reachable_buildings] } which buildings a base can reach
 var last_target_index: Dictionary = {}          # { base: int } tracks incremental target selection
 # -----------------------------------------
 # --- Signals -----------------------------
@@ -128,8 +128,8 @@ func are_connected(a: Building, b: Building) -> bool:
 	
 # Public static-like helper for ghost preview: 
 # checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
-static func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
-	if not is_relay_a and not is_relay_b:
+static func can_buildings_connect(type_a: int, pos_a: Vector2, is_building_a: bool, type_b: int, pos_b: Vector2, is_building_b: bool) -> bool:
+	if not is_building_a and not is_building_b:
 		return false
 	var range_a = GlobalData.get_connection_range(type_a)
 	var range_b = GlobalData.get_connection_range(type_b)
@@ -143,32 +143,32 @@ func _connect_buildings(building_a: Building, building_b: Building):
 		_create_connection_line(building_a, building_b)
 
 func _connection_exists(building_a: Building, building_b: Building) -> bool:
-	for c in connections:
-		if (c.relay_a == building_a and c.relay_b == building_b) or (c.relay_a == building_b and c.relay_b == building_a):
+	for connection in current_connections:
+		if (connection.building_a == building_a and connection.building_b == building_b) or (connection.building_a == building_b and connection.building_b == building_a):
 			return true
 	return false
 
 # used only in unregister
 func _clear_connections_for(building: Building):
-	for c in connections:
-		if c.relay_a == building or c.relay_b == building:
-			if is_instance_valid(c.connection_line):
-				c.connection_line.queue_free()
-	connections = connections.filter(func(c): return c.relay_a != building and c.relay_b != building)
+	for connection in current_connections:
+		if connection.building_a == building or connection.building_b == building:
+			if is_instance_valid(connection.connection_line):
+				connection.connection_line.queue_free()
+	current_connections = current_connections.filter(func(connection): return connection.building_a != building and connection.building_b != building)
 
 func _clear_all_connections():
-	for c in connections:
-		if is_instance_valid(c.connection_line):
-			c.connection_line.queue_free()
-	connections.clear()
+	for connection in current_connections:
+		if is_instance_valid(connection.connection_line):
+			connection.connection_line.queue_free()
+	current_connections.clear()
 
-func _create_connection_line(a: Building, b: Building):
+func _create_connection_line(building_a: Building, building_b: Building):
 	var line := Line2D.new()
 	line.width = 1
 	line.default_color = Color(0.3, 0.9, 1.0)
-	line.points = [a.global_position, b.global_position]
+	line.points = [building_a.global_position, building_b.global_position]
 	lines_2d_container.add_child(line)
-	connections.append({"relay_a": a, "relay_b": b, "connection_line": line})
+	current_connections.append({"building_a": building_a, "building_b": building_b, "connection_line": line})
 
 # -----------------------------------------
 # --- grid Cache -----------------------
@@ -242,11 +242,11 @@ func _update_grid_integrity():
 			building.reset_packets_in_flight()
 
 	# Update connection visuals
-	for c in connections:
+	for c in current_connections:
 		if not is_instance_valid(c.connection_line):
 			continue
-		var a_powered = powered_map.get(c.relay_a, false)
-		var b_powered = powered_map.get(c.relay_b, false)
+		var a_powered = powered_map.get(c.building_a, false)
+		var b_powered = powered_map.get(c.building_b, false)
 		c.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
 
 # -----------------------------------------
