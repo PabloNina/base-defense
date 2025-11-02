@@ -59,7 +59,8 @@ func register_to_grid(new_building: Building):
 
 # Unregisters a building from the grid, typically when it's destroyed.
 # This involves cleaning up any active packets targeting the building, removing it from the list of registered buildings,
-# and then rebuilding the grid connections and caches to reflect the change.
+# and then updating the grid caches and power states to reflect the change.
+# This approach is more efficient than a full rebuild for a single building removal.
 func unregister_to_grid(building: Building):
 	if building not in registered_buildings:
 		return
@@ -80,8 +81,8 @@ func unregister_to_grid(building: Building):
 		other.connected_buildings.erase(building)
 
 	# Update grid state (order is important)
-	_rebuild_all_connections() # handles both connections and power states 
-
+	_refresh_grid_caches()
+	_update_grid_integrity()
 
 # -----------------------------------------
 # --- Grid Construction ----------------
@@ -167,7 +168,7 @@ func _connection_exists(building_a: Building, building_b: Building) -> bool:
 
 # used only in unregister
 func _clear_connections_for(building: Building):
-	var remaining_connections = []
+	var remaining_connections: Array[ConnectionLine] = []
 	for connection in current_connections:
 		if connection.building_a == building or connection.building_b == building:
 			connection.destroy()

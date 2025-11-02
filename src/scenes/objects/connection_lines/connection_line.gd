@@ -23,7 +23,7 @@ func update_power_status(powered_map: Dictionary):
 		
 	var a_powered = powered_map.get(building_a, false)
 	var b_powered = powered_map.get(building_b, false)
-	# If either building is powered, the line is blue (active). Otherwise, it's red (inactive).
+	# If either building is powered, the line is green (active). Otherwise, it's red (inactive).
 	line_2d.default_color = PREVIEW_LINE_COLOR if (a_powered or b_powered) else PREVIEW_LINE_INVALID_COLOR
 
 # Sets up the line for preview purposes.

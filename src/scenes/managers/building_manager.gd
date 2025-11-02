@@ -174,6 +174,7 @@ func _place_building() -> void:
 		is_command_center_placed = true
 		_instance_and_place_building(building_scene, local_tile_position)
 		is_construction_state = false
+		construction_preview.clear() # Clear the preview after successful placement
 	elif is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		print("You can only have 1 Command Center!")
 	elif is_command_center_placed and building_to_build_type != GlobalData.BUILDING_TYPE.COMMAND_CENTER:
@@ -590,14 +591,18 @@ func _on_InputManager_map_left_released(release_position: Vector2i):
 			else:
 				_place_building_line()
 		_clear_construction_line_previews()
-		construction_preview.initialize(
-			building_to_build_type,
-			grid_manager,
-			GlobalData.get_ghost_texture(building_to_build_type),
-			ground_layer,
-			buildable_tile_id
-		)
-		construction_preview.visible = true
+		
+		# Only re-initialize the single preview if we are still in construction mode
+		# (i.e., we didn't just place the one-and-only Command Center).
+		if is_construction_state:
+			construction_preview.initialize(
+				building_to_build_type,
+				grid_manager,
+				GlobalData.get_ghost_texture(building_to_build_type),
+				ground_layer,
+				buildable_tile_id
+			)
+			construction_preview.visible = true
 	elif is_box_selecting_state:
 		is_box_selecting_state = false
 		if selection_start_pos.distance_to(selection_end_pos) > 5:
