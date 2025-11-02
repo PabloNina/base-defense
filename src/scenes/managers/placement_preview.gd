@@ -4,7 +4,6 @@
 # Displays a semi-transparent preview of a building and its potential grid connections.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
 class_name PlacementPreview extends Node2D
-
 # --------------------------------------------
 # --- Signals --------------------------------
 # --------------------------------------------
@@ -28,11 +27,8 @@ var grid_manager: GridManager
 var ground_layer: TileMapLayer
 var buildable_tile_id: int = 0
 # --- Visuals ---
-const VALID_COLOR: Color = Color(1.0, 1.0, 1.0, 0.5)
-const INVALID_COLOR: Color = Color(1.0, 0.0, 0.0, 0.5)
 # Color for the weapon range visualization circle.
 const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
-
 # --- State ---
 # Keeps track of overlapping placement-blocking areas.
 var overlapping_areas: Array[Area2D] = []
@@ -140,13 +136,8 @@ func _on_area_exited(area: Area2D) -> void:
 # --------------------------------------------
 func _update_validity() -> void:
 	is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
-	_set_valid_color(is_valid)
 	is_placeable.emit(is_valid, self)
 	queue_redraw()
-
-# Tints the preview sprite based on placement validity.
-func _set_valid_color(s_is_valid: bool) -> void:
-	sprite.modulate = VALID_COLOR if s_is_valid else INVALID_COLOR
 
 # --------------------------------------------
 # --- Connection Previews --------------------
