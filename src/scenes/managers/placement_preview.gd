@@ -16,7 +16,7 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 # --------------------------------------------
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $Area2D/CollisionShape2D
-@onready var lines_container: Node2D = $LinesContainer
+@onready var connection_lines_container: Node = $ConnectionLinesContainer
 # --------------------------------------------
 # --- Preview Configuration ------------------
 # --------------------------------------------
@@ -176,25 +176,27 @@ func _update_connection_ghosts() -> void:
 		):
 			targets.append(other)
 
+	# Get more lines from the pool if needed.
 	while _ghost_lines.size() < targets.size():
-		var ConnectionLineScene = load("res://src/scenes/objects/connection_lines/connection_line.tscn")
-		var line: ConnectionLine = ConnectionLineScene.instantiate()
-		lines_container.add_child(line)
+		var line: ConnectionLine = grid_manager.get_line()
+		connection_lines_container.add_child(line)
 		_ghost_lines.append(line)
 
-	for i in range(_ghost_lines.size()):
+	# Return excess lines to the pool.
+	while _ghost_lines.size() > targets.size():
+		var line: ConnectionLine = _ghost_lines.pop_back()
+		grid_manager.return_line(line)
+
+	# Update the visible lines.
+	for i in range(targets.size()):
 		var line: ConnectionLine = _ghost_lines[i]
-		if i < targets.size():
-			var target = targets[i]
-			var is_line_valid = overlapping_areas.is_empty() and is_on_buildable_tile
-			line.setup_preview(global_position, target.global_position, is_line_valid)
-			line.visible = true
-		else:
-			line.visible = false
+		var target = targets[i]
+		var is_line_valid = overlapping_areas.is_empty() and is_on_buildable_tile
+		line.setup_preview(global_position, target.global_position, is_line_valid)
+
 
 # Frees the Line2D nodes and clears the line array.
 func _clear_ghost_lines() -> void:
 	for line in _ghost_lines:
-		if is_instance_valid(line):
-			line.queue_free()
+		grid_manager.return_line(line)
 	_ghost_lines.clear()

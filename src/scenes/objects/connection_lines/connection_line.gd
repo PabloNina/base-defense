@@ -33,7 +33,3 @@ func setup_preview(start_pos: Vector2, end_pos: Vector2, is_valid: bool):
 	line_2d.points = [start_pos, end_pos]
 	line_2d.global_position = Vector2.ZERO # The line is a child of the ConnectionLine Node2D, which is positioned at the container's origin.
 	line_2d.default_color = PREVIEW_LINE_COLOR if is_valid else PREVIEW_LINE_INVALID_COLOR
-
-# Destroys the connection line.
-func destroy():
-	queue_free()

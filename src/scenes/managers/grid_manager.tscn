@@ -1,8 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://cjr2r4qtmpky6"]
+[gd_scene load_steps=3 format=3 uid="uid://cjr2r4qtmpky6"]
 
 [ext_resource type="Script" uid="uid://dwf43g5kg6ox7" path="res://src/scenes/managers/grid_manager.gd" id="1_houfk"]
+[ext_resource type="Script" uid="uid://b4o7xc4k4scwc" path="res://src/scenes/managers/connection_line_pool.gd" id="2_674ey"]
 
 [node name="GridManager" type="Node"]
 script = ExtResource("1_houfk")
 
-[node name="Lines2DContainer" type="Node" parent="."]
+[node name="ConnectionLinesContainer" type="Node" parent="."]
+
+[node name="ConnectionLinePool" type="Node" parent="."]
+script = ExtResource("2_674ey")

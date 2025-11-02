@@ -6,7 +6,8 @@ class_name GridManager extends Node
 # -----------------------------------------
 # --- Onready Variables -------------------
 # -----------------------------------------
-@onready var lines_2d_container: Node = $Lines2DContainer
+@onready var connection_lines_container: Node = $ConnectionLinesContainer
+@onready var connection_line_pool: ConnectionLinePool = $ConnectionLinePool
 # -----------------------------------------
 # --- Runtime Data ------------------------
 # -----------------------------------------
@@ -29,6 +30,15 @@ signal ui_update_packets(pkt_stored: float, max_pkt_capacity: float , pkt_produc
 func _ready():
 	add_to_group("grid_manager")
 	_rebuild_all_connections()
+
+# -----------------------------------------
+# --- Connection Line Pool Wrappers -------
+# -----------------------------------------
+func get_line() -> ConnectionLine:
+	return connection_line_pool.get_line()
+
+func return_line(line: ConnectionLine) -> void:
+	connection_line_pool.return_line(line)
 
 # -----------------------------------------
 # --- Buildings Registration ------------------
@@ -153,9 +163,8 @@ func _connect_buildings(building_a: Building, building_b: Building):
 	building_a.connect_to(building_b)
 	building_b.connect_to(building_a)
 	if not _connection_exists(building_a, building_b):
-		var ConnectionLineScene = load("res://src/scenes/objects/connection_lines/connection_line.tscn")
-		var connection_line: ConnectionLine = ConnectionLineScene.instantiate()
-		lines_2d_container.add_child(connection_line)
+		var connection_line: ConnectionLine = get_line()
+		connection_lines_container.add_child(connection_line)
 		connection_line.setup_connection(building_a, building_b)
 		current_connections.append(connection_line)
 
@@ -171,7 +180,7 @@ func _clear_connections_for(building: Building):
 	var remaining_connections: Array[ConnectionLine] = []
 	for connection in current_connections:
 		if connection.building_a == building or connection.building_b == building:
-			connection.destroy()
+			return_line(connection)
 		else:
 			remaining_connections.append(connection)
 	current_connections = remaining_connections
@@ -179,7 +188,7 @@ func _clear_connections_for(building: Building):
 # Removes all connection visuals and clears the list of current connections.
 func _clear_all_connections():
 	for connection in current_connections:
-		connection.destroy()
+		return_line(connection)
 	current_connections.clear()
 
 # -----------------------------------------
@@ -201,7 +210,7 @@ func _refresh_grid_caches():
 # Performs a breadth-first search starting from a base building to find all reachable buildings.
 # This function simultaneously calculates the shortest path (in terms of number of hops) to each reachable building
 # and caches these paths for later use by the PacketManager.
-# The traversal for pathfinding only considers built buildings as intermediate nodes.
+# The traversal for pathfinding only considers built buildings as intermediate nodes. 
 # Unbuilt buildings can only be the final node in a path, making them reachable for construction packets.
 func _get_reachable_buildings_from_base(base: Building) -> Array:
 	var visited: Array = [base]
