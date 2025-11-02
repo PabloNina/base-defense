@@ -2,6 +2,9 @@
 # GridManager.gd
 # =========================================
 class_name GridManager extends Node
+
+const ConnectionLineScene = preload("res://src/scenes/objects/connection_lines/connection_line.tscn")
+
 # -----------------------------------------
 # --- Onready Variables -------------------
 # -----------------------------------------
@@ -10,7 +13,7 @@ class_name GridManager extends Node
 # --- Runtime Data ------------------------
 # -----------------------------------------
 var registered_buildings: Array[Building] = [] # All active buildings in the grid
-var current_connections: Array = []             # Connection visuals between buildings
+var current_connections: Array[ConnectionLine] = [] # Connection visuals between buildings
 # -----------------------------------------
 # --- Cached Data for Optimization --------
 # -----------------------------------------
@@ -151,7 +154,10 @@ func _connect_buildings(building_a: Building, building_b: Building):
 	building_a.connect_to(building_b)
 	building_b.connect_to(building_a)
 	if not _connection_exists(building_a, building_b):
-		_create_connection_line(building_a, building_b)
+		var connection_line: ConnectionLine = ConnectionLineScene.instantiate()
+		lines_2d_container.add_child(connection_line)
+		connection_line.setup(building_a, building_b)
+		current_connections.append(connection_line)
 
 # Checks if a visual connection line already exists between two buildings.
 func _connection_exists(building_a: Building, building_b: Building) -> bool:
@@ -162,27 +168,19 @@ func _connection_exists(building_a: Building, building_b: Building) -> bool:
 
 # used only in unregister
 func _clear_connections_for(building: Building):
+	var remaining_connections = []
 	for connection in current_connections:
 		if connection.building_a == building or connection.building_b == building:
-			if is_instance_valid(connection.connection_line):
-				connection.connection_line.queue_free()
-	current_connections = current_connections.filter(func(connection): return connection.building_a != building and connection.building_b != building)
+			connection.destroy()
+		else:
+			remaining_connections.append(connection)
+	current_connections = remaining_connections
 
 # Removes all connection visuals and clears the list of current connections.
 func _clear_all_connections():
 	for connection in current_connections:
-		if is_instance_valid(connection.connection_line):
-			connection.connection_line.queue_free()
+		connection.destroy()
 	current_connections.clear()
-
-# Creates a Line2D node to visually represent a connection between two buildings.
-func _create_connection_line(building_a: Building, building_b: Building):
-	var line := Line2D.new()
-	line.width = 1
-	line.default_color = Color(0.3, 0.9, 1.0)
-	line.points = [building_a.global_position, building_b.global_position]
-	lines_2d_container.add_child(line)
-	current_connections.append({"building_a": building_a, "building_b": building_b, "connection_line": line})
 
 # -----------------------------------------
 # --- Grid Cache -----------------------
@@ -272,11 +270,7 @@ func _update_grid_integrity():
 
 	# Update connection visuals
 	for connection in current_connections:
-		if not is_instance_valid(connection.connection_line):
-			continue
-		var a_powered = powered_map.get(connection.building_a, false)
-		var b_powered = powered_map.get(connection.building_b, false)
-		connection.connection_line.default_color = Color(0.3, 0.9, 1.0) if (a_powered or b_powered) else Color(1, 0.3, 0.3)
+		connection.update_power_status(powered_map)
 
 # -----------------------------------------
 # --- Signals Handling --------------------

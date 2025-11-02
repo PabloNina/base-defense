@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://bxt6vth3tar67"]
+
+[ext_resource type="Script" uid="uid://bwl4qltydl3o6" path="res://src/scenes/objects/connection_lines/connection_line.gd" id="1_4byhf"]
+
+[node name="ConnectionLine" type="Node2D"]
+script = ExtResource("1_4byhf")
+
+[node name="Line2D" type="Line2D" parent="."]
+width = 1.0

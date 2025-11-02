@@ -4,20 +4,18 @@
 # Displays a semi-transparent preview of a building and its potential grid connections.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
 class_name PlacementPreview extends Node2D
-
 # --------------------------------------------
 # --- Signals --------------------------------
 # --------------------------------------------
 # Emitted when placement validity changes, passing itself for identification.
+# Listener BuildingManager
 signal is_placeable(is_valid: bool, preview: PlacementPreview)
-
 # --------------------------------------------
 # --- Onready References ---------------------
 # --------------------------------------------
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $Area2D/CollisionShape2D
 @onready var lines_container: Node2D = $LinesContainer
-
 # --------------------------------------------
 # --- Preview Configuration ------------------
 # --------------------------------------------
@@ -25,9 +23,9 @@ signal is_placeable(is_valid: bool, preview: PlacementPreview)
 var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
 # Reference to the GridManager to check for connections.
 var grid_manager: GridManager
+# Reference to TileMap ground layer and buildable tile for placement validity
 var ground_layer: TileMapLayer
 var buildable_tile_id: int = 0
-
 # --- Visuals ---
 const VALID_COLOR: Color = Color(1.0, 1.0, 1.0, 0.5)
 const INVALID_COLOR: Color = Color(1.0, 0.0, 0.0, 0.5)
@@ -51,11 +49,6 @@ var is_valid: bool = true
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
 # --------------------------------------------
-#func _ready() -> void:
-	## Connect signals for area overlap detection
-	#area_entered.connect(_on_area_entered)
-	#area_exited.connect(_on_area_exited)
-
 func _draw() -> void:
 	if not show_visual_feedback:
 		return
@@ -89,9 +82,6 @@ func initialize(p_building_type: GlobalData.BUILDING_TYPE, p_grid_manager: GridM
 	ground_layer = p_ground_layer
 	buildable_tile_id = p_buildable_tile_id
 	show_visual_feedback = p_show_feedback
-	
-	# Set z_index to ensure it's drawn on top
-	#z_index = 1
 	
 	# Configure collision shape based on texture size
 	var shape_size = sprite.texture.get_size() * sprite.scale

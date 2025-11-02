@@ -36,7 +36,7 @@ enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE}
 # - optimal_building_distance_tiles: in tile units
 # - connection_range_tiles: in tile units
 # - add more and comment
-const BUILDINGS_METADATA: Dictionary = {
+const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/command_center.png"),
@@ -46,6 +46,7 @@ const BUILDINGS_METADATA: Dictionary = {
 		"is_relay": true,
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 0,
+		# building_category
 		# Command_Center class only
 		# default packet prod
 	},
@@ -58,6 +59,7 @@ const BUILDINGS_METADATA: Dictionary = {
 		"is_relay": true,
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 8,
+		# building_category
 		# Relay class only
 	},
 	BUILDING_TYPE.GENERATOR: {
@@ -69,6 +71,7 @@ const BUILDINGS_METADATA: Dictionary = {
 		"is_relay": false,
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 1,
+		# building_category
 		# Generator class only
 		# packet bonus
 	},
@@ -81,6 +84,7 @@ const BUILDINGS_METADATA: Dictionary = {
 		"is_relay": false,
 		"upkeep_cost": 1.0,
 		"optimal_building_distance_tiles": 3,
+		# building_category
 		# Weapon class only
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
 		"max_ammo_storage": 10,
@@ -95,7 +99,7 @@ const BUILDINGS_METADATA: Dictionary = {
 # --- Buildings Metadata Accessors -----------
 # --------------------------------------------
 static func get_building_data(building_type: int) -> Dictionary:
-	return BUILDINGS_METADATA.get(building_type, {})
+	return BUILDINGS_DATA.get(building_type, {})
 
 static func get_ghost_texture(building_type: int) -> Texture2D:
 	var data = get_building_data(building_type)
