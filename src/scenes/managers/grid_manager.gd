@@ -34,12 +34,14 @@ func _ready():
 # -----------------------------------------
 # --- Connection Line Pool Wrappers -------
 # -----------------------------------------
-func get_line() -> ConnectionLine:
-	return connection_line_pool.get_line()
+# Retrieves a ConnectionLine from the pool
+# Also called by BuildingManager and PlacementPreview
+func get_connection_line_from_pool() -> ConnectionLine:
+	return connection_line_pool.get_connection_line()
 
-func return_line(line: ConnectionLine) -> void:
-	connection_line_pool.return_line(line)
-
+func return_connection_line_to_pool(line: ConnectionLine) -> void:
+	connection_line_pool.return_connection_line(line)
+	
 # -----------------------------------------
 # --- Buildings Registration ------------------
 # -----------------------------------------
@@ -163,7 +165,7 @@ func _connect_buildings(building_a: Building, building_b: Building):
 	building_a.connect_to(building_b)
 	building_b.connect_to(building_a)
 	if not _connection_exists(building_a, building_b):
-		var connection_line: ConnectionLine = get_line()
+		var connection_line: ConnectionLine = get_connection_line_from_pool()
 		connection_lines_container.add_child(connection_line)
 		connection_line.setup_connection(building_a, building_b)
 		current_connections.append(connection_line)
@@ -180,7 +182,7 @@ func _clear_connections_for(building: Building):
 	var remaining_connections: Array[ConnectionLine] = []
 	for connection in current_connections:
 		if connection.building_a == building or connection.building_b == building:
-			return_line(connection)
+			return_connection_line_to_pool(connection)
 		else:
 			remaining_connections.append(connection)
 	current_connections = remaining_connections
@@ -188,7 +190,7 @@ func _clear_connections_for(building: Building):
 # Removes all connection visuals and clears the list of current connections.
 func _clear_all_connections():
 	for connection in current_connections:
-		return_line(connection)
+		return_connection_line_to_pool(connection)
 	current_connections.clear()
 
 # -----------------------------------------

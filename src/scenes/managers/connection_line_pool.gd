@@ -1,50 +1,60 @@
 # =========================================
-# ConnectionLinePool.gd
+# connection_line_pool.gd
 # =========================================
-# Manages a pool of ConnectionLine objects to reuse them and avoid frequent
-# instantiation and freeing, which can cause performance issues.
+# Manages a pool of reusable ConnectionLine objects to optimize performance
+# by avoiding frequent instantiation and destruction.
 class_name ConnectionLinePool extends Node
 
-var _pool: Array[ConnectionLine] = []
+## The initial size of the connection_line_pool.
+@export var pool_size: int = 20
+# The pool of available ConnectionLine objects.
+var connection_line_pool: Array[ConnectionLine] = []
 
-# Pre-warms the pool with a specified number of instances.
 func _ready() -> void:
-	_prewarm_pool(20)
+	# Pre-populate the pool with ConnectionLine instances.
+	_populate_pool(pool_size)
 
-# Pre-instantiates a number of lines to have them ready for use.
-func _prewarm_pool(size: int) -> void:
+# Pre-instantiates a number of Connectionlines to have them ready for use.
+func _populate_pool(size: int) -> void:
 	for i in range(size):
-		#var line: ConnectionLine = ConnectionLineScene.instantiate()
-		var line: ConnectionLine = GlobalData.CONNECTION_LINE_SCENE.instantiate()
-		line.visible = false
-		add_child(line)
-		_pool.append(line)
+		var connection_line: ConnectionLine = GlobalData.CONNECTION_LINE_SCENE.instantiate()
+		# Disable the line and add it to the pool.
+		connection_line.visible = false
+		connection_line_pool.append(connection_line)
+		add_child(connection_line)
 
 
-# Retrieves a line from the pool. If the pool is empty, it creates a new one.
-func get_line() -> ConnectionLine:
-	if _pool.is_empty():
-		_prewarm_pool(5) # Add more lines if the pool runs dry.
+# Retrieves a ConnectionLine from the pool. If the pool is empty it creates more.
+# Initializes the ConnectionLine with the provided parameters.
+# Returns the configured ConnectionLine.
+func get_connection_line() -> ConnectionLine:
+	# Add more ConnectionLines if the pool runs dry.
+	# This makes the pool grow dynamically as needed.
+	if connection_line_pool.is_empty():
+		print("ConnectionLine pool empty. Growing pool!")
+		@warning_ignore("integer_division")
+		_populate_pool(pool_size/4)
 
-	var line: ConnectionLine = _pool.pop_front()
+	# Get a ConnectionLine from the front of the pool.
+	var connection_line: ConnectionLine = connection_line_pool.pop_front()
 	
-	# The line is a child of the pool, remove it before handing it out.
-	if line.get_parent() == self:
-		remove_child(line)
+	# The ConnectionLine is a child of the pool, remove it before handing it out.
+	if connection_line.get_parent() == self:
+		remove_child(connection_line)
 		
-	line.visible = true
-	return line
+	connection_line.visible = true
+	return connection_line
 
 
-# Returns a line to the pool so it can be reused.
-func return_line(line: ConnectionLine) -> void:
-	if not is_instance_valid(line):
+# Returns a ConnectionLine to the pool so it can be reused.
+func return_connection_line(connection_line: ConnectionLine) -> void:
+	if not is_instance_valid(connection_line):
 		return
 
-	line.visible = false
-	# Reparent the line back to the pool to keep the scene tree clean.
-	if line.get_parent() != self:
-		line.get_parent().remove_child(line)
-		add_child(line)
+	connection_line.visible = false
+	# Reparent the ConnectionLine back to the pool to keep the scene tree clean.
+	if connection_line.get_parent() != self:
+		connection_line.get_parent().remove_child(connection_line)
+		add_child(connection_line)
 	
-	_pool.append(line)
+	connection_line_pool.append(connection_line)

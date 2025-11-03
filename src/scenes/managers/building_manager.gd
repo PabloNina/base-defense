@@ -1,5 +1,5 @@
 # =========================================
-# BuildingManager.gd
+# building_manager.gd
 # =========================================
 # Handles Mouse tracking and Input Events related to Buildings
 # Manages construction, selection, movement and other buildings actions(to be implemented)
@@ -449,7 +449,7 @@ func _update_construction_line_previews() -> void:
 
 	# --- Relay line previews ---
 	for line in relay_line_previews:
-		grid_manager.return_line(line)
+		grid_manager.return_connection_line_to_pool(line)
 	relay_line_previews.clear()
 
 	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY and construction_line_previews.size() > 1:
@@ -463,7 +463,7 @@ func _update_construction_line_previews() -> void:
 			var connection_range = GlobalData.get_connection_range(GlobalData.BUILDING_TYPE.RELAY)
 			
 			if dist <= connection_range:
-				var line: ConnectionLine = grid_manager.get_line()
+				var line: ConnectionLine = grid_manager.get_connection_line_from_pool()
 				add_child(line)
 				var is_line_valid = construction_previews_validity.get(preview_a, false) and construction_previews_validity.get(preview_b, false)
 				line.setup_preview(from_pos, to_pos, is_line_valid)
@@ -477,7 +477,7 @@ func _clear_construction_line_previews() -> void:
 	construction_previews_validity.clear()
 
 	for line in relay_line_previews:
-		grid_manager.return_line(line)
+		grid_manager.return_connection_line_to_pool(line)
 	relay_line_previews.clear()
 
 

@@ -1,4 +1,7 @@
+# =========================================
 # connection_line.gd
+# =========================================
+# add description
 class_name ConnectionLine extends Node2D
 
 const PREVIEW_LINE_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)

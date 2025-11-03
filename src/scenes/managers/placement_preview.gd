@@ -1,5 +1,5 @@
 # =========================================
-# PlacementPreview.gd
+# placement_preview.gd
 # =========================================
 # Displays a semi-transparent preview of a building and its potential grid connections.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
@@ -169,14 +169,14 @@ func _update_connection_ghosts() -> void:
 
 	# Get more lines from the pool if needed.
 	while _ghost_lines.size() < targets.size():
-		var line: ConnectionLine = grid_manager.get_line()
+		var line: ConnectionLine = grid_manager.get_connection_line_from_pool()
 		connection_lines_container.add_child(line)
 		_ghost_lines.append(line)
 
 	# Return excess lines to the pool.
 	while _ghost_lines.size() > targets.size():
 		var line: ConnectionLine = _ghost_lines.pop_back()
-		grid_manager.return_line(line)
+		grid_manager.return_connection_line_to_pool(line)
 
 	# Update the visible lines.
 	for i in range(targets.size()):
@@ -189,5 +189,5 @@ func _update_connection_ghosts() -> void:
 # Frees the Line2D nodes and clears the line array.
 func _clear_ghost_lines() -> void:
 	for line in _ghost_lines:
-		grid_manager.return_line(line)
+		grid_manager.return_connection_line_to_pool(line)
 	_ghost_lines.clear()
