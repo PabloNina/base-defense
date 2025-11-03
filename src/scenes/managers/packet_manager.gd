@@ -11,9 +11,9 @@ class_name PacketManager extends Node
 func _ready() -> void:
 	add_to_group("packet_manager")
 
-# --------------------------------------------
-# --- Packet Acquiring/Releasing from pool ---
-# --------------------------------------------
+# -------------------------------
+# --- Packet Pool Wrappers ------
+# -------------------------------
 func _get_packet_from_pool(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
 	var packet: Packet = packet_pool.get_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
 	if is_instance_valid(packet) and not packet.is_in_group("packets"):
