@@ -41,7 +41,7 @@ func get_connection_line_from_pool() -> ConnectionLine:
 
 func return_connection_line_to_pool(line: ConnectionLine) -> void:
 	connection_line_pool.return_connection_line(line)
-	
+
 # -----------------------------------------
 # --- Buildings Registration --------------
 # -----------------------------------------

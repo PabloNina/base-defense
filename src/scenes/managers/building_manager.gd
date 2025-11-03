@@ -15,8 +15,7 @@ class_name BuildingManager extends Node2D
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
-# The primary preview used for construction and single-building moves.
-@onready var construction_preview: PlacementPreview = $PlacementPreview
+@onready var placement_preview_pool: PlacementPreviewPool = $PlacementPreviewPool
 @onready var double_click_timer: Timer = $DoubleClickTimer
 # -----------------------------------------
 # --- Mouse Tracking ----------------------
@@ -37,6 +36,7 @@ var is_building_placeable: bool = true
 var building_to_build_type: GlobalData.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
+var single_preview: PlacementPreview = null
 # --- Line Construction ---
 var is_line_construction_state: bool = false
 var line_construction_start_pos: Vector2i
@@ -99,9 +99,6 @@ func _ready() -> void:
 	user_interface.move_selection_pressed.connect(_on_ui_move_selection_pressed)
 	user_interface.deactivate_button_pressed.connect(_on_ui_deactivate_button_pressed)
 	
-	# Connect to the construction preview's signal
-	construction_preview.is_placeable.connect(_on_placement_preview_is_placeable)
-	
 	# Set ground_layer in InputManager
 	InputManager.ground_layer = ground_layer
 	
@@ -129,6 +126,15 @@ func _process(_delta: float) -> void:
 		# The tile_position is passed to the update_previews function
 		_update_previews(tile_position)
 
+
+# -----------------------------------------
+# --- PlacementPreview Pool Wrappers ------
+# -----------------------------------------
+func get_placement_preview_from_pool() -> PlacementPreview:
+	return placement_preview_pool.get_preview()
+
+func return_placement_preview_to_pool(preview: PlacementPreview) -> void:
+	placement_preview_pool.return_preview(preview)
 # ----------------------------------------------
 # --- Public Methods / Building Registration ---
 # ----------------------------------------------
@@ -171,7 +177,8 @@ func _place_building() -> void:
 		is_command_center_placed = true
 		_instance_and_place_building(building_scene, local_tile_position)
 		is_construction_state = false
-		construction_preview.clear() # Clear the preview after successful placement
+		if is_instance_valid(single_preview):
+			single_preview.clear() # Clear the preview after successful placement
 	elif is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		print("You can only have 1 Command Center!")
 	elif is_command_center_placed and building_to_build_type != GlobalData.BUILDING_TYPE.COMMAND_CENTER:
@@ -209,19 +216,26 @@ func _select_building_to_build(new_building_type: GlobalData.BUILDING_TYPE) -> v
 	is_construction_state = true
 	building_to_build_type = new_building_type
 	
-	construction_preview.initialize(
+	if not is_instance_valid(single_preview):
+		single_preview = placement_preview_pool.get_preview()
+		add_child(single_preview)
+		if not single_preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
+			single_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+	
+	single_preview.initialize(
 		new_building_type,
 		grid_manager,
 		GlobalData.get_ghost_texture(new_building_type),
 		ground_layer,
 		buildable_tile_id
 	)
-	construction_preview.visible = true
+	single_preview.visible = true
 
 func _deselect_building_to_build() -> void:
 	is_construction_state = false
-	construction_preview.clear()
-	#building_to_build_id = 0
+	if is_instance_valid(single_preview):
+		placement_preview_pool.return_preview(single_preview)
+		single_preview = null
 
 # ----------------------------------------------
 # ------ Preview Feedback ----------------------
@@ -238,7 +252,8 @@ func _update_previews(new_position: Vector2i) -> void:
 	if is_line_construction_state:
 		_update_construction_line_previews()
 	elif is_construction_state:
-		construction_preview.update_position(local_tile_position)
+		if is_instance_valid(single_preview): 
+			single_preview.update_position(local_tile_position)
 	elif is_move_state:
 		_update_move_previews()
 
@@ -246,7 +261,7 @@ func _update_previews(new_position: Vector2i) -> void:
 # Called when a preview's placement validity changes.
 func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPreview) -> void:
 	# If it's the main construction preview, update the global flag directly.
-	if preview == construction_preview:
+	if preview == single_preview:
 		is_building_placeable = is_valid
 	# If it's a group move or line construction preview, update its status in the dictionary.
 	else:
@@ -298,7 +313,7 @@ func _create_move_previews() -> void:
 	move_previews_validity.clear()
 	for building in buildings_to_move_group:
 		if building is MovableBuilding:
-			var preview = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate() as PlacementPreview
+			var preview = placement_preview_pool.get_preview()
 			add_child(preview)
 			preview.initialize(
 				building.building_type,
@@ -309,7 +324,10 @@ func _create_move_previews() -> void:
 			)
 			move_previews.append(preview)
 			move_previews_validity[preview] = true # Assume valid at start
-			preview.is_placeable.connect(_on_placement_preview_is_placeable)
+
+			# Prevents connecting multiple times the same signal when moving buildings
+			if not preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
+				preview.is_placeable.connect(_on_placement_preview_is_placeable)
 
 # Updates the positions of all previews in a group move.
 func _update_move_previews() -> void:
@@ -330,7 +348,7 @@ func _update_move_previews() -> void:
 # Clears and frees all previews used in a group move.
 func _clear_move_previews() -> void:
 	for preview in move_previews:
-		preview.queue_free()
+		placement_preview_pool.return_preview(preview)
 	move_previews.clear()
 	move_previews_validity.clear()
 
@@ -343,16 +361,17 @@ func _cancel_move_state() -> void:
 	# Reset the formation scale and angle to their default values.
 	formation_scale = 1.0
 	formation_angle = 0.0
-	construction_preview.clear()
+	if is_instance_valid(single_preview): 
+		single_preview.clear()
 	_clear_move_previews()
 
 
 # Creates a static marker when a building's move begins.
 func _on_building_move_started(building: MovableBuilding, landing_position: Vector2) -> void:
 	if landing_markers.has(building):
-		landing_markers[building].queue_free()
+		placement_preview_pool.return_preview(landing_markers[building])
 
-	var marker = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate() as PlacementPreview
+	var marker = placement_preview_pool.get_preview()
 	add_child(marker)
 	marker.initialize(
 		building.building_type,
@@ -368,7 +387,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 # Removes the static marker when a building's move is complete.
 func _on_building_move_completed(building: MovableBuilding) -> void:
 	if landing_markers.has(building):
-		landing_markers[building].queue_free()
+		placement_preview_pool.return_preview(landing_markers[building])
 		landing_markers.erase(building)
 
 
@@ -395,16 +414,18 @@ func _update_construction_line_previews() -> void:
 		# If only one building fits, just show one preview.
 		while construction_line_previews.size() > 1:
 			var p = construction_line_previews.pop_back()
-			if is_instance_valid(p): p.queue_free()
+			if is_instance_valid(p): 
+				placement_preview_pool.return_preview(p)
 		if construction_line_previews.is_empty():
-			var preview = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate()
+			var preview = placement_preview_pool.get_preview()
 			add_child(preview)
 			construction_line_previews.append(preview)
-			preview.is_placeable.connect(_on_placement_preview_is_placeable)
+			if not preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
+				preview.is_placeable.connect(_on_placement_preview_is_placeable)
 		
-		var single_preview = construction_line_previews[0]
-		if not single_preview.is_initialized():
-			single_preview.initialize(
+		var _single_preview = construction_line_previews[0]
+		if not _single_preview.is_initialized():
+			_single_preview.initialize(
 				building_type,
 				grid_manager,
 				GlobalData.get_ghost_texture(building_type),
@@ -412,21 +433,23 @@ func _update_construction_line_previews() -> void:
 				buildable_tile_id
 			)
 		# Position the single preview at the snapped start position.
-		single_preview.update_position(start_pos_pixels)
+		_single_preview.update_position(start_pos_pixels)
 		return
 
 	var num_buildings = int(distance_pixels / optimal_dist_pixels) + 1
 
 	# Create or remove previews to match the required number.
 	while construction_line_previews.size() < num_buildings:
-		var new_preview = GlobalData.PLACEMENT_PREVIEW_SCENE.instantiate()
+		var new_preview = placement_preview_pool.get_preview()
 		add_child(new_preview)
 		construction_line_previews.append(new_preview)
-		new_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+		if not new_preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
+			new_preview.is_placeable.connect(_on_placement_preview_is_placeable)
 	
 	while construction_line_previews.size() > num_buildings:
 		var p = construction_line_previews.pop_back()
-		if is_instance_valid(p): p.queue_free()
+		if is_instance_valid(p): 
+			placement_preview_pool.return_preview(p)
 
 	# --- Direct position calculation to avoid cumulative floating-point errors ---
 	var direction = (end_pos_pixels - start_pos_pixels).normalized()
@@ -472,7 +495,7 @@ func _update_construction_line_previews() -> void:
 # Clears and frees all previews used in line construction.
 func _clear_construction_line_previews() -> void:
 	for preview in construction_line_previews:
-		preview.queue_free()
+		placement_preview_pool.return_preview(preview)
 	construction_line_previews.clear()
 	construction_previews_validity.clear()
 
@@ -570,7 +593,8 @@ func _on_InputManager_map_left_clicked(click_position: Vector2i):
 	if is_construction_state:
 		is_line_construction_state = true
 		line_construction_start_pos = click_position
-		construction_preview.clear() # Hide and disable single preview
+		if is_instance_valid(single_preview): 
+			single_preview.visible = false # Hide and disable single preview
 		_update_construction_line_previews()
 	elif is_move_state and is_building_placeable:
 		_move_building_selection()
@@ -593,14 +617,20 @@ func _on_InputManager_map_left_released(release_position: Vector2i):
 		# Only re-initialize the single preview if we are still in construction mode
 		# (i.e., we didn't just place the one-and-only Command Center).
 		if is_construction_state:
-			construction_preview.initialize(
+			if not is_instance_valid(single_preview):
+				single_preview = placement_preview_pool.get_preview()
+				add_child(single_preview)
+				if not single_preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
+					single_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+			
+			single_preview.initialize(
 				building_to_build_type,
 				grid_manager,
 				GlobalData.get_ghost_texture(building_to_build_type),
 				ground_layer,
 				buildable_tile_id
 			)
-			construction_preview.visible = true
+			single_preview.visible = true
 	elif is_box_selecting_state:
 		is_box_selecting_state = false
 		if selection_start_pos.distance_to(selection_end_pos) > 5:
@@ -611,7 +641,8 @@ func _on_InputManager_map_right_clicked(_click_position: Vector2i):
 	if is_line_construction_state:
 		is_line_construction_state = false
 		_clear_construction_line_previews()
-		construction_preview.visible = true
+		if is_instance_valid(single_preview): 
+			single_preview.visible = true
 	elif is_construction_state:
 		_deselect_building_to_build()
 	elif is_move_state:
@@ -674,7 +705,8 @@ func _enter_move_mode() -> void:
 		buildings_to_move_group = selected_buildings.duplicate()
 		formation_offsets.clear()
 		formation_offsets.append(Vector2.ZERO)
-		construction_preview.clear()
+		if is_instance_valid(single_preview): 
+			single_preview.clear()
 		_create_move_previews()
 	else:
 		is_move_state = true
@@ -692,7 +724,8 @@ func _enter_move_mode() -> void:
 			var offset_y = 0
 			formation_offsets.append(Vector2(offset_x, offset_y))
 			
-		construction_preview.clear()
+		if is_instance_valid(single_preview): 
+			single_preview.clear()
 		_create_move_previews()
 	
 	clear_selection()

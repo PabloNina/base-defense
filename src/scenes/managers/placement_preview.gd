@@ -107,11 +107,14 @@ func update_position(new_position: Vector2) -> void:
 # Hides and resets the preview.
 func clear() -> void:
 	building_type = GlobalData.BUILDING_TYPE.NULL
-	sprite.texture = null
+	if sprite:
+		sprite.texture = null
 	visible = false
 	overlapping_areas.clear()
-	_clear_ghost_lines()
-	collision_shape.set_deferred("disabled", true)
+	if grid_manager:
+		_clear_ghost_lines()
+	if collision_shape:
+		collision_shape.set_deferred("disabled", true)
 	# Clear the fire range circle.
 	queue_redraw()
 	_is_initialized = false
