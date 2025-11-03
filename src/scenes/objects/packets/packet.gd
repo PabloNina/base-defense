@@ -45,7 +45,7 @@ func _cleanup_packet() -> void:
 	if path.size() > 0 and is_instance_valid(path[-1]):
 		path[-1].decrement_packets_in_flight()
 
-	get_tree().get_first_node_in_group("packet_manager").release_packet(self)
+	get_tree().get_first_node_in_group("packet_manager").return_packet_to_pool(self)
 
 # -------------------------------
 # --- Movement Logic -----------

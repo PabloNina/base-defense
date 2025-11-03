@@ -43,7 +43,7 @@ func return_connection_line_to_pool(line: ConnectionLine) -> void:
 	connection_line_pool.return_connection_line(line)
 	
 # -----------------------------------------
-# --- Buildings Registration ------------------
+# --- Buildings Registration --------------
 # -----------------------------------------
 # Registers a new building to the grid.
 # This connects the building to the grid management system, updates connections to nearby buildings,

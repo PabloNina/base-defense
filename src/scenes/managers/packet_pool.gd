@@ -4,17 +4,28 @@
 # Manages a pool of reusable Packet objects to optimize performance
 # by avoiding frequent instantiation and destruction.
 class_name PacketPool extends Node
-
-## The initial size of the packet_pool.
+# -----------------------------------------
+# --- Editor Exports ----------------------
+# -----------------------------------------
+## The initial size of the pool.
 @export var pool_size: int = 100
+## The value to increment pool_size each time the pool goes empty.
+@export var pool_grow_value: int = 25
+# -----------------------------------------
+# --- Runtime Data ------------------------
+# -----------------------------------------
 # The pool of available Packet objects.
 var packet_pool: Array[Packet] = []
-
-
+# -----------------------------------------
+# --- Engine Callbacks --------------------
+# -----------------------------------------
 func _ready() -> void:
 	# Pre-populate the pool with packet instances.
 	_populate_pool(pool_size)
 
+# ---------------------------------
+# --- Private Methods -------------
+# ---------------------------------
 # Pre-instantiates a number of Packets to have them ready for use.
 func _populate_pool(size: int) -> void:
 	for i in range(size):
@@ -25,54 +36,58 @@ func _populate_pool(size: int) -> void:
 		packet_pool.append(packet)
 		add_child(packet)
 
-# Retrieves a packet from the pool. If the pool is empty it creates more.
-# Initializes the packet with the provided parameters.
-# Returns the configured packet.
-func acquire_packet(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
-	var packet: Packet
+# ---------------------------------
+# --- Public Methods --------------
+# ---------------------------------
+# Retrieves a Packet from the pool. If the pool is empty it creates more.
+# Initializes the Packet with the provided parameters.
+# Returns the configured Packet.
+func get_packet(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
+	# Add more Packets if the pool runs dry.
+	# This makes the pool grow dynamically as needed.
 	if packet_pool.is_empty():
-		# Add more Packets if the pool runs dry.
-		# This makes the pool grow dynamically as needed.
 		print("Packet pool empty. Growing pool!")
-		packet = GlobalData.PACKET_SCENE.instantiate()
-		# Add the new packet as a child of the pool so it's tracked.
-		add_child(packet)
-	else:
-		# Get a packet from the front of the pool.
-		packet = packet_pool.pop_front()
+		_populate_pool(pool_grow_value)
 
-	# Initialize the packet's properties
+	# Get a Packet from the front of the pool.
+	var packet: Packet = packet_pool.pop_front()
+
+	# The Packet is a child of the pool remove it before handing it out.
+	if packet.get_parent() == self:
+		remove_child(packet)
+
+	# Initialize the Packet's properties
 	packet.packet_type = pkt_type
 	packet.speed = pkt_speed
 	packet.path = pkt_path
 	packet.global_position = pkt_position
-	
+
 	# Reset internal state
 	packet.current_index = 0
 	packet.is_cleaned_up = false
 	packet._set_sprite()
 
-	# Enable the packet for processing and visibility
+	# Enable the Packet for processing and visibility
 	packet.process_mode = Node.PROCESS_MODE_INHERIT
 	packet.visible = true
-	
+
 	return packet
 
 
-# Returns a packet back to the pool.
-# Disables the packet and makes it available for reuse.
-func release_packet(packet: Packet) -> void:
+# Returns a Packet back to the pool.
+# Disables the Packet and makes it available for reuse.
+func return_packet(packet: Packet) -> void:
 	if not is_instance_valid(packet):
 		return
 
-	# Add the packet back to the pool.
-	packet_pool.append(packet)
-
-	# Disable the packet.
+	# Disable the Packet.
 	packet.process_mode = Node.PROCESS_MODE_DISABLED
 	packet.visible = false
-	
-	# Reparent the packet to the pool to keep the scene tree clean.
+
+	# Reparent the Packet to the pool to keep the scene tree clean.
 	if packet.get_parent() != self:
 		packet.get_parent().remove_child(packet)
 		add_child(packet)
+
+	# Add the Packet back to the pool.
+	packet_pool.append(packet)

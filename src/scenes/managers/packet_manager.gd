@@ -11,17 +11,18 @@ class_name PacketManager extends Node
 func _ready() -> void:
 	add_to_group("packet_manager")
 
-# -----------------------------------------
-# --- Packet Spawning / Releasing ---------
-# -----------------------------------------
-func _acquire_packet(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
-	var packet: Packet = packet_pool.acquire_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
+# --------------------------------------------
+# --- Packet Acquiring/Releasing from pool ---
+# --------------------------------------------
+func _get_packet_from_pool(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Building], pkt_position: Vector2) -> Packet:
+	var packet: Packet = packet_pool.get_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
 	if is_instance_valid(packet) and not packet.is_in_group("packets"):
 		packet.add_to_group("packets")
 	return packet
 
-func release_packet(packet: Packet) -> void:
-	packet_pool.release_packet(packet)
+# Called by Packet
+func return_packet_to_pool(packet: Packet) -> void:
+	packet_pool.return_packet(packet)
 
 # -----------------------------------------
 # --- Packet Propagation ------------------
@@ -172,15 +173,15 @@ func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PAC
 		await get_tree().create_timer(delay_offset).timeout
 	
 	# Acquire a new packet from the pool and set it up.
-	var packet: Packet = _acquire_packet(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
+	var packet: Packet = _get_packet_from_pool(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
 	
 	# Connect to the packet's signals to manage its lifecycle.
 	if not packet.packet_arrived.is_connected(_on_packet_arrived):
 		packet.packet_arrived.connect(_on_packet_arrived)
 
-	# Add the packet to the scene tree.
-	packet.reparent(active_packets_container)
-
+	# Add the packet to active_packets_container.
+	#packet.reparent(active_packets_container)
+	active_packets_container.add_child(packet)
 
 func _on_packet_arrived(packet: Packet):
 	if packet.is_cleaned_up:
@@ -198,7 +199,7 @@ func _on_packet_arrived(packet: Packet):
 	# Decrement in-flight packet count safely
 	target_building.decrement_packets_in_flight()
 	# Release the packet
-	release_packet(packet)
+	return_packet_to_pool(packet)
 
 func _on_path_broken(packet: Packet):
 	packet._cleanup_packet()
