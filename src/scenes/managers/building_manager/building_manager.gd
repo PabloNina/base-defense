@@ -15,7 +15,7 @@ class_name BuildingManager extends Node2D
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
-@onready var placement_preview_pool: PlacementPreviewPool = $PlacementPreviewPool
+@onready var ghost_preview_pool: GhostPreviewPool = $GhostPreviewPool
 @onready var double_click_timer: Timer = $DoubleClickTimer
 # -----------------------------------------
 # --- Mouse Tracking ----------------------
@@ -131,10 +131,10 @@ func _process(_delta: float) -> void:
 # --- GhostPreview Pool Wrappers ------
 # -----------------------------------------
 func _get_placement_preview_from_pool() -> GhostPreview:
-	return placement_preview_pool.get_preview()
+	return ghost_preview_pool.get_preview()
 
 func _return_placement_preview_to_pool(preview: GhostPreview) -> void:
-	placement_preview_pool.return_preview(preview)
+	ghost_preview_pool.return_preview(preview)
 # ----------------------------------------------
 # --- Public Methods / Building Registration ---
 # ----------------------------------------------

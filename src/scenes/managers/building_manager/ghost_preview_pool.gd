@@ -1,9 +1,9 @@
 # =========================================
-# placement_preview_pool.gd
+# ghost_preview_pool.gd
 # =========================================
 # Manages a pool of reusable GhostPreview objects to optimize performance
 # by avoiding frequent instantiation and destruction.
-class_name PlacementPreviewPool extends Node
+class_name GhostPreviewPool extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
@@ -15,7 +15,7 @@ class_name PlacementPreviewPool extends Node
 # --- Runtime Data ------------------------
 # -----------------------------------------
 # The pool of available GhostPreview objects.
-var placement_preview_pool: Array[GhostPreview] = []
+var ghost_preview_pool: Array[GhostPreview] = []
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
@@ -32,7 +32,7 @@ func _populate_pool(size: int) -> void:
 		var preview: GhostPreview = GlobalData.GHOST_PREVIEW_SCENE.instantiate()
 		# Disable the preview and add it to the pool.
 		preview.clear()
-		placement_preview_pool.append(preview)
+		ghost_preview_pool.append(preview)
 		add_child(preview)
 
 # ---------------------------------
@@ -42,12 +42,12 @@ func _populate_pool(size: int) -> void:
 # If the pool is empty it creates more.
 func get_preview() -> GhostPreview:
 	# Add more previews if the pool runs dry.
-	if placement_preview_pool.is_empty():
+	if ghost_preview_pool.is_empty():
 		print("GhostPreview pool empty. Growing pool!")
 		_populate_pool(pool_grow_value)
 
 	# Get a preview from the front of the pool.
-	var preview: GhostPreview = placement_preview_pool.pop_front()
+	var preview: GhostPreview = ghost_preview_pool.pop_front()
 
 	# The preview is a child of the pool, remove it before handing it out.
 	if preview.get_parent() == self:
@@ -74,4 +74,4 @@ func return_preview(preview: GhostPreview) -> void:
 		add_child(preview)
 	
 	# Add preview back to the pool
-	placement_preview_pool.append(preview)
+	ghost_preview_pool.append(preview)

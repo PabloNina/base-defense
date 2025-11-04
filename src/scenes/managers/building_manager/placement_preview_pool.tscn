@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://cc3je7d1u8jvx"]
-
-[ext_resource type="Script" uid="uid://bxry3lduvycgh" path="res://src/scenes/managers/building_manager/placement_preview_pool.gd" id="1_oi2oi"]
-
-[node name="PlacementPreviewPool" type="Node"]
-script = ExtResource("1_oi2oi")
