@@ -7,9 +7,9 @@ class_name UserInterface extends CanvasLayer
 @onready var packets_spent_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsDemandLabel
 @onready var packets_produced_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsProducedLabel
 @onready var packets_balance_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsBalanceLabel
-@onready var building_actions_panel: MarginContainer = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel
-@onready var building_actions_label: Label = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/BuildingActionsLabel
-@onready var buttons_container: VBoxContainer = $BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer
+@onready var building_actions_panel: MarginContainer = $BuildingsPanelOld/HBoxContainer/Panel/BuildingActionsPanel
+@onready var building_actions_label: Label = $BuildingsPanelOld/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/BuildingActionsLabel
+@onready var buttons_container: VBoxContainer = $BuildingsPanelOld/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/ButtonsContainer
 # -----------------------------------------
 # --- Managers References ---------------
 # -----------------------------------------

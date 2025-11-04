@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dosdc7ctbrr8g"]
+[gd_scene load_steps=4 format=3 uid="uid://dosdc7ctbrr8g"]
 
 [ext_resource type="Script" uid="uid://dvgy74ph8byy6" path="res://src/scenes/ui/user_interface.gd" id="1_yb1xu"]
 [ext_resource type="PackedScene" uid="uid://bj8k3lt30f7yw" path="res://src/scenes/ui/packets_stats.tscn" id="2_nxqqf"]
+[ext_resource type="PackedScene" uid="uid://bwxklu52i4lfa" path="res://src/scenes/ui/buildings_panel_old.tscn" id="3_nxqqf"]
 
 [node name="UserInterface" type="CanvasLayer"]
 script = ExtResource("1_yb1xu")
@@ -11,102 +12,4 @@ offset_left = -150.0
 offset_right = 150.0
 offset_bottom = 120.0
 
-[node name="BuildingsPanel" type="MarginContainer" parent="."]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -216.5
-offset_top = -132.0
-offset_right = 216.5
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="HBoxContainer" type="HBoxContainer" parent="BuildingsPanel"]
-layout_mode = 2
-
-[node name="Panel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
-custom_minimum_size = Vector2(140, 140)
-layout_mode = 2
-
-[node name="BuildingActionsPanel" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/Panel"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -68.5
-offset_right = 68.5
-offset_bottom = 136.0
-grow_horizontal = 2
-theme_override_constants/margin_left = 4
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 4
-theme_override_constants/margin_bottom = 4
-
-[node name="LabelsContainer" type="VBoxContainer" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel"]
-layout_mode = 2
-
-[node name="BuildingActionsLabel" type="Label" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer"]
-layout_mode = 2
-text = "Building Actions:"
-
-[node name="ButtonsContainer" type="VBoxContainer" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer"]
-layout_mode = 2
-alignment = 1
-
-[node name="DestroyButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer"]
-layout_mode = 2
-text = "Destroy"
-
-[node name="MoveButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer"]
-layout_mode = 2
-text = "Move"
-
-[node name="DeactivateButton" type="Button" parent="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer"]
-layout_mode = 2
-text = "De/activate"
-
-[node name="BuildingConstructionPanel" type="Panel" parent="BuildingsPanel/HBoxContainer"]
-custom_minimum_size = Vector2(260, 100)
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-theme_override_constants/margin_left = 4
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 4
-theme_override_constants/margin_bottom = 4
-
-[node name="HBoxContainer" type="HBoxContainer" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer"]
-layout_mode = 2
-
-[node name="RelayButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Relay"
-
-[node name="TurretButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Turret"
-
-[node name="GeneratorButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Generator"
-
-[node name="BaseButton" type="Button" parent="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Base"
-
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/DestroyButton" to="." method="_on_destroy_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/MoveButton" to="." method="_on_move_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/Panel/BuildingActionsPanel/LabelsContainer/ButtonsContainer/DeactivateButton" to="." method="_on_deactivate_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/RelayButton" to="." method="_on_relay_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/TurretButton" to="." method="_on_turret_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/GeneratorButton" to="." method="_on_generator_button_pressed"]
-[connection signal="pressed" from="BuildingsPanel/HBoxContainer/BuildingConstructionPanel/MarginContainer/HBoxContainer/BaseButton" to="." method="_on_base_button_pressed"]
+[node name="BuildingsPanelOld" parent="." instance=ExtResource("3_nxqqf")]

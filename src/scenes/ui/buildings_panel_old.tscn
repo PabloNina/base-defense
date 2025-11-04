@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bwxklu52i4lfa"]
 
-[node name="BuildingsPanel" type="MarginContainer"]
+[node name="BuildingsPanelOld" type="MarginContainer"]
+custom_minimum_size = Vector2(435, 175)
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -22,8 +23,6 @@ layout_mode = 2
 [node name="Panel" type="Panel" parent="HBoxContainer"]
 custom_minimum_size = Vector2(137, 100)
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 8
 
 [node name="BuildingActionsPanel" type="MarginContainer" parent="HBoxContainer/Panel"]
 layout_mode = 0
@@ -41,11 +40,18 @@ layout_mode = 2
 layout_mode = 2
 text = "Building Actions:"
 
-[node name="DestroyButton" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
+[node name="ButtonsContainer" type="VBoxContainer" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="DestroyButton" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/ButtonsContainer"]
 layout_mode = 2
 text = "Destroy"
 
-[node name="MoveButton" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer"]
+[node name="MoveButton" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/ButtonsContainer"]
+layout_mode = 2
+text = "Move"
+
+[node name="MoveButton2" type="Button" parent="HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/ButtonsContainer"]
 layout_mode = 2
 text = "Move"
 
