@@ -8,7 +8,7 @@ class_name GlobalData extends Node
 # --------------------------------------------
 const TILE_SIZE: int = 16
 const CONNECTION_LINE_SCENE: PackedScene = preload("res://src/scenes/objects/connection_lines/connection_line.tscn")
-const PLACEMENT_PREVIEW_SCENE: PackedScene = preload("res://src/scenes/managers/placement_preview.tscn")
+const GHOST_PREVIEW_SCENE: PackedScene = preload("res://src/scenes/objects/ghost_previews/ghost_preview.tscn")
 const PACKET_SCENE: PackedScene = preload("res://src/scenes/objects/packets/base_packet.tscn")
 # --------------------------------------------
 # --- Enumerations ---------------------------

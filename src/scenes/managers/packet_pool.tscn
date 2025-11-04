@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://xf47by6s5w60"]
-
-[ext_resource type="Script" uid="uid://qn2quqrnys37" path="res://src/scenes/managers/packet_pool.gd" id="1_bx0ha"]
-
-[node name="PacketPool" type="Node"]
-script = ExtResource("1_bx0ha")

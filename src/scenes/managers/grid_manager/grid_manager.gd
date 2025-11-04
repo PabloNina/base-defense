@@ -35,7 +35,7 @@ func _ready():
 # --- Connection Line Pool Wrappers -------
 # -----------------------------------------
 # Retrieves a ConnectionLine from the pool
-# Also called by BuildingManager and PlacementPreview
+# Also called by BuildingManager and GhostPreview
 func get_connection_line_from_pool() -> ConnectionLine:
 	return connection_line_pool.get_connection_line()
 

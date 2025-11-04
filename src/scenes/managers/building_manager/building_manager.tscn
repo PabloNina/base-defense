@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://b343w2e4y27v"]
 
-[ext_resource type="Script" uid="uid://cymhc3rmgng4k" path="res://src/scenes/managers/building_manager.gd" id="1_t5t3c"]
-[ext_resource type="PackedScene" uid="uid://cc3je7d1u8jvx" path="res://src/scenes/managers/placement_preview_pool.tscn" id="3_lcaib"]
+[ext_resource type="Script" uid="uid://cymhc3rmgng4k" path="res://src/scenes/managers/building_manager/building_manager.gd" id="1_t5t3c"]
+[ext_resource type="PackedScene" uid="uid://cc3je7d1u8jvx" path="res://src/scenes/managers/building_manager/placement_preview_pool.tscn" id="3_lcaib"]
 
 [node name="BuildingManager" type="Node2D"]
 z_index = 1

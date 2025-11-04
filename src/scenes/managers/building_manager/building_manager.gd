@@ -36,11 +36,11 @@ var is_building_placeable: bool = true
 var building_to_build_type: GlobalData.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
-var single_preview: PlacementPreview = null
+var single_preview: GhostPreview = null
 # --- Line Construction ---
 var is_line_construction_state: bool = false
 var line_construction_start_pos: Vector2i
-var construction_line_previews: Array[PlacementPreview] = []
+var construction_line_previews: Array[GhostPreview] = []
 var construction_previews_validity: Dictionary = {}
 var relay_line_previews: Array[ConnectionLine] = []
 # ---------------------------------------
@@ -60,7 +60,7 @@ var position_to_move: Vector2 = Vector2.ZERO
 # Dictionary of active landing markers for buildings currently moving.
 var landing_markers = {} # Key: building instance, Value: marker instance
 # Array of active previews for group moves.
-var move_previews: Array[PlacementPreview] = []
+var move_previews: Array[GhostPreview] = []
 # Tracks the validity of each preview in a group move.
 var move_previews_validity: Dictionary = {}
 # ---------------------------------------
@@ -128,12 +128,12 @@ func _process(_delta: float) -> void:
 
 
 # -----------------------------------------
-# --- PlacementPreview Pool Wrappers ------
+# --- GhostPreview Pool Wrappers ------
 # -----------------------------------------
-func _get_placement_preview_from_pool() -> PlacementPreview:
+func _get_placement_preview_from_pool() -> GhostPreview:
 	return placement_preview_pool.get_preview()
 
-func _return_placement_preview_to_pool(preview: PlacementPreview) -> void:
+func _return_placement_preview_to_pool(preview: GhostPreview) -> void:
 	placement_preview_pool.return_preview(preview)
 # ----------------------------------------------
 # --- Public Methods / Building Registration ---
@@ -219,8 +219,8 @@ func _select_building_to_build(new_building_type: GlobalData.BUILDING_TYPE) -> v
 	if not is_instance_valid(single_preview):
 		single_preview = _get_placement_preview_from_pool()
 		add_child(single_preview)
-		if not single_preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
-			single_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+		if not single_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
+			single_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 	
 	single_preview.initialize(
 		new_building_type,
@@ -259,7 +259,7 @@ func _update_previews(new_position: Vector2i) -> void:
 
 
 # Called when a preview's placement validity changes.
-func _on_placement_preview_is_placeable(is_valid: bool, preview: PlacementPreview) -> void:
+func _on_ghost_preview_is_placeable(is_valid: bool, preview: GhostPreview) -> void:
 	# If it's the main construction preview, update the global flag directly.
 	if preview == single_preview:
 		is_building_placeable = is_valid
@@ -326,8 +326,8 @@ func _create_move_previews() -> void:
 			move_previews_validity[preview] = true # Assume valid at start
 
 			# Prevents connecting multiple times the same signal when moving buildings
-			if not preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
-				preview.is_placeable.connect(_on_placement_preview_is_placeable)
+			if not preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
+				preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 
 # Updates the positions of all previews in a group move.
 func _update_move_previews() -> void:
@@ -420,8 +420,8 @@ func _update_construction_line_previews() -> void:
 			var preview = _get_placement_preview_from_pool()
 			add_child(preview)
 			construction_line_previews.append(preview)
-			if not preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
-				preview.is_placeable.connect(_on_placement_preview_is_placeable)
+			if not preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
+				preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 		
 		var _single_preview = construction_line_previews[0]
 		if not _single_preview.is_initialized():
@@ -443,8 +443,8 @@ func _update_construction_line_previews() -> void:
 		var new_preview = _get_placement_preview_from_pool()
 		add_child(new_preview)
 		construction_line_previews.append(new_preview)
-		if not new_preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
-			new_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+		if not new_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
+			new_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 	
 	while construction_line_previews.size() > num_buildings:
 		var p = construction_line_previews.pop_back()
@@ -620,8 +620,8 @@ func _on_InputManager_map_left_released(release_position: Vector2i):
 			if not is_instance_valid(single_preview):
 				single_preview = _get_placement_preview_from_pool()
 				add_child(single_preview)
-				if not single_preview.is_placeable.is_connected(_on_placement_preview_is_placeable):
-					single_preview.is_placeable.connect(_on_placement_preview_is_placeable)
+				if not single_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
+					single_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 			
 			single_preview.initialize(
 				building_to_build_type,

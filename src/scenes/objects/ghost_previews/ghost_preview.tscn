@@ -1,13 +1,13 @@
 [gd_scene load_steps=3 format=3 uid="uid://c8t5w2j2qg3j"]
 
-[ext_resource type="Script" uid="uid://ceyt54foo7kb8" path="res://src/scenes/managers/placement_preview.gd" id="1_abcde"]
+[ext_resource type="Script" uid="uid://ceyt54foo7kb8" path="res://src/scenes/objects/ghost_previews/ghost_preview.gd" id="1_2wqr3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_abcde"]
 size = Vector2(32, 32)
 
-[node name="PlacementPreview" type="Node2D"]
+[node name="GhostPreview" type="Node2D"]
 z_index = 1
-script = ExtResource("1_abcde")
+script = ExtResource("1_2wqr3")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(1, 1, 1, 0.5)

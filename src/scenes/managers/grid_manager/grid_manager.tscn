@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://cjr2r4qtmpky6"]
+
+[ext_resource type="Script" uid="uid://dwf43g5kg6ox7" path="res://src/scenes/managers/grid_manager/grid_manager.gd" id="1_houfk"]
+[ext_resource type="PackedScene" uid="uid://cntin16mfwc5i" path="res://src/scenes/managers/grid_manager/connection_line_pool.tscn" id="2_674ey"]
+
+[node name="GridManager" type="Node"]
+script = ExtResource("1_houfk")
+
+[node name="ConnectionLinesContainer" type="Node" parent="."]
+
+[node name="ConnectionLinePool" parent="." instance=ExtResource("2_674ey")]

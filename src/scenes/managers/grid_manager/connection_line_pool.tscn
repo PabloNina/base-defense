@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://cntin16mfwc5i"]
 
-[ext_resource type="Script" uid="uid://b4o7xc4k4scwc" path="res://src/scenes/managers/connection_line_pool.gd" id="1_4ekac"]
+[ext_resource type="Script" uid="uid://b4o7xc4k4scwc" path="res://src/scenes/managers/grid_manager/connection_line_pool.gd" id="1_4ekac"]
 
 [node name="ConnectionLinePool" type="Node"]
 script = ExtResource("1_4ekac")

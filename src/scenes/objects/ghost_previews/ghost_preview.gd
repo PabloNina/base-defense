@@ -1,15 +1,15 @@
 # =========================================
-# placement_preview.gd
+# ghost_preview.gd
 # =========================================
 # Displays a semi-transparent preview of a building and its potential grid connections and fire range.
 # Handles placement validity through Area2D overlap detection and provides visual feedback.
-class_name PlacementPreview extends Node2D
+class_name GhostPreview extends Node2D
 # --------------------------------------------
 # --- Signals --------------------------------
 # --------------------------------------------
 # Emitted when placement validity changes, passing itself for identification.
 # Listener BuildingManager
-signal is_placeable(is_valid: bool, preview: PlacementPreview)
+signal is_placeable(is_valid: bool, preview: GhostPreview)
 # --------------------------------------------
 # --- Onready References ---------------------
 # --------------------------------------------

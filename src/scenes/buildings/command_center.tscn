@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dktsk6rvbyg5f" path="res://assets/sprites/buildings/command_center.png" id="1_6q2hw"]
 [ext_resource type="Script" uid="uid://cm557jy8egni6" path="res://src/scenes/buildings/command_center.gd" id="1_oaft0"]
-[ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/building_hurt_box.tscn" id="2_pkfxu"]
+[ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/hurt&hit_boxes/building_hurt_box.tscn" id="2_pkfxu"]
 [ext_resource type="Texture2D" uid="uid://c8e1wx4o47i3l" path="res://assets/sprites/icons/exclamation_mark.png" id="3_a7xo4"]
 [ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/construction_progress_bar.tscn" id="4_2s0ca"]
 [ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="4_3272p"]
