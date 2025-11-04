@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cpoaqe645mbpq"]
+[gd_scene load_steps=9 format=3 uid="uid://cpoaqe645mbpq"]
 
 [ext_resource type="Script" uid="uid://dhe57h5w5xkvq" path="res://src/scenes/buildings/generator.gd" id="1_efbft"]
 [ext_resource type="Texture2D" uid="uid://ip4hsht2n84x" path="res://assets/sprites/buildings/energy_generator.png" id="1_g1aqw"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://c8e1wx4o47i3l" path="res://assets/sprites/icons/exclamation_mark.png" id="3_16py1"]
 [ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="4_7gk5y"]
 [ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/construction_progress_bar.tscn" id="4_dx60t"]
+[ext_resource type="Texture2D" uid="uid://cptw35ufyg47x" path="res://assets/sprites/icons/small_selection_box.png" id="5_3clxv"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_efbft"]
 size = Vector2(14, 14)
@@ -23,6 +24,9 @@ texture = ExtResource("3_16py1")
 
 [node name="DeactivatedSprite" type="Sprite2D" parent="."]
 texture = ExtResource("4_7gk5y")
+
+[node name="SelectionBoxSprite" type="Sprite2D" parent="."]
+texture = ExtResource("5_3clxv")
 
 [node name="BuildingHurtBox" parent="." instance=ExtResource("2_gm03w")]
 

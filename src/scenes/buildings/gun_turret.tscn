@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bmwseob8yf20s"]
+[gd_scene load_steps=12 format=3 uid="uid://bmwseob8yf20s"]
 
 [ext_resource type="Script" uid="uid://ndu688dmwy5s" path="res://src/scenes/buildings/gun_turret.gd" id="1_es320"]
 [ext_resource type="Texture2D" uid="uid://bps65f6milxa6" path="res://assets/sprites/buildings/cannon_base.png" id="2_5w6a5"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://qayhiiktwu23" path="res://assets/sprites/icons/out_ammo_icon.png" id="5_rafxf"]
 [ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/construction_progress_bar.tscn" id="6_b5r10"]
 [ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="6_th267"]
+[ext_resource type="Texture2D" uid="uid://cptw35ufyg47x" path="res://assets/sprites/icons/small_selection_box.png" id="7_n3a8b"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3m2l5"]
 size = Vector2(14, 14)
@@ -33,6 +34,9 @@ texture = ExtResource("5_rafxf")
 
 [node name="DeactivatedSprite" type="Sprite2D" parent="."]
 texture = ExtResource("6_th267")
+
+[node name="SelectionBoxSprite" type="Sprite2D" parent="."]
+texture = ExtResource("7_n3a8b")
 
 [node name="BuildingHurtBox" parent="." instance=ExtResource("4_dgy6q")]
 

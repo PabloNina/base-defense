@@ -31,12 +31,13 @@ var upkeep_cost: float = 0.0
 # Max range for connection lines to be created
 var connection_range: float = 0.0
 # -------------------------------
-# --- Child Node References -----
+# --- Common Child Node References -----
 # -------------------------------
 @onready var building_hurt_box: Area2D = $BuildingHurtBox
 @onready var construction_progress_bar: ProgressBar = $ConstructionProgressBar
 @onready var exclamation_mark_sprite: Sprite2D = $ExclamationMarkSprite
 @onready var deactivated_sprite: Sprite2D = $DeactivatedSprite
+@onready var selection_box_sprite: Sprite2D = $SelectionBoxSprite
 # -------------------------------
 # --- Runtime States ------------
 # -------------------------------
@@ -74,8 +75,8 @@ func _ready():
 	construction_progress_bar.value = 0
 	# Starts hidden is activated after receiving the first building packet
 	construction_progress_bar.visible = false
-	# hide exclamation mark sprite
-	#exclamation_mark_sprite.visible = false
+	# hide exclamation selection box sprite
+	selection_box_sprite.visible = false
 	# hide deactivated sprite
 	deactivated_sprite.visible = false
 	
@@ -93,28 +94,30 @@ func _ready():
 # -------------------------------
 # --- Selected Box Drawing ------
 # -------------------------------
-func _draw() -> void:                                                                                                                                   
-	if is_selected:                                                                                                                                     
-		# Find the building texture to determine the size of the selection box
-		var texture = GlobalData.get_ghost_texture(building_type)
-		if texture:
-			var rect: Rect2 
-			rect.size = texture.get_size()
-			rect.position = -rect.size / 2
-			# Grow the rectangle by 4 pixels on each side to create a margin
-			draw_rect(rect.grow(4), Color.GREEN, false, 2.0)
+#func _draw() -> void:                                                                                                                                   
+	#if is_selected:                                                                                                                                     
+		## Find the building texture to determine the size of the selection box
+		#var texture = GlobalData.get_ghost_texture(building_type)
+		#if texture:
+			#var rect: Rect2 
+			#rect.size = texture.get_size()
+			#rect.position = -rect.size / 2
+			## Grow the rectangle by 4 pixels on each side to create a margin
+			#draw_rect(rect.grow(4), Color.GREEN, false, 2.0)
 			
 # -------------------------------
 # --- Selection Box Updating ----
 # -------------------------------
 func select() -> void:
 	is_selected = true
-	queue_redraw()
+	selection_box_sprite.visible = true
+	#queue_redraw()
 
 
 func deselect() -> void:
 	is_selected = false
-	queue_redraw()
+	selection_box_sprite.visible = false
+	#queue_redraw()
 	
 # -------------------------------
 # --- Input / Click Handling ----
