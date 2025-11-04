@@ -276,7 +276,7 @@ func _update_grid_integrity():
 		powered_map[building] = is_powered
 		
 		# Reset packets in flight if building is isolated
-		if not is_powered:
+		if not is_powered and building.is_built:
 			building.reset_packets_in_flight()
 
 	# Update connection visuals

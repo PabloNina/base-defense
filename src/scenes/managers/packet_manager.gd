@@ -22,6 +22,8 @@ func _get_packet_from_pool(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_pat
 
 # Called by Packet
 func return_packet_to_pool(packet: Packet) -> void:
+	if packet.packet_arrived.is_connected(_on_packet_arrived):
+		packet.packet_arrived.disconnect(_on_packet_arrived)
 	packet_pool.return_packet(packet)
 
 # -----------------------------------------
@@ -46,9 +48,6 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		match packet_type:
 			GlobalData.PACKETS.BUILDING:
 				if building.is_scheduled_to_build or building.is_built:
-					continue
-			GlobalData.PACKETS.ENERGY:
-				if building.packets_in_flight >= building.cost_to_supply:
 					continue
 			GlobalData.PACKETS.AMMO:
 				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
@@ -84,9 +83,6 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 			GlobalData.PACKETS.BUILDING:
 				if building.is_scheduled_to_build or building.is_built:
 					continue
-			GlobalData.PACKETS.ENERGY:
-				if building.packets_in_flight >= building.cost_to_supply:
-					continue
 			GlobalData.PACKETS.AMMO:
 				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
 					continue
@@ -103,18 +99,14 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 		if not grid_manager.are_connected(path[0], path[-1]):
 			continue
 
+		# Check if the path is traversable before incrementing in-flight packets and spawning.
+		if not _is_path_traversable(path, packet_type):
+			continue
+
 		# Increment in-flight AFTER the final checks and BEFORE spawning the packet.
 		# This ensures other bases/ticks see the incremented value immediately.
 		building.increment_packets_in_flight()
 
-		####### DEBUG ###############
-		if enable_packed_debug:
-			print("[DEBUG]", building.name, 
-			" inflight=", building.packets_in_flight,
-			" scheduled=", building.is_scheduled_to_build,
-			" built=", building.is_built,
-			" cost=", building.cost_to_build)
-	
 		_spawn_packet_along_path(path, packet_type, delay_accum)
 		delay_accum += spawn_delay_step
 		packets_sent += 1
@@ -161,13 +153,6 @@ func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS
 	return true
 
 func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PACKETS, delay_offset :float = 0.0) -> void:
-	# First, check if the path is traversable.
-	if not _is_path_traversable(path, packet_type):
-		# If the path is not traversable, decrement the in-flight counter and return.
-		if path.size() > 0 and is_instance_valid(path[-1]):
-			path[-1].decrement_packets_in_flight()
-		return
-
 	# Use a small delay to prevent packets from stacking on top of each other.
 	if delay_offset > 0.0:
 		await get_tree().create_timer(delay_offset).timeout

@@ -65,7 +65,7 @@ func get_packet(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_path: Array[Bu
 	# Reset internal state
 	packet.current_index = 0
 	packet.is_cleaned_up = false
-	packet._set_sprite()
+	packet.set_sprite()
 
 	# Enable the Packet for processing and visibility
 	packet.process_mode = Node.PROCESS_MODE_INHERIT

@@ -18,7 +18,7 @@ signal finish_building()
 signal deactivated(is_deactivated: bool)
 
 # -------------------------------
-# --- Editor Settings ----------- 
+# --- Editor Settings -----------
 # -------------------------------
 # packets needed to complete construction
 var cost_to_build: int = 0

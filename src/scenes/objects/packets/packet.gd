@@ -29,7 +29,7 @@ func _ready():
 		return
 	global_position = path[0].global_position
 	current_index = 0
-	_set_sprite()
+	set_sprite()
 
 func _process(delta: float):
 	_follow_path(delta)
@@ -80,7 +80,7 @@ func _follow_path(delta: float) -> void:
 # --- Visuals -----------
 # -----------------------
 # Set sprite texture base on packet type
-func _set_sprite() -> void:
+func set_sprite() -> void:
 	match packet_type:
 		GlobalData.PACKETS.BUILDING:
 			sprite_2d.texture = GREEN_TEXTURE
