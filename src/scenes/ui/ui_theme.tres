@@ -1,6 +1,7 @@
-[gd_resource type="Theme" load_steps=18 format=3 uid="uid://dgr6s1uvlv71a"]
+[gd_resource type="Theme" load_steps=19 format=3 uid="uid://dgr6s1uvlv71a"]
 
 [ext_resource type="Texture2D" uid="uid://dj8bx1nwpdcev" path="res://assets/ui/basic_ui_test.png" id="1_nssnw"]
+[ext_resource type="FontVariation" uid="uid://2abic66bb3yk" path="res://assets/fonts/kenney_variation.tres" id="2_ifiro"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_xird6"]
 load_path = "res://.godot/imported/basic_ui_test.png-bafd7a47b5fb53f1e7fae71ed5b54655.ctex"
@@ -95,6 +96,7 @@ ConstructionButton/styles/pressed = SubResource("StyleBoxTexture_c8e73")
 ConstructionLabel/base_type = &"Label"
 ConstructionLabel/colors/font_color = Color(0, 0, 0, 1)
 ConstructionLabel/font_sizes/font_size = 16
+ConstructionLabel/fonts/font = ExtResource("2_ifiro")
 GreyPanel/base_type = &"PanelContainer"
 GreyPanel/styles/panel = SubResource("StyleBoxTexture_xird6")
 MarginContainer/constants/margin_bottom = 10

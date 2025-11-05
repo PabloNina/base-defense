@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bj8k3lt30f7yw"]
 
-[node name="PacketsStats" type="MarginContainer"]
+[node name="PacketsStatsOld" type="MarginContainer"]
 custom_minimum_size = Vector2(300, 120)
 anchors_preset = 5
 anchor_left = 0.5

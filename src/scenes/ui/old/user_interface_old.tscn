@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3 uid="uid://dosdc7ctbrr8g"]
+
+[ext_resource type="Script" uid="uid://dvgy74ph8byy6" path="res://src/scenes/ui/old/user_interface_old.gd" id="1_yb1xu"]
+[ext_resource type="PackedScene" uid="uid://bj8k3lt30f7yw" path="res://src/scenes/ui/old/packets_stats_old.tscn" id="2_nxqqf"]
+[ext_resource type="PackedScene" uid="uid://bwxklu52i4lfa" path="res://src/scenes/ui/old/buildings_panel_old.tscn" id="3_nxqqf"]
+
+[node name="UserInterfaceOld" type="CanvasLayer"]
+script = ExtResource("1_yb1xu")
+
+[node name="PacketsStats" parent="." instance=ExtResource("2_nxqqf")]
+offset_left = -150.0
+offset_right = 150.0
+offset_bottom = 120.0
+
+[node name="BuildingsPanelOld" parent="." instance=ExtResource("3_nxqqf")]

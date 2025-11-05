@@ -43,7 +43,7 @@ const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/command_center.png"),
-		"display_name": "Command Center",
+		"display_name": "Base",
 		"cost_to_build": 0,
 		"connection_range_tiles": 8,
 		"is_relay": true,
@@ -52,6 +52,7 @@ const BUILDINGS_DATA: Dictionary = {
 		# building_category
 		# Command_Center class only
 		# default packet prod
+		# default max storage
 	},
 	BUILDING_TYPE.RELAY: {
 		"packed_scene": preload("res://src/scenes/buildings/relay.tscn"),
@@ -68,7 +69,7 @@ const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.GENERATOR: {
 		"packed_scene": preload("res://src/scenes/buildings/generator.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/energy_generator.png"),
-		"display_name": "Generator",
+		"display_name": "Reactor",
 		"cost_to_build": 5,
 		"connection_range_tiles": 5,
 		"is_relay": false,
@@ -81,7 +82,7 @@ const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.GUN_TURRET: {
 		"packed_scene": preload("res://src/scenes/buildings/gun_turret.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/cannon_base.png"),
-		"display_name": "Gun Turret",
+		"display_name": "Cannon",
 		"cost_to_build": 3,
 		"connection_range_tiles": 6,
 		"is_relay": false,

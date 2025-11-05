@@ -1,0 +1,83 @@
+[gd_scene load_steps=3 format=3 uid="uid://bbe8htqb2cdtu"]
+
+[ext_resource type="Theme" uid="uid://dgr6s1uvlv71a" path="res://src/scenes/ui/ui_theme.tres" id="1_7fy4r"]
+[ext_resource type="Script" uid="uid://bblscjswwjrn2" path="res://src/scenes/ui/building_actions_panel.gd" id="2_04et7"]
+
+[node name="BuildingActionsPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(403, 126)
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -97.0
+offset_top = -72.0
+offset_right = 89.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("1_7fy4r")
+theme_type_variation = &"GreyPanel"
+script = ExtResource("2_04et7")
+
+[node name="MainMarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="MainHBoxContainer" type="HBoxContainer" parent="MainMarginContainer"]
+layout_mode = 2
+
+[node name="ActionsButtonsContainer" type="VBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+layout_mode = 2
+
+[node name="DestroyButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/ActionsButtonsContainer"]
+custom_minimum_size = Vector2(117, 31)
+layout_mode = 2
+text = "Destroy
+"
+
+[node name="DeactivateButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/ActionsButtonsContainer"]
+custom_minimum_size = Vector2(117, 31)
+layout_mode = 2
+text = "De/Activate
+"
+
+[node name="MoveButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/ActionsButtonsContainer"]
+custom_minimum_size = Vector2(117, 31)
+layout_mode = 2
+text = "Move"
+
+[node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer"]
+layout_mode = 2
+
+[node name="InfoContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_type_variation = &"ConstructionLabel"
+text = "Building name:"
+
+[node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+layout_mode = 2
+
+[node name="HealthLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_type_variation = &"ConstructionLabel"
+text = "Health: 10/10"
+
+[node name="VSeparator2" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+layout_mode = 2
+
+[node name="AmmoLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_type_variation = &"ConstructionLabel"
+text = "Ammo: 10/10"

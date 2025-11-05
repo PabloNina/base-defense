@@ -1,0 +1,969 @@
+[gd_scene load_steps=8 format=3 uid="uid://2ggdqsbop0oc"]
+
+[ext_resource type="Theme" uid="uid://dgr6s1uvlv71a" path="res://src/scenes/ui/ui_theme.tres" id="1_sn0d1"]
+[ext_resource type="Script" uid="uid://ddy5beytsf0c5" path="res://src/scenes/ui/buildings_construction_panel.gd" id="2_cp3hb"]
+[ext_resource type="Texture2D" uid="uid://cegj3a117b1o0" path="res://assets/sprites/buildings/energy_relay.png" id="3_tehn3"]
+[ext_resource type="Texture2D" uid="uid://ip4hsht2n84x" path="res://assets/sprites/buildings/energy_generator.png" id="4_dk4of"]
+[ext_resource type="Texture2D" uid="uid://dq0v7fxhqtnk4" path="res://assets/sprites/icons/lock.png" id="5_fsvf4"]
+[ext_resource type="Texture2D" uid="uid://bps65f6milxa6" path="res://assets/sprites/buildings/cannon_base.png" id="6_e55oy"]
+[ext_resource type="Texture2D" uid="uid://dktsk6rvbyg5f" path="res://assets/sprites/buildings/command_center.png" id="7_f7738"]
+
+[node name="BuildingsConstructionPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(403, 126)
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -97.0
+offset_top = -72.0
+offset_right = 89.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("1_sn0d1")
+theme_type_variation = &"GreyPanel"
+script = ExtResource("2_cp3hb")
+
+[node name="MainMarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="MainHBoxContainer" type="HBoxContainer" parent="MainMarginContainer"]
+layout_mode = 2
+
+[node name="CategoryButtonsContainer" type="VBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+layout_mode = 2
+
+[node name="InfrastructureButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/CategoryButtonsContainer"]
+custom_minimum_size = Vector2(117, 31)
+layout_mode = 2
+text = "Infrastructure
+"
+
+[node name="WeaponsButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/CategoryButtonsContainer"]
+custom_minimum_size = Vector2(117, 31)
+layout_mode = 2
+text = "Weapons
+"
+
+[node name="SpecialButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/CategoryButtonsContainer"]
+custom_minimum_size = Vector2(117, 31)
+layout_mode = 2
+text = "Special"
+
+[node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer"]
+layout_mode = 2
+
+[node name="InfrastructureButtonsContainer" type="VBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+layout_mode = 2
+
+[node name="RowOneButtonsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="RelayButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+tooltip_text = "Relay:
+Cost to build - 2
+Upkeek cost - 0.5"
+theme_type_variation = &"ConstructionButton"
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/RelayButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Relay"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/RelayButton"]
+position = Vector2(30, 30)
+texture = ExtResource("3_tehn3")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/RelayButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+text = "2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ReactorButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/ReactorButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Reactor"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/ReactorButton"]
+position = Vector2(30, 30)
+texture = ExtResource("4_dk4of")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/ReactorButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+text = "5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/LockedButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/LockedButton"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/LockedButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton2" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RowTwoButtonsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="LockedButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton2" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton3" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton4" type="Button" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WeaponButtonsContainer" type="VBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="RowOneButtonsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="CannonButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/CannonButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Cannon"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/CannonButton"]
+position = Vector2(30, 30)
+texture = ExtResource("6_e55oy")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/CannonButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+text = "3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton2" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton3" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton3"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton3"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/LockedButton3"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RowTwoButtonsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="LockedButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton2" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton3" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton4" type="Button" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SpecialButtonsContainer" type="VBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="RowOneButtonsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="BaseButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/BaseButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Base"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/BaseButton"]
+position = Vector2(30, 30)
+scale = Vector2(0.33, 0.33)
+texture = ExtResource("7_f7738")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/BaseButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton2" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton2"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton3" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton3"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton3"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/LockedButton3"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RowTwoButtonsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="LockedButton" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton2" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton2"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton3" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton3"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockedButton4" type="Button" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer"]
+custom_minimum_size = Vector2(60, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"ConstructionButton"
+disabled = true
+
+[node name="ButtonLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.5
+offset_top = 7.0
+offset_right = 21.5
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+text = "Locked"
+horizontal_alignment = 1
+
+[node name="ButtonIcon" type="Sprite2D" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+position = Vector2(30, 30)
+texture = ExtResource("5_fsvf4")
+
+[node name="ButtonCostLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowTwoButtonsContainer/LockedButton4"]
+layout_mode = 0
+offset_left = 22.5
+offset_top = 19.0
+offset_right = 62.5
+offset_bottom = 42.0
+theme_type_variation = &"ConstructionLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/CategoryButtonsContainer/InfrastructureButton" to="." method="_on_infrastructure_button_pressed"]
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/CategoryButtonsContainer/WeaponsButton" to="." method="_on_weapons_button_pressed"]
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/CategoryButtonsContainer/SpecialButton" to="." method="_on_special_button_pressed"]
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/RelayButton" to="." method="_on_relay_button_pressed"]
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/InfrastructureButtonsContainer/RowOneButtonsContainer/ReactorButton" to="." method="_on_reactor_button_pressed"]
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/WeaponButtonsContainer/RowOneButtonsContainer/CannonButton" to="." method="_on_cannon_button_pressed"]
+[connection signal="pressed" from="MainMarginContainer/MainHBoxContainer/SpecialButtonsContainer/RowOneButtonsContainer/BaseButton" to="." method="_on_base_button_pressed"]

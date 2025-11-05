@@ -2,19 +2,10 @@ class_name UserInterface extends CanvasLayer
 # -----------------------------------------
 # --- Child Nodes References --------------
 # -----------------------------------------
-@onready var packets_stored_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/PacketsStoredLabel
-@onready var packets_stored_bar: ProgressBar = $PacketsStats/Panel/MarginContainer/VBoxContainer/PacketsStoredBar
-@onready var packets_spent_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsDemandLabel
-@onready var packets_produced_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsProducedLabel
-@onready var packets_balance_label: Label = $PacketsStats/Panel/MarginContainer/VBoxContainer/HBoxContainer/PacketsBalanceLabel
-@onready var building_actions_panel: MarginContainer = $BuildingsPanelOld/HBoxContainer/Panel/BuildingActionsPanel
-@onready var building_actions_label: Label = $BuildingsPanelOld/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/BuildingActionsLabel
-@onready var buttons_container: VBoxContainer = $BuildingsPanelOld/HBoxContainer/Panel/BuildingActionsPanel/VBoxContainer/ButtonsContainer
-# -----------------------------------------
-# --- Managers References ---------------
-# -----------------------------------------
-var grid_manager: GridManager
-var building_manager: BuildingManager
+@onready var building_actions_panel: BuildingActionsPanel = $MainMarginContainer/BuildingActionsPanel
+@onready var buildings_construction_panel: BuildingsConstructionPanel = $MainMarginContainer/BuildingsConstructionPanel
+@onready var packets_stats_panel: PacketsStatsPanel = $MainMarginContainer/PacketsStatsPanel
+
 # -----------------------------------------
 # --- Signals ------------------------------
 # -----------------------------------------
@@ -23,131 +14,84 @@ signal building_button_pressed(building_to_build: GlobalData.BUILDING_TYPE)
 signal destroy_button_pressed(building_to_destroy: Building)
 signal deactivate_button_pressed(building_to_deactivate: Building)
 signal move_selection_pressed()
+
 # -----------------------------------------
-# --- ???????????? -----------------------
+# --- Managers References ---------------
 # -----------------------------------------
-var current_selection: Array[Building] = []
-var default_max_storage: float = 50.0
-# A dictionary to map actions to button text and methods
-const ACTION_DEFINITIONS = {
-	GlobalData.BUILDING_ACTIONS.DESTROY: {"text": "Destroy", "method": "_on_destroy_button_pressed"},
-	GlobalData.BUILDING_ACTIONS.MOVE: {"text": "Move", "method": "_on_move_button_pressed"},
-	GlobalData.BUILDING_ACTIONS.DEACTIVATE: {"text": "De/activate", "method": "_on_deactivate_button_pressed"},
-}
+var building_manager: BuildingManager
+var grid_manager: GridManager
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
-	# Subscribe to grid signals
-	grid_manager = get_tree().get_first_node_in_group("grid_manager")
-	if grid_manager:
-		grid_manager.ui_update_packets.connect(on_update_packets)
+	# By default start with construction panel selected
+	_hide_building_actions_panel()
+	_show_buildings_construction_panel()
 
 	# Subscribe to building manager signals
 	building_manager = get_tree().get_first_node_in_group("building_manager")
 	if building_manager:
 		#building_manager.building_selected.connect(show_building_actions_panel)
-		building_manager.selection_changed.connect(show_building_actions_panel)
-		building_manager.building_deselected.connect(hide_building_actions_panel)
+		building_manager.selection_changed.connect(_show_building_actions_panel)
+		building_manager.building_deselected.connect(_hide_building_actions_panel)
 
-	# Hide building actions panel at start
-	hide_building_actions_panel()
+	# Subscribe to grid manager signals
+	grid_manager = get_tree().get_first_node_in_group("grid_manager")
+	if grid_manager:
+		grid_manager.ui_update_packets.connect(_on_update_packets)
 
-	# Initialize packets stored bar range
-	packets_stored_bar.min_value = 0
-	packets_stored_bar.max_value = default_max_storage
-	packets_stored_bar.value = 0
-
-# -----------------------------------------
-# --- Packets Stats Panel ----------------
-# -----------------------------------------
-# Update packets stats
-func on_update_packets(stored: float, max_storage: float, produced: float, consumed: float, net_balance: float) -> void:
-	# Update stored packets label and bar
-	packets_stored_label.text = "Packets Stored: %.1f / %.1f" % [stored, max_storage]
-	packets_stored_bar.value = stored
-	# Only assign new value if max storaged changed 
-	if packets_stored_bar.max_value != max_storage:
-		packets_stored_bar.max_value = max_storage
-
-	# Update production/consumption values
-	packets_produced_label.text = "+ %.1f" % [produced]
-	packets_spent_label.text = "- %.1f" % [consumed]
-
-	# Update balance label
-	# Color code the balance label based on value
-	var balance_color := Color.GREEN if net_balance > 0 else Color.RED if net_balance < 0 else Color.WHITE
-	packets_balance_label.add_theme_color_override("font_color", balance_color)
-	packets_balance_label.text = "%.1f" % [net_balance]
-
-# -----------------------------------------
-# --- Building Actions Panel --------------
-# -----------------------------------------
-func show_building_actions_panel(selected_buildings: Array[Building]) -> void:
-	current_selection = selected_buildings
+	# Subscribe to building actions panel signals
+	building_actions_panel.destroy_action_pressed.connect(_on_destroy_action_pressed)
+	building_actions_panel.deactivate_action_pressed.connect(_on_deactivate_action_pressed)
+	building_actions_panel.move_action_pressed.connect(_on_move_action_pressed)
 	
-	# First, clear any old buttons from the container
-	for child in buttons_container.get_children():
-		child.queue_free()
-
-	var available_actions: Array[GlobalData.BUILDING_ACTIONS]
-
-	if current_selection.size() == 1:
-		# Single building selected
-		var building = current_selection[0]
-		building_actions_label.text = GlobalData.get_display_name(building.building_type)
-		available_actions = building.get_available_actions()
-	else:
-		# Multiple buildings selected - actions are the same for all
-		building_actions_label.text = "%s Buildings Selected" % current_selection.size()
-		available_actions = current_selection[0].get_available_actions()
-
-	# Create a button for each common action
-	for action in available_actions:
-		if ACTION_DEFINITIONS.has(action):
-			var definition = ACTION_DEFINITIONS[action]
-			var button = Button.new()
-			button.text = definition.text
-			button.pressed.connect(self.call.bind(definition.method))
-			buttons_container.add_child(button)
+	# Subscribe to buildings construction panel signals
+	buildings_construction_panel.construction_button_pressed.connect(_on_construction_button_pressed)
 	
-	building_actions_panel.visible = true
+# -----------------------------------------
+# --- Building Manager Signal Handling ----
+# -----------------------------------------
+# Connected to building_manager.selection_changed Signal
+func _show_building_actions_panel(selected_buildings: Array[Building]) -> void:
+	if not building_actions_panel.visible:
+		building_actions_panel.visible = true
+		building_actions_panel.update_building_actions_buttons(selected_buildings)
 
-func hide_building_actions_panel() -> void:
-	current_selection.clear()
-	building_actions_panel.visible = false
-
-func _on_destroy_button_pressed() -> void:
-	if not current_selection.is_empty():
-		for building in current_selection:
-			destroy_button_pressed.emit(building)
-		hide_building_actions_panel()
-
-func _on_move_button_pressed() -> void:
-	if not current_selection.is_empty():
-		move_selection_pressed.emit()
-		hide_building_actions_panel()
-		
-func _on_deactivate_button_pressed() -> void:
-	if not current_selection.is_empty():
-		for building in current_selection:
-			deactivate_button_pressed.emit(building)
-		hide_building_actions_panel()
+# Connected to building_manager.building_deselected Signal
+func _hide_building_actions_panel() -> void:
+	if building_actions_panel.visible:
+		building_actions_panel.visible = false
+		building_actions_panel.clear_building_actions_buttons()
 
 # -----------------------------------------
-# --- Building Selection Panel -------------
+# --- Grid Manager Signal Handling --------
 # -----------------------------------------
-func _on_relay_button_pressed() -> void:
-	building_button_pressed.emit(GlobalData.BUILDING_TYPE.RELAY)
+# Connected to grid_manager.ui_update_packets Signal
+func _on_update_packets(stored: float, max_storage: float, produced: float, consumed: float, net_balance: float) -> void:
+	packets_stats_panel.update_stats(stored, max_storage, produced, consumed, net_balance)
+	
+# -------------------------------------------------
+# --- Building Actions Buttons Signal Handling ----
+# -------------------------------------------------
+func _on_destroy_action_pressed(building: Building) -> void:
+	destroy_button_pressed.emit(building)
 
+func _on_deactivate_action_pressed(building: Building) -> void:
+	deactivate_button_pressed.emit(building)
 
-func _on_turret_button_pressed() -> void:
-	building_button_pressed.emit(GlobalData.BUILDING_TYPE.GUN_TURRET)
+func _on_move_action_pressed() -> void:
+	move_selection_pressed.emit()
 
+func _on_construction_button_pressed(building_type: GlobalData.BUILDING_TYPE) -> void:
+	building_button_pressed.emit(building_type)
 
-func _on_generator_button_pressed() -> void:
-	building_button_pressed.emit(GlobalData.BUILDING_TYPE.GENERATOR)
+# -----------------------------------------------
+# --- Buildings Construction Panel Visibility ---
+# -----------------------------------------------
+func _show_buildings_construction_panel() -> void:
+	if not buildings_construction_panel.visible:
+		buildings_construction_panel.visible = true
 
-
-func _on_base_button_pressed() -> void:
-	building_button_pressed.emit(GlobalData.BUILDING_TYPE.COMMAND_CENTER)
+func _hide_buildings_construction_panel() -> void:
+	if buildings_construction_panel.visible:
+		buildings_construction_panel.visible = false

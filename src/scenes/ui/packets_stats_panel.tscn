@@ -1,0 +1,94 @@
+[gd_scene load_steps=5 format=3 uid="uid://d0xc3jnvlg3jc"]
+
+[ext_resource type="Theme" uid="uid://dgr6s1uvlv71a" path="res://src/scenes/ui/ui_theme.tres" id="1_o3vgp"]
+[ext_resource type="Texture2D" uid="uid://ddjmvcqun3kdx" path="res://assets/ui/progress_bar.png" id="2_l3xby"]
+[ext_resource type="Script" uid="uid://dwa00wvrsms5x" path="res://src/scenes/ui/packets_stats_panel.gd" id="2_wslc0"]
+[ext_resource type="Texture2D" uid="uid://colweingixwrm" path="res://assets/ui/progress_filler.png" id="3_wslc0"]
+
+[node name="PacketsStatsPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(300, 120)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_right = 150.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme = ExtResource("1_o3vgp")
+theme_type_variation = &"GreyPanel"
+script = ExtResource("2_wslc0")
+
+[node name="MainMarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="MainVBoxContainer" type="VBoxContainer" parent="MainMarginContainer"]
+layout_mode = 2
+
+[node name="HeaderLabel" type="Label" parent="MainMarginContainer/MainVBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"ConstructionLabel"
+text = "Packets Stats"
+
+[node name="HSeparator" type="HSeparator" parent="MainMarginContainer/MainVBoxContainer"]
+layout_mode = 2
+
+[node name="StoredProgressBar" type="TextureProgressBar" parent="MainMarginContainer/MainVBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+value = 60.0
+texture_under = ExtResource("2_l3xby")
+texture_progress = ExtResource("3_wslc0")
+
+[node name="StoredValueLabel" type="Label" parent="MainMarginContainer/MainVBoxContainer/StoredProgressBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -49.0
+offset_top = -6.0
+offset_right = 49.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+theme_type_variation = &"ConstructionLabel"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "Stored: 60/100"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="MainMarginContainer/MainVBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MainMarginContainer/MainVBoxContainer"]
+layout_mode = 2
+
+[node name="ConsumedValueLabel" type="Label" parent="MainMarginContainer/MainVBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 2
+theme_type_variation = &"ConstructionLabel"
+theme_override_colors/font_color = Color(0.91227055, 4.7168137e-06, 6.738305e-07, 1)
+text = "- 0.0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BalanceValueLabel" type="Label" parent="MainMarginContainer/MainVBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 6
+theme_type_variation = &"ConstructionLabel"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "0.0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ProducedValueLabel" type="Label" parent="MainMarginContainer/MainVBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 10
+theme_type_variation = &"ConstructionLabel"
+theme_override_colors/font_color = Color(0, 0.9027056, 0, 1)
+text = "+ 0.0"
+horizontal_alignment = 1
+vertical_alignment = 1
