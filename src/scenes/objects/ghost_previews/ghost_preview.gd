@@ -44,17 +44,15 @@ var grid_manager: GridManager
 # Reference to TileMap ground layer and buildable tile for placement validity
 var ground_layer: TileMapLayer
 var buildable_tile_id: int = 0
-# Color for the weapon range visualization circle.
-const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
+var is_on_buildable_tile: bool = true
+var is_valid: bool = true
 # Keeps track of overlapping placement-blocking areas.
 var overlapping_areas: Array[Area2D] = []
-var is_on_buildable_tile: bool = true
 # Pool of Line2D nodes for drawing connection previews.
 var _ghost_lines: Array[ConnectionLine] = []
 # Tracks if the preview has been configured.
 var _is_initialized: bool = false
 var show_visual_feedback: bool = true
-var is_valid: bool = true
 
 # --------------------------------------------
 # --- Engine Callbacks -----------------------
@@ -63,9 +61,10 @@ func _draw() -> void:
 	if not show_visual_feedback:
 		return
 	# Draws the weapon's fire range if applicable.
+	# Use building category instead
 	var fire_range = GlobalData.get_fire_range(building_type)
 	if fire_range > 0:
-		draw_circle(Vector2.ZERO, fire_range, RANGE_COLOR)
+		draw_circle(Vector2.ZERO, fire_range, GlobalData.FIRE_RANGE_COLOR)
 	
 	# Draws the validity box around the building
 	var texture = sprite.texture
@@ -73,19 +72,20 @@ func _draw() -> void:
 		var rect: Rect2
 		rect.size = texture.get_size()
 		rect.position = -rect.size / 2
-		var color = Color.GREEN if is_valid else Color.RED
+		var color = GlobalData.BOX_VALID_COLOR if is_valid else GlobalData.BOX_INVALID_COLOR
 		draw_rect(rect.grow(4), color, false, 2.0)
 
 # --------------------------------------------
 # --- Public Methods -------------------------
 # --------------------------------------------
 # Returns whether the preview has been initialized.
-func is_initialized() -> bool:
+# Called by BuildingManager
+func is_ghost_preview_initialized() -> bool:
 	return _is_initialized
 
-
 # Initializes the preview's properties.
-func initialize(p_building_type: GlobalData.BUILDING_TYPE, p_grid_manager: GridManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
+# Called by BuildingManager
+func initialize_ghost_preview(p_building_type: GlobalData.BUILDING_TYPE, p_grid_manager: GridManager, p_texture: Texture2D, p_ground_layer: TileMapLayer, p_buildable_tile_id: int, p_show_feedback: bool = true) -> void:
 	building_type = p_building_type
 	grid_manager = p_grid_manager
 	sprite.texture = p_texture
@@ -100,16 +100,12 @@ func initialize(p_building_type: GlobalData.BUILDING_TYPE, p_grid_manager: GridM
 	# Ensure collision is enabled
 	collision_shape.set_deferred("disabled", false)
 	
-	# Force an immediate update of the connection lines and range indicator.
-	if show_visual_feedback:
-		_update_connection_ghosts()
-		queue_redraw()
-	
 	_is_initialized = true
 	_update_validity()
 
 # Updates the preview's position and redraws connection lines.
-func update_position(new_position: Vector2) -> void:
+# Called by BuildingManager
+func update_ghost_preview_position(new_position: Vector2) -> void:
 	global_position = new_position
 
 	if ground_layer:
@@ -118,10 +114,10 @@ func update_position(new_position: Vector2) -> void:
 		is_on_buildable_tile = (source_id == buildable_tile_id)
 	
 	_update_validity()
-	_update_connection_ghosts()
 
 # Hides and resets the preview.
-func clear() -> void:
+# Called by BuildingManager
+func clear_ghost_preview() -> void:
 	building_type = GlobalData.BUILDING_TYPE.NULL
 	if sprite:
 		sprite.texture = null
@@ -136,36 +132,36 @@ func clear() -> void:
 	_is_initialized = false
 
 # --------------------------------------------
-# --- Overlap Handling -----------------------
+# --- Area2D Signal Handling -----------------
 # --------------------------------------------
 # Called when another area enters the preview's detection box.
 func _on_area_entered(area: Area2D) -> void:
 	overlapping_areas.append(area)
 	_update_validity()
-	_update_connection_ghosts()
 
 # Called when an area leaves the preview's detection box.
 func _on_area_exited(area: Area2D) -> void:
 	overlapping_areas.erase(area)
 	_update_validity()
-	_update_connection_ghosts()
 
 # --------------------------------------------
-# --- Visual Feedback ------------------------
+# --- Validity Update / Visual Feedback ------
 # --------------------------------------------
 func _update_validity() -> void:
 	is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
 	is_placeable.emit(is_valid, self)
-	queue_redraw()
+	
+	if show_visual_feedback:
+		_update_connection_ghosts()
+		queue_redraw()
+	else:
+		_clear_ghost_lines()
 
 # --------------------------------------------
-# --- Connection Previews --------------------
+# --- Connection Previews Update&Cleanup -----
 # --------------------------------------------
 # Updates the visibility and position of connection lines to nearby buildings.
 func _update_connection_ghosts() -> void:
-	if not show_visual_feedback:
-		_clear_ghost_lines()
-		return
 	if building_type == GlobalData.BUILDING_TYPE.NULL or not is_visible():
 		_clear_ghost_lines()
 		return
@@ -201,8 +197,7 @@ func _update_connection_ghosts() -> void:
 	for i in range(targets.size()):
 		var line: ConnectionLine = _ghost_lines[i]
 		var target = targets[i]
-		var is_line_valid = overlapping_areas.is_empty() and is_on_buildable_tile
-		line.setup_preview_connections(global_position, target.global_position, is_line_valid)
+		line.setup_preview_connections(global_position, target.global_position, is_valid)
 
 
 # Frees the Line2D nodes and clears the line array.

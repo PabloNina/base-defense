@@ -1,10 +1,45 @@
-# -------------------------------
-# --------- Building.gd ---------
-# -------------------------------
-# Base building class for all player structures, weapons and grid nodes.
-# Other types (CommandCenter, relays, Generator, etc.) extend this.
+# Building - building.gd
+# ============================================================================
+# This is the abstract base class for all player-constructible structures
+# within the game, including Command Centers, Relays, Generators, and defensive
+# turrets. It provides the fundamental properties, states, and behaviors common
+# to all buildings, ensuring a consistent foundation for the game's core
+# mechanics.
+#
+# Key Responsibilities:
+# - Core Properties: Manages essential building attributes such as type,
+#   construction cost, connection range, and resource upkeep.
+#
+# - State Management: Tracks and updates various building states, including
+#   construction status, power status, activation status, and selection state.
+#
+# - Construction & Resource Flow: Handles the process of building construction
+#   by receiving packets, updating progress, and determining resource needs.
+#
+# - Grid Integration: Facilitates connection to the game's energy grid,
+#   allowing buildings to link with others and interact with the GridManager.
+#
+# - Lifecycle Management: Oversees the building's lifecycle from placement
+#   and construction to destruction and unregistration from game systems.f
+#
+# - Visual Feedback: Manages common visual elements like selection indicators,
+#   deactivation states, and construction progress bars.
+# ============================================================================
 @abstract
 class_name Building extends Node2D
+# --------------------------------------
+# --- Common Child Node References -----
+# --------------------------------------
+@onready var building_hurt_box: Area2D = $BuildingHurtBox
+@onready var construction_progress_bar: ProgressBar = $ConstructionProgressBar
+@onready var exclamation_mark_sprite: Sprite2D = $ExclamationMarkSprite
+@onready var deactivated_sprite: Sprite2D = $DeactivatedSprite
+@onready var selection_box_sprite: Sprite2D = $SelectionBoxSprite
+# -------------------------------
+# --- Managers References -------
+# -------------------------------
+var grid_manager: GridManager
+var building_manager: BuildingManager
 # -------------------------------
 # --- Signals -------------------
 # -------------------------------
@@ -20,32 +55,23 @@ signal finish_building()
 ## Emited when building is (de)activated.
 ## Connected to BuildingManager
 signal deactivated(is_deactivated: bool)
-
 # -------------------------------
-# --- Editor Settings -----------
+# --- Building Settings ---------
 # -------------------------------
+## Type of building that is using this class for Ui labeling
+@export var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
 # packets needed to complete construction
 var cost_to_build: int = 0
 # tag to prevent connections between generators/weapons etc...
 var is_relay: bool = false
 # Amount of Packets this building consumes per tick
 var upkeep_cost: float = 0.0
-## Type of building that is using this class for Ui labeling
-@export var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
 # Max range for connection lines to be created
 var connection_range: float = 0.0
 # -------------------------------
-# --- Common Child Node References -----
-# -------------------------------
-@onready var building_hurt_box: Area2D = $BuildingHurtBox
-@onready var construction_progress_bar: ProgressBar = $ConstructionProgressBar
-@onready var exclamation_mark_sprite: Sprite2D = $ExclamationMarkSprite
-@onready var deactivated_sprite: Sprite2D = $DeactivatedSprite
-@onready var selection_box_sprite: Sprite2D = $SelectionBoxSprite
-# -------------------------------
 # --- Runtime States ------------
 # -------------------------------
-var is_built: bool = false: set = set_built_state
+var is_built: bool = false: set = _set_built_state
 var is_powered: bool = false: set = set_powered_state
 var is_deactivated: bool = false: set = set_deactivated_state
 var is_scheduled_to_build: bool = false
@@ -54,10 +80,6 @@ var is_selected: bool = false
 var packets_in_flight: int = 0
 var construction_progress: int = 0
 var connected_buildings: Array[Building] = []
-var grid_manager: GridManager
-var building_manager: BuildingManager
-
-
 # -------------------------------
 # --- Engine Callbacks ----------
 # -------------------------------
@@ -68,8 +90,8 @@ func _ready():
 	is_relay = GlobalData.get_is_relay(building_type)
 	upkeep_cost = GlobalData.get_upkeep_cost(building_type)
 
-	# Setup Click Detection
-	building_hurt_box.area_clicked.connect(on_hurtbox_clicked)
+	# Connect signal for click detection
+	building_hurt_box.area_clicked.connect(_on_hurtbox_clicked)
 	# group adding
 	add_to_group("buildings")
 	
@@ -98,33 +120,37 @@ func _ready():
 # -------------------------------
 # --- Selection Box Updating ----
 # -------------------------------
-func select() -> void:
+# Called by BuildingManager
+func show_selection_sprite() -> void:
 	is_selected = true
 	selection_box_sprite.visible = true
-
-func deselect() -> void:
+	
+# Called by BuildingManager
+func hide_selection_sprite() -> void:
 	is_selected = false
 	selection_box_sprite.visible = false
-
 # -------------------------------
-# --- Input / Click Handling ----
+# --- Signal / Click Handling ---
 # -------------------------------
-func on_hurtbox_clicked() -> void:
+func _on_hurtbox_clicked() -> void:
 	clicked.emit(self)
 
 # -------------------------------
-# --- grid Linking -----------
+# --- Grid Linking --------------
 # -------------------------------
+# Called by GridManager
 func connect_to(other_building: Building):
 	if not connected_buildings.has(other_building):
 		connected_buildings.append(other_building)
 
+# Called by GridManager
 func disconnect_from(other_building: Building):
 	connected_buildings.erase(other_building)
-
+	
 # ----------------------
 # --- States Setters ---
 # ----------------------
+# Called by GridManager.
 func set_powered_state(new_state: bool) -> void:
 	if is_powered == new_state:
 		return
@@ -135,7 +161,7 @@ func set_powered_state(new_state: bool) -> void:
 	else:
 		exclamation_mark_sprite.visible = true
 
-func set_built_state(new_state: bool) -> void:
+func _set_built_state(new_state: bool) -> void:
 	if is_built == new_state:
 		return
 	is_built = new_state
@@ -144,6 +170,7 @@ func set_built_state(new_state: bool) -> void:
 	_updates_visuals()
 
 # Sets the deactivated state of the building.
+# Called by BuildingManager.
 func set_deactivated_state(deactivate: bool) -> void:
 	is_deactivated = deactivate
 	deactivated.emit(is_deactivated)
@@ -156,16 +183,19 @@ func set_deactivated_state(deactivate: bool) -> void:
 # -------------------------------
 # --- Packet In Flight ----------
 # -------------------------------
+# Called by PacketManager
 func increment_packets_in_flight() -> void:
 	packets_in_flight += 1
 	if not is_built and packets_in_flight + construction_progress >= cost_to_build:
 		is_scheduled_to_build = true
 
+# Called by PacketManager
 func decrement_packets_in_flight() -> void:
 	packets_in_flight = max(0, packets_in_flight - 1)
 	if not is_built and packets_in_flight + construction_progress < cost_to_build:
 		is_scheduled_to_build = false
 
+# Called by GridManager
 func reset_packets_in_flight() -> void:
 	packets_in_flight = 0
 	if not is_built:
@@ -173,6 +203,7 @@ func reset_packets_in_flight() -> void:
 # -------------------------------
 # --- Packet Reception ----------
 # -------------------------------
+# Called by PacketManager
 func received_packet(packet_type: GlobalData.PACKETS):
 	match packet_type:
 		GlobalData.PACKETS.BUILDING:
@@ -196,6 +227,7 @@ func _handle_received_building_packet() -> void:
 # -------------------------------
 # --- Packet Demand Query -------
 # -------------------------------
+# Called by PacketManager
 func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 	match packet_type:
 		GlobalData.PACKETS.BUILDING:
@@ -212,6 +244,7 @@ func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 # -------------------------------
 # --- Destroy and Clean ---------
 # -------------------------------
+# Called by BuildingManager
 func destroy():
 	# Unregister from managers
 	if grid_manager:
@@ -230,7 +263,8 @@ func destroy():
 # -----------------------------------------
 # ------ Building Energy Consumption ------
 # -----------------------------------------
-# Called by command center on tick
+# Returns current upkeep 
+# Called by Command Center on tick
 func get_upkeep_cost() -> float:
 	if not is_built or not is_powered or is_deactivated:
 		return 0.0
@@ -240,6 +274,7 @@ func get_upkeep_cost() -> float:
 # --- Visuals Updating ----------
 # -------------------------------
 # Make it abstract
+# change method name
 func _updates_visuals() -> void:
 # Implemented by child classes (e.g., change color or glow)
 	pass

@@ -180,7 +180,7 @@ func _place_building() -> void:
 		_instance_and_place_building(building_scene, local_tile_position)
 		is_construction_state = false
 		if is_instance_valid(single_preview):
-			single_preview.clear() # Clear the preview after successful placement
+			single_preview.clear_ghost_preview() # Clear the preview after successful placement
 	elif is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		print("You can only have 1 Command Center!")
 	elif is_command_center_placed and building_to_build_type != GlobalData.BUILDING_TYPE.COMMAND_CENTER:
@@ -224,7 +224,7 @@ func _select_building_to_build(new_building_type: GlobalData.BUILDING_TYPE) -> v
 		if not single_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
 			single_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 	
-	single_preview.initialize(
+	single_preview.initialize_ghost_preview(
 		new_building_type,
 		grid_manager,
 		GlobalData.get_ghost_texture(new_building_type),
@@ -255,7 +255,7 @@ func _update_previews(new_position: Vector2i) -> void:
 		_update_construction_line_previews()
 	elif is_construction_state:
 		if is_instance_valid(single_preview): 
-			single_preview.update_position(local_tile_position)
+			single_preview.update_ghost_preview_position(local_tile_position)
 	elif is_move_state:
 		_update_move_previews()
 
@@ -317,7 +317,7 @@ func _create_move_previews() -> void:
 		if building is MovableBuilding:
 			var preview = _get_placement_preview_from_pool()
 			add_child(preview)
-			preview.initialize(
+			preview.initialize_ghost_preview(
 				building.building_type,
 				grid_manager,
 				GlobalData.get_landing_marker_texture(building.building_type),
@@ -345,7 +345,7 @@ func _update_move_previews() -> void:
 		# Snap to the grid
 		var target_tile = ground_layer.local_to_map(target_pos)
 		var snapped_pos = ground_layer.map_to_local(target_tile)
-		preview.update_position(snapped_pos)
+		preview.update_ghost_preview_position(snapped_pos)
 
 # Clears and frees all previews used in a group move.
 func _clear_move_previews() -> void:
@@ -364,7 +364,7 @@ func _cancel_move_state() -> void:
 	formation_scale = 1.0
 	formation_angle = 0.0
 	if is_instance_valid(single_preview): 
-		single_preview.clear()
+		single_preview.clear_ghost_preview()
 	_clear_move_previews()
 
 
@@ -375,7 +375,7 @@ func _on_building_move_started(building: MovableBuilding, landing_position: Vect
 
 	var marker = _get_placement_preview_from_pool()
 	add_child(marker)
-	marker.initialize(
+	marker.initialize_ghost_preview(
 		building.building_type,
 		grid_manager,
 		GlobalData.get_landing_marker_texture(building.building_type),
@@ -426,8 +426,8 @@ func _update_construction_line_previews() -> void:
 				preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 		
 		var _single_preview = construction_line_previews[0]
-		if not _single_preview.is_initialized():
-			_single_preview.initialize(
+		if not _single_preview.is_ghost_preview_initialized():
+			_single_preview.initialize_ghost_preview(
 				building_type,
 				grid_manager,
 				GlobalData.get_ghost_texture(building_type),
@@ -435,7 +435,7 @@ func _update_construction_line_previews() -> void:
 				buildable_tile_id
 			)
 		# Position the single preview at the snapped start position.
-		_single_preview.update_position(start_pos_pixels)
+		_single_preview.update_ghost_preview_position(start_pos_pixels)
 		return
 
 	var num_buildings = int(distance_pixels / optimal_dist_pixels) + 1
@@ -462,15 +462,15 @@ func _update_construction_line_previews() -> void:
 		var ideal_pos = start_pos_pixels + direction * optimal_dist_pixels * i
 		var current_snapped_pos = ground_layer.map_to_local(ground_layer.local_to_map(ideal_pos))
 
-		if not preview.is_initialized(): # Initialize only once.
-			preview.initialize(
+		if not preview.is_ghost_preview_initialized(): # Initialize only once.
+			preview.initialize_ghost_preview(
 				building_type,
 				grid_manager,
 				GlobalData.get_ghost_texture(building_type),
 				ground_layer,
 				buildable_tile_id
 			)
-		preview.update_position(current_snapped_pos)
+		preview.update_ghost_preview_position(current_snapped_pos)
 
 	# --- Relay line previews ---
 	for line in relay_line_previews:
@@ -540,10 +540,11 @@ func _on_double_click_timer_timeout() -> void:
 		selected_buildings.append(last_clicked_building)
 		_update_selection()
 
-	last_clicked_building = null # Reset for the next click sequence.
+	# Reset for the next click sequence.
+	last_clicked_building = null
 
 
-# Finds and selects all buildings of a specific type from the manager's list.
+# Finds and selects all buildings of a specific type from the managers list.
 func _select_all_by_type(type: GlobalData.BUILDING_TYPE) -> void:
 	clear_selection()
 	# Filter all registered buildings to find ones that match the given type.
@@ -566,7 +567,7 @@ func _select_weapons_in_box() -> void:
 func clear_selection() -> void:
 	for building in selected_buildings:
 		if is_instance_valid(building):
-			building.deselect()
+			building.hide_selection_sprite()
 	selected_buildings.clear()
 	_update_selection()
 
@@ -576,7 +577,7 @@ func _update_selection() -> void:
 	else:
 		for building in selected_buildings:
 			if is_instance_valid(building):
-				building.select()
+				building.show_selection_sprite()
 		selection_changed.emit(selected_buildings)
 
 # ---------------------------------------
@@ -625,7 +626,7 @@ func _on_InputManager_map_left_released(release_position: Vector2i):
 				if not single_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
 					single_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 			
-			single_preview.initialize(
+			single_preview.initialize_ghost_preview(
 				building_to_build_type,
 				grid_manager,
 				GlobalData.get_ghost_texture(building_to_build_type),
@@ -708,7 +709,7 @@ func _enter_move_mode() -> void:
 		formation_offsets.clear()
 		formation_offsets.append(Vector2.ZERO)
 		if is_instance_valid(single_preview): 
-			single_preview.clear()
+			single_preview.clear_ghost_preview()
 		_create_move_previews()
 	else:
 		is_move_state = true
@@ -727,7 +728,7 @@ func _enter_move_mode() -> void:
 			formation_offsets.append(Vector2(offset_x, offset_y))
 			
 		if is_instance_valid(single_preview): 
-			single_preview.clear()
+			single_preview.clear_ghost_preview()
 		_create_move_previews()
 	
 	clear_selection()

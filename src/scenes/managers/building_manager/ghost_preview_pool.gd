@@ -47,7 +47,7 @@ func _populate_pool(size: int) -> void:
 	for i in range(size):
 		var preview: GhostPreview = GlobalData.GHOST_PREVIEW_SCENE.instantiate()
 		# Disable the preview and add it to the pool.
-		preview.clear()
+		preview.clear_ghost_preview()
 		ghost_preview_pool.append(preview)
 		add_child(preview)
 
@@ -81,7 +81,7 @@ func return_preview(preview: GhostPreview) -> void:
 		return
 
 	# Disable and reset the preview.
-	preview.clear()
+	preview.clear_ghost_preview()
 
 	# Reparent the preview back to the pool to keep the scene tree clean.
 	if preview.get_parent() != self:
