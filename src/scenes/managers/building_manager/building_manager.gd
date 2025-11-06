@@ -491,7 +491,7 @@ func _update_construction_line_previews() -> void:
 				var line: ConnectionLine = grid_manager.get_connection_line_from_pool()
 				add_child(line)
 				var is_line_valid = construction_previews_validity.get(preview_a, false) and construction_previews_validity.get(preview_b, false)
-				line.setup_preview(from_pos, to_pos, is_line_valid)
+				line.setup_preview_connections(from_pos, to_pos, is_line_valid)
 				relay_line_previews.append(line)
 
 # Clears and frees all previews used in line construction.

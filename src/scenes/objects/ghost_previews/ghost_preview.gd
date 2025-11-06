@@ -1,8 +1,26 @@
-# =========================================
-# ghost_preview.gd
-# =========================================
-# Displays a semi-transparent preview of a building and its potential grid connections and fire range.
-# Handles placement validity through Area2D overlap detection and provides visual feedback.
+# GhostPreview - ghost_preview.gd
+# ============================================================================
+# This script manages the visual representation of a building during the
+# placement phase. It displays a semi-transparent "ghost" of the building
+# along with visual indicators for its potential connections and operational
+# range. It also determines and communicates the validity of the current
+# placement location.
+#
+# Key Responsibilities:
+# - Visual Feedback: Renders a semi-transparent preview of the building,
+#   its connection lines to existing structures, and its operational range
+#   (e.g., fire range for turrets).
+#
+# - Placement Validation: Utilizes Area2D for overlap detection to ensure
+#   the proposed placement does not conflict with other objects or invalid
+#   terrain.
+#
+# - Status Communication: Emits signals to inform the BuildingManager about
+#   the current placement validity, allowing for appropriate UI responses.
+#
+# - Dynamic Updates: Continuously updates its position and visual feedback
+#   as the player moves the ghost preview around the grid.
+# ============================================================================
 class_name GhostPreview extends Node2D
 # --------------------------------------------
 # --- Signals --------------------------------
@@ -26,10 +44,8 @@ var grid_manager: GridManager
 # Reference to TileMap ground layer and buildable tile for placement validity
 var ground_layer: TileMapLayer
 var buildable_tile_id: int = 0
-# --- Visuals ---
 # Color for the weapon range visualization circle.
 const RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
-# --- State ---
 # Keeps track of overlapping placement-blocking areas.
 var overlapping_areas: Array[Area2D] = []
 var is_on_buildable_tile: bool = true
@@ -186,7 +202,7 @@ func _update_connection_ghosts() -> void:
 		var line: ConnectionLine = _ghost_lines[i]
 		var target = targets[i]
 		var is_line_valid = overlapping_areas.is_empty() and is_on_buildable_tile
-		line.setup_preview(global_position, target.global_position, is_line_valid)
+		line.setup_preview_connections(global_position, target.global_position, is_line_valid)
 
 
 # Frees the Line2D nodes and clears the line array.

@@ -29,6 +29,8 @@ class_name GlobalData extends Node
 # --- Constants ------------------------------
 # --------------------------------------------
 const TILE_SIZE: int = 16
+const LINE_VALID_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)
+const LINE_INVALID_COLOR: Color = Color(1.0, 0.2, 0.2, 0.6)
 # --------------------------------------------
 # --- Preloads -------------------------------
 # --------------------------------------------

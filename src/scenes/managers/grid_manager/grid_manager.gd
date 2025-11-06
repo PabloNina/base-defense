@@ -281,7 +281,7 @@ func _update_grid_integrity():
 
 	# Update connection visuals
 	for connection in current_connections:
-		connection.update_power_status(powered_map)
+		connection.update_connection_status(powered_map)
 
 # -----------------------------------------
 # --- Signals Handling --------------------
