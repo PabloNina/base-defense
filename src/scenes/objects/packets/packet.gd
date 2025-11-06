@@ -1,6 +1,7 @@
 # =========================================
-# Packet.gd
+# packet.gd
 # =========================================
+
 class_name Packet extends Node2D
 
 const GREEN_TEXTURE: Texture2D = preload("res://assets/sprites/objects/energy_packet.png")
@@ -18,7 +19,12 @@ var is_cleaned_up: bool = false
 @onready var sprite_2d: Sprite2D = $Sprite2D
 
 # Signals
+# Emited when packet reaches its target building
+# Listener PacketManager
 signal packet_arrived(packet: Packet)
+# Emited in _cleanup_packet
+# Listener PacketManager
+signal packet_cleanup(packet: Packet)
 
 # -------------------------------
 # --- Engine Callbacks ----------
@@ -41,11 +47,7 @@ func _cleanup_packet() -> void:
 	if is_cleaned_up:
 		return
 	is_cleaned_up = true
-
-	if path.size() > 0 and is_instance_valid(path[-1]):
-		path[-1].decrement_packets_in_flight()
-
-	get_tree().get_first_node_in_group("packet_manager").return_packet_to_pool(self)
+	packet_cleanup.emit(self)
 
 # -------------------------------
 # --- Movement Logic -----------
