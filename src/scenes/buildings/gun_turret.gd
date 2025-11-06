@@ -29,7 +29,7 @@ func _ready():
 	# hide Out of ammo sprite
 	#out_of_ammo_sprite.visible = false
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if is_deactivated:
 		return
 	# Add shooting logic here
