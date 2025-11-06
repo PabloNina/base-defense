@@ -18,7 +18,7 @@ enum PACKETS {NULL, BUILDING, ENERGY, AMMO, ORE, TECH}
 # Player Buildings 
 enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, GENERATOR, GUN_TURRET, MORTAR, ORE_MINE, FACTORY, RESEARCH_CENTER}
 # Buildings categories
-enum BUILDING_CATEGORY {NULL, BASE, INFRASTRUCTURE, WEAPON, RESEARCH}
+enum BUILDING_CATEGORY {NULL, INFRASTRUCTURE, WEAPON, SPECIAL}
 # Buildings actions
 enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE} 
 
@@ -49,7 +49,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": true,
 		"upkeep_cost": 0.0,
 		"optimal_building_distance_tiles": 0,
-		# building_category
+		"building_category": BUILDING_CATEGORY.SPECIAL,
+		"building_actions": [BUILDING_ACTIONS.DESTROY]
 		# Command_Center class only
 		# default packet prod
 		# default max storage
@@ -63,7 +64,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": true,
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 8,
-		# building_category
+		"building_category": BUILDING_CATEGORY.INFRASTRUCTURE,
+		"building_actions": [BUILDING_ACTIONS.DESTROY]
 		# Relay class only
 	},
 	BUILDING_TYPE.GENERATOR: {
@@ -75,7 +77,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": false,
 		"upkeep_cost": 0.5,
 		"optimal_building_distance_tiles": 1,
-		# building_category
+		"building_category": BUILDING_CATEGORY.INFRASTRUCTURE,
+		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE],
 		# Generator class only
 		# packet bonus
 	},
@@ -88,7 +91,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"is_relay": false,
 		"upkeep_cost": 1.0,
 		"optimal_building_distance_tiles": 3,
-		# building_category
+		"building_category": BUILDING_CATEGORY.WEAPON,
+		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE, BUILDING_ACTIONS.MOVE],
 		# Weapon class only
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
 		"max_ammo_storage": 10,
@@ -97,7 +101,6 @@ const BUILDINGS_DATA: Dictionary = {
 		"fire_range": 100,
 	},
 }
-
 
 # --------------------------------------------
 # --- Buildings Metadata Accessors -----------
@@ -146,3 +149,21 @@ static func get_upkeep_cost(building_type: GlobalData.BUILDING_TYPE) -> float:
 static func get_packed_scene(building_type: int) -> PackedScene:
 	var data = get_building_data(building_type)
 	return data.get("packed_scene", null)
+
+static func get_building_category(building_type: GlobalData.BUILDING_TYPE) -> GlobalData.BUILDING_CATEGORY:
+	var data = get_building_data(building_type)
+	return data.get("building_category", -1)
+
+static func get_max_ammo_storage(building_type: GlobalData.BUILDING_TYPE) -> int:
+	var data = get_building_data(building_type)
+	return data.get("max_ammo_storage", -1)
+
+static func get_building_actions(building_type: GlobalData.BUILDING_TYPE) -> Array[GlobalData.BUILDING_ACTIONS]:
+	var data = get_building_data(building_type)
+	# Retrieve the raw actions data, which is a generic Array from the dictionary.
+	var actions_data: Array = data.get("building_actions", [])
+	# Create a new typed Array to match the function's return type hint.
+	var typed_actions: Array[GlobalData.BUILDING_ACTIONS] = []
+	# Assign the elements from the generic array to the newly created typed array.
+	typed_actions.assign(actions_data)
+	return typed_actions

@@ -81,6 +81,7 @@ func _set_ammo(new_ammo: float) -> void:
 	if current_ammo == new_ammo:
 		return
 	current_ammo = new_ammo
+	state_updated.emit()
 	_update_ammo_stock_bar(current_ammo)
 	if current_ammo >= max_ammo_storage:
 		is_full_ammo = true

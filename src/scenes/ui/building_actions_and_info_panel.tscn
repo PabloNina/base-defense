@@ -1,9 +1,9 @@
 [gd_scene load_steps=3 format=3 uid="uid://bbe8htqb2cdtu"]
 
-[ext_resource type="Theme" uid="uid://dgr6s1uvlv71a" path="res://src/scenes/ui/ui_theme.tres" id="1_7fy4r"]
-[ext_resource type="Script" uid="uid://bblscjswwjrn2" path="res://src/scenes/ui/building_actions_panel.gd" id="2_04et7"]
+[ext_resource type="Theme" uid="uid://dgr6s1uvlv71a" path="res://src/scenes/ui/ui_theme.tres" id="1_pta16"]
+[ext_resource type="Script" uid="uid://bblscjswwjrn2" path="res://src/scenes/ui/building_actions_and_info_panel.gd" id="2_sv0fn"]
 
-[node name="BuildingActionsPanel" type="PanelContainer"]
+[node name="BuildingActionsAndInfoPanel" type="PanelContainer"]
 custom_minimum_size = Vector2(403, 126)
 anchors_preset = 7
 anchor_left = 0.5
@@ -15,9 +15,9 @@ offset_top = -72.0
 offset_right = 89.0
 grow_horizontal = 2
 grow_vertical = 0
-theme = ExtResource("1_7fy4r")
+theme = ExtResource("1_pta16")
 theme_type_variation = &"GreyPanel"
-script = ExtResource("2_04et7")
+script = ExtResource("2_sv0fn")
 
 [node name="MainMarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -52,32 +52,32 @@ text = "Move"
 [node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer"]
 layout_mode = 2
 
-[node name="InfoContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
+[node name="InfoLabelsContainer" type="HBoxContainer" parent="MainMarginContainer/MainHBoxContainer"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+[node name="NameLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 0
 theme_type_variation = &"ConstructionLabel"
-text = "Building name:"
+text = "Building:"
 
-[node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+[node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
 layout_mode = 2
 
-[node name="HealthLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 0
-theme_type_variation = &"ConstructionLabel"
-text = "Health: 10/10"
-
-[node name="VSeparator2" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
-layout_mode = 2
-
-[node name="AmmoLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoContainer"]
+[node name="HealthLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 0
 theme_type_variation = &"ConstructionLabel"
-text = "Ammo: 10/10"
+text = "Health: 0/10"
+
+[node name="VSeparator2" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
+layout_mode = 2
+
+[node name="AmmoLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_type_variation = &"ConstructionLabel"
+text = "Ammo: 0.0/10"

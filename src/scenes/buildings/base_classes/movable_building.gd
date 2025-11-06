@@ -62,10 +62,3 @@ func _complete_move() -> void:
 	move_completed.emit(self)
 	#_updates_visuals()
 	
-
-func get_available_actions() -> Array[GlobalData.BUILDING_ACTIONS]:
-	# Start with the parent class's actions
-	var actions: Array[GlobalData.BUILDING_ACTIONS] = super.get_available_actions()
-	# Add the actions specific to this class
-	actions.append(GlobalData.BUILDING_ACTIONS.MOVE)
-	return actions

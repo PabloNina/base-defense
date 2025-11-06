@@ -8,6 +8,9 @@ class_name Building extends Node2D
 # -------------------------------
 # --- Signals -------------------
 # -------------------------------
+## Emited when building state changes
+## Connected to BuildingActionsAndInfoPanel
+signal state_updated
 ## Emited when building is clicked
 ## Connected to BuildingManager
 signal clicked(building: Building)
@@ -15,6 +18,7 @@ signal clicked(building: Building)
 ## Connected to GridManager
 signal finish_building()
 ## Emited when building is (de)activated.
+## Connected to BuildingManager
 signal deactivated(is_deactivated: bool)
 
 # -------------------------------
@@ -92,33 +96,16 @@ func _ready():
 	_updates_visuals()
 
 # -------------------------------
-# --- Selected Box Drawing ------
-# -------------------------------
-#func _draw() -> void:                                                                                                                                   
-	#if is_selected:                                                                                                                                     
-		## Find the building texture to determine the size of the selection box
-		#var texture = GlobalData.get_ghost_texture(building_type)
-		#if texture:
-			#var rect: Rect2 
-			#rect.size = texture.get_size()
-			#rect.position = -rect.size / 2
-			## Grow the rectangle by 4 pixels on each side to create a margin
-			#draw_rect(rect.grow(4), Color.GREEN, false, 2.0)
-			
-# -------------------------------
 # --- Selection Box Updating ----
 # -------------------------------
 func select() -> void:
 	is_selected = true
 	selection_box_sprite.visible = true
-	#queue_redraw()
-
 
 func deselect() -> void:
 	is_selected = false
 	selection_box_sprite.visible = false
-	#queue_redraw()
-	
+
 # -------------------------------
 # --- Input / Click Handling ----
 # -------------------------------
@@ -142,7 +129,7 @@ func set_powered_state(new_state: bool) -> void:
 	if is_powered == new_state:
 		return
 	is_powered = new_state
-	#_updates_visuals()
+	# update powered icon
 	if is_powered:
 		exclamation_mark_sprite.visible = false
 	else:
@@ -153,18 +140,19 @@ func set_built_state(new_state: bool) -> void:
 		return
 	is_built = new_state
 	finish_building.emit()
+	# update built color
 	_updates_visuals()
 
 # Sets the deactivated state of the building.
 func set_deactivated_state(deactivate: bool) -> void:
 	is_deactivated = deactivate
 	deactivated.emit(is_deactivated)
+	# update deactivated icon
 	if is_deactivated:
 		deactivated_sprite.visible = true
 	else:
 		deactivated_sprite.visible = false
-	#_updates_visuals()
-	
+
 # -------------------------------
 # --- Packet In Flight ----------
 # -------------------------------
@@ -199,6 +187,7 @@ func _handle_received_building_packet() -> void:
 	if is_built:
 		return
 	construction_progress += 1
+	state_updated.emit()
 	_update_construction_progress_bar(construction_progress)
 
 	if construction_progress >= cost_to_build:
@@ -246,16 +235,6 @@ func get_upkeep_cost() -> float:
 	if not is_built or not is_powered or is_deactivated:
 		return 0.0
 	return upkeep_cost
-# -----------------------------------------
-# ------ Building Actions -----------------
-# -----------------------------------------
-func get_available_actions() -> Array[GlobalData.BUILDING_ACTIONS]:
-	# By default every building can be destroyed 
-	var actions: Array[GlobalData.BUILDING_ACTIONS] = [GlobalData.BUILDING_ACTIONS.DESTROY]
-	# Only relays and CC cant be deactivated every other building can
-	if not is_relay:
-		actions.append(GlobalData.BUILDING_ACTIONS.DEACTIVATE)
-	return actions
 
 # -------------------------------
 # --- Visuals Updating ----------

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://c55q6jpft12dr" path="res://src/scenes/ui/user_interface.gd" id="1_yb1xu"]
 [ext_resource type="PackedScene" uid="uid://2ggdqsbop0oc" path="res://src/scenes/ui/buildings_construction_panel.tscn" id="2_nxqqf"]
 [ext_resource type="PackedScene" uid="uid://d0xc3jnvlg3jc" path="res://src/scenes/ui/packets_stats_panel.tscn" id="2_xba4v"]
-[ext_resource type="PackedScene" uid="uid://bbe8htqb2cdtu" path="res://src/scenes/ui/building_actions_panel.tscn" id="3_xba4v"]
+[ext_resource type="PackedScene" uid="uid://bbe8htqb2cdtu" path="res://src/scenes/ui/building_actions_and_info_panel.tscn" id="3_xba4v"]
 
 [node name="UserInterface" type="CanvasLayer"]
 script = ExtResource("1_yb1xu")
@@ -29,7 +29,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
 
-[node name="BuildingActionsPanel" parent="MainMarginContainer" instance=ExtResource("3_xba4v")]
+[node name="BuildingActionsAndInfoPanel" parent="MainMarginContainer" instance=ExtResource("3_xba4v")]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
