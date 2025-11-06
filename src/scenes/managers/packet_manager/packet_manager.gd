@@ -16,6 +16,7 @@ class_name PacketManager extends Node
 # -----------------------------------------
 @onready var active_packets_container: Node = $ActivePacketsContainer
 @onready var packet_pool: PacketPool = $PacketPool
+@onready var spawn_delay_timer: Timer = $SpawnDelayTimer
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
@@ -112,6 +113,67 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 	grid_manager.last_target_index[command_center] = index % n
 	return packets_sent
 
+# -----------------------------------------
+# --- Path Validity Check -----------------
+# -----------------------------------------
+# Checks if all valid path rules are respected 
+func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS) -> bool:
+	# A path must have at least a start and an end.
+	if path.size() < 2:
+		return false
+
+	# The start and end buildings must be connected in the grid.
+	if not grid_manager.are_connected(path[0], path[-1]):
+		return false
+
+	# Check the validity of each edge in the path.
+	for i in range(path.size() - 1):
+		var building_a = path[i]
+		var building_b = path[i+1]
+
+		# Both buildings in an edge must be valid instances.
+		if not is_instance_valid(building_a) or not is_instance_valid(building_b):
+			return false
+
+		# Check if the buildings are built. There is a special case for building packets.
+		var is_final_edge = (i == path.size() - 2)
+		if is_final_edge and packet_type == GlobalData.PACKETS.BUILDING:
+			# For the final edge of a building packet only the source (building_a) must be built.
+			if not building_a.is_built:
+				return false
+		else:
+			# For all other cases both buildings must be built.
+			if not building_a.is_built or not building_b.is_built:
+				return false
+
+		# At least one of the two buildings in an edge must be powered.
+		if not building_a.is_powered and not building_b.is_powered:
+			return false
+			
+	return true
+
+# -----------------------------------------
+# --- Packet spawning ---------------------
+# -----------------------------------------
+# Spawns packet along the received validated path with a delay
+func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PACKETS, delay_offset :float = 0.0) -> void:
+	# Use a small delay to prevent packets from stacking on top of each other.
+	if delay_offset > 0.0:
+		spawn_delay_timer.start(delay_offset)
+		await spawn_delay_timer.timeout
+	
+	# Acquire a new packet from the pool and set it up.
+	var packet: Packet = _get_packet_from_pool(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
+	
+	# Connect to the packet's signals to manage its lifecycle.
+	if not packet.packet_arrived.is_connected(_on_packet_arrived):
+		packet.packet_arrived.connect(_on_packet_arrived)
+	if not packet.packet_cleanup.is_connected(_on_packet_cleanup):
+		packet.packet_cleanup.connect(_on_packet_cleanup)
+		
+	# Add the packet to active_packets_container.
+	active_packets_container.add_child(packet)
+
 # -------------------------------
 # --- Packet Pool Wrappers ------
 # -------------------------------
@@ -131,64 +193,6 @@ func _return_packet_to_pool(packet: Packet) -> void:
 
 	# Return packet to pool
 	packet_pool.return_packet(packet)
-
-# -----------------------------------------
-# --- Path Validity Check -----------------
-# -----------------------------------------
-func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS) -> bool:
-	# A path must have at least a start and an end.
-	if path.size() < 2:
-		return false
-
-	# The start and end nodes must be connected in the grid.
-	if not grid_manager.are_connected(path[0], path[-1]):
-		return false
-
-	# Check the validity of each edge in the path.
-	for i in range(path.size() - 1):
-		var a = path[i]
-		var b = path[i+1]
-
-		# Both nodes in an edge must be valid instances.
-		if not is_instance_valid(a) or not is_instance_valid(b):
-			return false
-
-		# Check if the nodes are built. There's a special case for building packets.
-		var is_final_edge = (i == path.size() - 2)
-		if is_final_edge and packet_type == GlobalData.PACKETS.BUILDING:
-			# For the final edge of a building packet, only the source (a) must be built.
-			if not a.is_built:
-				return false
-		else:
-			# For all other cases, both nodes must be built.
-			if not a.is_built or not b.is_built:
-				return false
-
-		# At least one of the two nodes in an edge must be powered.
-		if not a.is_powered and not b.is_powered:
-			return false
-			
-	return true
-
-# -----------------------------------------
-# --- Packet spawning ---------------------
-# -----------------------------------------
-func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PACKETS, delay_offset :float = 0.0) -> void:
-	# Use a small delay to prevent packets from stacking on top of each other.
-	if delay_offset > 0.0:
-		await get_tree().create_timer(delay_offset).timeout
-	
-	# Acquire a new packet from the pool and set it up.
-	var packet: Packet = _get_packet_from_pool(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
-	
-	# Connect to the packet's signals to manage its lifecycle.
-	if not packet.packet_arrived.is_connected(_on_packet_arrived):
-		packet.packet_arrived.connect(_on_packet_arrived)
-	if not packet.packet_cleanup.is_connected(_on_packet_cleanup):
-		packet.packet_cleanup.connect(_on_packet_cleanup)
-		
-	# Add the packet to active_packets_container.
-	active_packets_container.add_child(packet)
 
 # -----------------------------------------
 # --- Packets Signal Handling -------------
