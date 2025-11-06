@@ -27,6 +27,7 @@ signal build_command_center_pressed
 signal formation_tighter_pressed
 signal formation_looser_pressed
 signal formation_rotate_pressed
+signal game_paused(is_paused: bool)
 
 # -----------------------------------------
 # --- References --------------------------
@@ -41,6 +42,11 @@ var is_box_selecting: bool = false
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
+
+func _ready() -> void:
+	# Ensure InputManager processes even when game is paused 
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 func _unhandled_input(event: InputEvent) -> void:
 	# --- Mouse Motion ---
 	if event is InputEventMouseMotion:
@@ -80,6 +86,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		formation_looser_pressed.emit()
 	elif event.is_action_pressed("formation_rotate"):
 		formation_rotate_pressed.emit()
+	elif event.is_action_pressed("pause"):
+		get_tree().paused = not get_tree().paused
+		game_paused.emit(get_tree().paused)
 
 	# --- Box selection state ---
 	if event.is_action_pressed("left_mouse"):

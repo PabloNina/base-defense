@@ -24,6 +24,8 @@ var grid_manager: GridManager
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
+	# Ensure UserInterface processes even when game is paused 
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	# By default start with construction panel selected
 	_hide_building_actions_and_info_panel()
 	_show_buildings_construction_panel()

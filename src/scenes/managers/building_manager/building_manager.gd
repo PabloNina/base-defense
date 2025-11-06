@@ -89,6 +89,8 @@ signal building_deselected()
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
+	# Ensure BuildingManager processes even when game is paused 
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	add_to_group("building_manager")
 	# Connect timer signal for double click detection
 	double_click_timer.timeout.connect(_on_double_click_timer_timeout)
