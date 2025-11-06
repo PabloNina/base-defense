@@ -1,15 +1,45 @@
-# =========================================
-# GlobalData.gd
-# =========================================
-# Centralized global consts, enums and metadata tables for consistency across systems
+# GlobalData - global_data.gd
+# ============================================================================
+# This autoloaded singleton script serves as a central repository for global
+# constants, enumerations, and metadata tables used throughout the game.
+# Its purpose is to ensure consistency, provide a single source of truth for
+# game-wide data, and facilitate easy access to commonly used resources and
+# configurations.
+#
+# Key Responsibilities:
+# - Centralized Constants: Defines game-wide constants such as TILE_SIZE.
+#
+# - Enumerations: Provides a comprehensive set of enumerations for various
+#   game entities like PACKETS, BUILDING_TYPE, BUILDING_CATEGORY, and
+#   BUILDING_ACTIONS, promoting type safety and readability.
+#
+# - Metadata Tables: Stores detailed metadata for game elements, such as
+#   BUILDINGS_DATA, which includes packed scenes, ghost textures, costs,
+#   and other configuration details for different building types.
+#
+# - Data Accessors: Offers static helper functions to easily retrieve specific
+#   pieces of data from the metadata tables, abstracting away the underlying
+#   dictionary structure.
+#
+# - Resource Preloading: Preloads essential scenes and textures to ensure they
+#   are readily available when needed, reducing load times during gameplay.
+# ============================================================================
 class_name GlobalData extends Node
 # --------------------------------------------
 # --- Constants ------------------------------
 # --------------------------------------------
 const TILE_SIZE: int = 16
+# --------------------------------------------
+# --- Preloads -------------------------------
+# --------------------------------------------
+# PackedScenes
 const CONNECTION_LINE_SCENE: PackedScene = preload("res://src/scenes/objects/connection_lines/connection_line.tscn")
 const GHOST_PREVIEW_SCENE: PackedScene = preload("res://src/scenes/objects/ghost_previews/ghost_preview.tscn")
 const PACKET_SCENE: PackedScene = preload("res://src/scenes/objects/packets/base_packet.tscn")
+# Textures2D
+const GREEN_PACKET_TEXTURE: Texture2D = preload("res://assets/sprites/objects/energy_packet.png")
+const RED_PACKET_TEXTURE:Texture2D = preload("res://assets/sprites/objects/ammo_packet.png")
+const BLUE_PACKET_TEXTURE:Texture2D = preload("res://assets/sprites/objects/building_packet.png")
 # --------------------------------------------
 # --- Enumerations ---------------------------
 # --------------------------------------------

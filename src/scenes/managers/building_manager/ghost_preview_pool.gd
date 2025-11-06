@@ -1,8 +1,24 @@
-# =========================================
-# ghost_preview_pool.gd
-# =========================================
-# Manages a pool of reusable GhostPreview objects to optimize performance
-# by avoiding frequent instantiation and destruction.
+# GhostPreviewPool - ghost_preview_pool.gd
+# ============================================================================
+# This script implements an object pooling pattern for GhostPreview objects.
+# Its purpose is to optimize performance by recycling the "ghost" sprites used
+# to show where buildings will be placed or moved, avoiding the overhead of
+# creating and destroying these nodes frequently.
+#
+# Key Responsibilities:
+# - Pre-population: Initializes a pool of GhostPreview instances at the start
+#   of the game.
+#
+# - Dynamic Growth: Automatically expands the pool if it runs out of available
+#   previews.
+#
+# - Preview Acquisition & Return: Provides methods for the BuildingManager to
+#   get an available preview from the pool and return it when construction or
+#   movement is complete.
+#
+# - State Management: Resets, hides, and reparents returned previews to keep
+#   them ready for reuse and ensure the main scene tree remains clean.
+# ============================================================================
 class_name GhostPreviewPool extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------

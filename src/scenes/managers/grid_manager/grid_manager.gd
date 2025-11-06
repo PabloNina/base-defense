@@ -77,12 +77,12 @@ func unregister_to_grid(building: Building):
 	if building not in registered_buildings:
 		return
 
-	# Clean up any packets that were using the destroyed relay
+	# Clean up any packets that were using the destroyed building
 	var packet_manager = get_tree().get_first_node_in_group("packet_manager")
 	if packet_manager:
 		for packet in packet_manager.active_packets_container.get_children():
 			if packet is Packet and building in packet.path:
-				packet._cleanup_packet()
+				packet.cleanup_packet()
 
 	# Remove building from grid
 	registered_buildings.erase(building)

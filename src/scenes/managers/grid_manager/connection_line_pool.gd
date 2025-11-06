@@ -1,8 +1,23 @@
-# =========================================
-# connection_line_pool.gd
-# =========================================
-# Manages a pool of reusable ConnectionLine objects to optimize performance
-# by avoiding frequent instantiation and destruction.
+# ConnectionLinePool - connection_line_pool.gd
+# ============================================================================
+# This script implements an object pooling pattern for ConnectionLine objects.
+# Its purpose is to optimize performance by recycling the visual lines that
+# connect buildings, avoiding the overhead of creating and destroying them
+# frequently, which is especially important as the grid grows.
+#
+# Key Responsibilities:
+# - Pre-population: Initializes a pool of ConnectionLine instances at the
+#   start of the game.
+#
+# - Dynamic Growth: Automatically expands the pool if it runs out of lines.
+#
+# - Line Acquisition & Return: Provides methods for other managers (like the
+#   GridManager) to get an available line from the pool and return it when it's
+#   no longer needed.
+#
+# - State Management: Hides and reparents returned lines to keep them ready
+#   for reuse while ensuring the main scene tree remains clean.
+# ============================================================================
 class_name ConnectionLinePool extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------

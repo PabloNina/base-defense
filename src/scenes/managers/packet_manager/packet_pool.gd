@@ -1,8 +1,26 @@
-# =========================================
-# packet_pool.gd
-# =========================================
-# Manages a pool of reusable Packet objects to optimize performance
-# by avoiding frequent instantiation and destruction.
+# PacketPool - packet_pool.gd
+# ============================================================================
+# This script implements an object pooling pattern specifically for Packet
+# objects. Its primary goal is to optimize game performance by minimizing the
+# overhead associated with frequently creating and destroying Packet nodes.
+#
+# Key Responsibilities:
+# - Pre-population: Initializes a pool of Packet instances at the start of the
+#   game, making them ready for immediate use.
+#
+# - Dynamic Growth: Automatically expands the pool size if all available
+#   packets are in use, ensuring a continuous supply without interruption.
+#
+# - Packet Acquisition: Provides a method to retrieve a pre-configured Packet
+#   from the pool, initializing it with necessary data (type, speed, path, position).
+#
+# - Packet Return: Manages the return of used Packet objects to the pool,
+#   resetting their state and making them available for future reuse.
+#
+# - Performance Optimization: By recycling Packet instances, it significantly
+#   reduces garbage collection overhead and CPU spikes that would occur from
+#   constant node instantiation/deletion, leading to smoother gameplay.
+# ============================================================================
 class_name PacketPool extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------

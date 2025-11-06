@@ -1,9 +1,26 @@
-# =========================================
-# packet_manager.gd
-# =========================================
-# Manages propagation spawning and path validity of Packet objects
-# Responsible for incrementing/decrementing building class in-flight packets variable
-# Uses PacketPool for optimization
+# PacketManager - packet_manager.gd
+# ============================================================================
+# This manager is the central authority for creating and dispatching all Packet
+# objects in the game. It is responsible for the entire lifecycle of a packet,
+# from propagation to arrival or cleanup.
+#
+# Key Responsibilities:
+# - Packet Propagation: Called by the Command Center on its tick, this manager
+#   determines which buildings need packets (e.g., for construction or ammo)
+#   and dispatches them according to a quota and round-robin distribution.
+#
+# - Pathfinding & Validation: It leverages the GridManager's cached paths to
+#   route packets and performs real-time traversability checks to ensure
+#   packets don't get stuck.
+#
+# - Lifecycle Management: It tracks packets in flight, notifies buildings upon
+#   packet arrival, and handles cleanup for packets that fail to reach their
+#   destination.
+#
+# - Performance Optimization: It utilizes a PacketPool to recycle and reuse
+#   Packet objects, minimizing the performance cost of creating and destroying
+#   nodes frequently.
+# ============================================================================
 class_name PacketManager extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
@@ -28,90 +45,108 @@ func _ready() -> void:
 # -----------------------------------------
 # Called by Command Center on tick
 func start_packet_propagation(command_center: Command_Center, quota: int, packet_type: GlobalData.PACKETS) -> int:
-	var packets_sent := 0
-	if quota <= 0 or not grid_manager.reachable_from_base_cache.has(command_center):
+	if quota <= 0:
 		return 0
 
-	var targets := []
-	for building in grid_manager.reachable_from_base_cache[command_center]:
-		if building == command_center or not is_instance_valid(building):
-			continue
-
-		# Use building's built-in needs_packet check
-		if not building.needs_packet(packet_type):
-			continue
-
-		# Prevent over-queuing: skip building that already have enough packets on the way
-		# use the correct target limit depending on packet type
-		match packet_type:
-			GlobalData.PACKETS.BUILDING:
-				if building.is_scheduled_to_build or building.is_built:
-					continue
-			GlobalData.PACKETS.AMMO:
-				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
-					continue
-			# other packet types
-			_:
-				# Default check
-				print("Packet type not valid!")
-
-		targets.append(building)
-
+	# Find all buildings that currently need this packet type.
+	var targets := _get_packet_targets(command_center, packet_type)
 	if targets.is_empty():
 		return 0
 
-	# Round-robin selection over the filtered targets
+	# Iterate through targets using a round-robin approach and send packets up to the quota.
+	var packets_sent := 0
 	var index = grid_manager.last_target_index.get(command_center, 0)
 	var n = targets.size()
 	
-	# seconds between packets
-	#var spawn_delay_step: float = 0.1  
+	# A small delay is added between each packet spawn to create a cascading effect.
 	var delay_accum: float = 0.0
 	
+	# Loop through the number of targets, but break early if the quota is met.
 	for i in range(n):
 		if packets_sent >= quota:
 			break
 
+		# Round-robin selection ensures packets are distributed evenly.
 		var building = targets[index % n]
 		index += 1
 
-		# Skip again if target became invalid or has now enough in-flight packets (race-safe)
-		if not is_instance_valid(building):
+		# Final validation before spawning
+		# Re-check if target is still valid, as its state might have changed this frame.
+		if not _is_target_still_valid(building, packet_type):
 			continue
-		match packet_type:
-			GlobalData.PACKETS.BUILDING:
-				if building.is_scheduled_to_build or building.is_built:
-					continue
-			GlobalData.PACKETS.AMMO:
-				if building.is_scheduled_to_full_ammo or building.is_full_ammo:
-					continue
 
-
+		# Check if a valid path exists in the cache.
 		var key = str(command_center.get_instance_id()) + "_" + str(building.get_instance_id())
 		if not grid_manager.path_cache.has(key):
 			continue
-
 		var path = grid_manager.path_cache[key]
-		if path.size() <= 1 or path.any(func(r): return not is_instance_valid(r)):
-			continue
 
-		if not grid_manager.are_connected(path[0], path[-1]):
-			continue
-
-		# Check if the path is traversable before incrementing in-flight packets and spawning.
+		# Check if the cached path is traversable right now.
 		if not _is_path_traversable(path, packet_type):
 			continue
 
-		# Increment in-flight AFTER the final checks and BEFORE spawning the packet.
-		# This ensures other bases/ticks see the incremented value immediately.
+		# Dispatch Packet
+		# Increment in-flight packets BEFORE spawning to prevent race conditions.
 		building.increment_packets_in_flight()
-
-		_spawn_packet_along_path(path, packet_type, delay_accum)
+		_dispatch_packet_along_path(path, packet_type, delay_accum)
+		
 		delay_accum += spawn_delay_step
 		packets_sent += 1
 
+	# Save the last index for the next tick's round-robin.
 	grid_manager.last_target_index[command_center] = index % n
 	return packets_sent
+
+
+# -----------------------------------------
+# --- Packet Propagation Helpers ----------
+# -----------------------------------------
+# Filters all reachable buildings to find valid targets that currently need a specific packet type.
+func _get_packet_targets(command_center: Command_Center, packet_type: GlobalData.PACKETS) -> Array[Building]:
+	var targets: Array[Building] = []
+	if not grid_manager.reachable_from_base_cache.has(command_center):
+		return targets
+
+	for building in grid_manager.reachable_from_base_cache[command_center]:
+		# Basic validation: building must be valid, not the command center itself, and must need the packet.
+		if building == command_center or not is_instance_valid(building):
+			continue
+		# Use building's built-in needs_packet check
+		if not building.needs_packet(packet_type):
+			continue
+
+		# Advanced validation: check if the building is already scheduled for completion/resupply.
+		if not _is_target_still_valid(building, packet_type):
+			continue
+			
+		targets.append(building)
+	
+	return targets
+
+
+# Checks if a building is still a valid target for a packet preventing over-queuing.
+func _is_target_still_valid(building: Building, packet_type: GlobalData.PACKETS) -> bool:
+	if not is_instance_valid(building):
+		return false
+
+	# Check based on packet type to see if the building's needs have already been met
+	# or are scheduled to be met by other in-flight packets.
+	match packet_type:
+		GlobalData.PACKETS.BUILDING:
+			# Prevent over-queuing: skip building that already have enough packets on the way
+			if building.is_scheduled_to_build or building.is_built:
+				return false
+		GlobalData.PACKETS.AMMO:
+			# Prevent over-queuing: skip building that already have enough packets on the way
+			if building.is_scheduled_to_full_ammo or building.is_full_ammo:
+				return false
+		# other packet types
+		_:
+			# If the packet type is unknown or unhandled consider it invalid.
+			print("Packet type not valid!")
+			return false
+	
+	return true
 
 # -----------------------------------------
 # --- Path Validity Check -----------------
@@ -153,24 +188,18 @@ func _is_path_traversable(path: Array[Building], packet_type: GlobalData.PACKETS
 	return true
 
 # -----------------------------------------
-# --- Packet spawning ---------------------
+# --- Packet Spawning ---------------------
 # -----------------------------------------
 # Spawns packet along the received validated path with a delay
-func _spawn_packet_along_path(path: Array[Building], packet_type: GlobalData.PACKETS, delay_offset :float = 0.0) -> void:
+func _dispatch_packet_along_path(path: Array[Building], packet_type: GlobalData.PACKETS, delay_offset :float = 0.0) -> void:
 	# Use a small delay to prevent packets from stacking on top of each other.
 	if delay_offset > 0.0:
 		spawn_delay_timer.start(delay_offset)
 		await spawn_delay_timer.timeout
-	
+
 	# Acquire a new packet from the pool and set it up.
 	var packet: Packet = _get_packet_from_pool(packet_type, current_packet_speed, path.duplicate(), path[0].global_position)
-	
-	# Connect to the packet's signals to manage its lifecycle.
-	if not packet.packet_arrived.is_connected(_on_packet_arrived):
-		packet.packet_arrived.connect(_on_packet_arrived)
-	if not packet.packet_cleanup.is_connected(_on_packet_cleanup):
-		packet.packet_cleanup.connect(_on_packet_cleanup)
-		
+
 	# Add the packet to active_packets_container.
 	active_packets_container.add_child(packet)
 
@@ -181,6 +210,12 @@ func _get_packet_from_pool(pkt_type: GlobalData.PACKETS, pkt_speed: int, pkt_pat
 	var packet: Packet = packet_pool.get_packet(pkt_type, pkt_speed, pkt_path, pkt_position)
 	if is_instance_valid(packet) and not packet.is_in_group("packets"):
 		packet.add_to_group("packets")
+
+	# Connect to the packet's signals to manage its lifecycle.
+	if not packet.packet_arrived.is_connected(_on_packet_arrived):
+		packet.packet_arrived.connect(_on_packet_arrived)
+	if not packet.packet_cleanup.is_connected(_on_packet_cleanup):
+		packet.packet_cleanup.connect(_on_packet_cleanup)
 
 	return packet
 
@@ -198,6 +233,7 @@ func _return_packet_to_pool(packet: Packet) -> void:
 # --- Packets Signal Handling -------------
 # -----------------------------------------
 # Called when packet reaches the target building
+# Connected to packet.packet_arrived
 func _on_packet_arrived(packet: Packet):
 	if packet.is_cleaned_up:
 		return
@@ -221,6 +257,7 @@ func _on_packet_arrived(packet: Packet):
 
 
 # Called when packet cant reach target building
+# Connected to packet.packet_cleanup
 func _on_packet_cleanup(packet: Packet):
 	# Decrement target building in-flight packet cout
 	if packet.path.size() > 0 and is_instance_valid(packet.path[-1]):
