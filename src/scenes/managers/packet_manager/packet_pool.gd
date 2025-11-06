@@ -36,9 +36,9 @@ func _populate_pool(size: int) -> void:
 		packet_pool.append(packet)
 		add_child(packet)
 
-# ---------------------------------
-# --- Public Methods --------------
-# ---------------------------------
+# -----------------------------------------
+# --- Public Methods/Get&Return Packets ---
+# -----------------------------------------
 # Retrieves a Packet from the pool. If the pool is empty it creates more.
 # Initializes the Packet with the provided parameters.
 # Returns the configured Packet.

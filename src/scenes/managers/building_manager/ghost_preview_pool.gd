@@ -35,9 +35,9 @@ func _populate_pool(size: int) -> void:
 		ghost_preview_pool.append(preview)
 		add_child(preview)
 
-# ---------------------------------
-# --- Public Methods --------------
-# ---------------------------------
+# -----------------------------------------
+# --- Public Methods/Get&Return Previews --
+# -----------------------------------------
 # Retrieves a GhostPreview from the pool and returns it.
 # If the pool is empty it creates more.
 func get_preview() -> GhostPreview:

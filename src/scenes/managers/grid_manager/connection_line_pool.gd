@@ -35,9 +35,9 @@ func _populate_pool(size: int) -> void:
 		connection_line_pool.append(connection_line)
 		add_child(connection_line)
 
-# ---------------------------------
-# --- Public Methods --------------
-# ---------------------------------
+# -----------------------------------------
+# --- Public Methods/Get&Return Lines -----
+# -----------------------------------------
 # Retrieves a ConnectionLine from the pool and returns it. 
 # If the pool is empty it creates more.
 func get_connection_line() -> ConnectionLine:

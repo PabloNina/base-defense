@@ -1,7 +1,6 @@
 # =========================================
 # packet.gd
 # =========================================
-
 class_name Packet extends Node2D
 
 const GREEN_TEXTURE: Texture2D = preload("res://assets/sprites/objects/energy_packet.png")
@@ -82,6 +81,7 @@ func _follow_path(delta: float) -> void:
 # --- Visuals -----------
 # -----------------------
 # Set sprite texture base on packet type
+# Called by PacketManager
 func set_sprite() -> void:
 	match packet_type:
 		GlobalData.PACKETS.BUILDING:

@@ -10,6 +10,7 @@ class_name PacketManager extends Node
 # -----------------------------------------
 @export var grid_manager: GridManager
 @export var current_packet_speed: int = 150
+@export var spawn_delay_step: float = 0.1
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
@@ -63,7 +64,7 @@ func start_packet_propagation(command_center: Command_Center, quota: int, packet
 	var n = targets.size()
 	
 	# seconds between packets
-	var spawn_delay_step: float = 0.1  
+	#var spawn_delay_step: float = 0.1  
 	var delay_accum: float = 0.0
 	
 	for i in range(n):
