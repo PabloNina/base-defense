@@ -31,8 +31,8 @@ class_name Packet extends Node2D
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
-# Emited when packet reaches its target building
-# Listener PacketManager
+## Emited when packet reaches its target building
+## Listener PacketManager
 signal packet_arrived(packet: Packet)
 # Emited in _cleanup_packet
 # Listener PacketManager

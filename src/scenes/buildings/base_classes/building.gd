@@ -58,7 +58,7 @@ signal deactivated(is_deactivated: bool)
 # -------------------------------
 # --- Building Settings ---------
 # -------------------------------
-## Type of building that is using this class for Ui labeling
+## Type of building that is using this class
 @export var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
 # packets needed to complete construction
 var cost_to_build: int = 0
@@ -84,42 +84,25 @@ var connected_buildings: Array[Building] = []
 # --- Engine Callbacks ----------
 # -------------------------------
 func _ready():
-	# Config building with data from GlobalData
-	connection_range = GlobalData.get_connection_range(building_type)
-	cost_to_build = GlobalData.get_cost_to_build(building_type)
-	is_relay = GlobalData.get_is_relay(building_type)
-	upkeep_cost = GlobalData.get_upkeep_cost(building_type)
-
-	# Connect signal for click detection
-	building_hurt_box.area_clicked.connect(_on_hurtbox_clicked)
 	# group adding
 	add_to_group("buildings")
-	
-	# setup construction progress bar
-	construction_progress_bar.max_value = cost_to_build
-	construction_progress_bar.step = 1
-	construction_progress_bar.value = 0
-	# Starts hidden is activated after receiving the first building packet
-	construction_progress_bar.visible = false
-	# hide exclamation selection box sprite
+	# Config building
+	_config_building_settings()
+	_config_construction_bar()
+	_register_with_managers()
+	# hide selection box sprite
 	selection_box_sprite.visible = false
 	# hide deactivated sprite
 	deactivated_sprite.visible = false
-	
-	# Register with Managers
-	grid_manager = get_tree().get_first_node_in_group("grid_manager")
-	if grid_manager:
-		grid_manager.register_to_grid(self)
+	_update_is_built_visuals()
 
-	building_manager = get_tree().get_first_node_in_group("building_manager")
-	if building_manager:
-		building_manager.register_building(self)
+# -------------------------------------------------------------
+# ----------------------- Public Methods ----------------------
+# -------------------------------------------------------------
 
-	_updates_visuals()
-
-# -------------------------------
-# --- Selection Box Updating ----
-# -------------------------------
+# ----------------------------------------------
+# --- Selection Box Updating -------------------
+# ----------------------------------------------
 # Called by BuildingManager
 func show_selection_sprite() -> void:
 	is_selected = true
@@ -129,11 +112,6 @@ func show_selection_sprite() -> void:
 func hide_selection_sprite() -> void:
 	is_selected = false
 	selection_box_sprite.visible = false
-# -------------------------------
-# --- Signal / Click Handling ---
-# -------------------------------
-func _on_hurtbox_clicked() -> void:
-	clicked.emit(self)
 
 # -------------------------------
 # --- Grid Linking --------------
@@ -147,9 +125,9 @@ func connect_to(other_building: Building):
 func disconnect_from(other_building: Building):
 	connected_buildings.erase(other_building)
 	
-# ----------------------
-# --- States Setters ---
-# ----------------------
+# -------------------------------------------
+# --- Power and Deactivate States Setters ---
+# -------------------------------------------
 # Called by GridManager.
 func set_powered_state(new_state: bool) -> void:
 	if is_powered == new_state:
@@ -160,14 +138,6 @@ func set_powered_state(new_state: bool) -> void:
 		exclamation_mark_sprite.visible = false
 	else:
 		exclamation_mark_sprite.visible = true
-
-func _set_built_state(new_state: bool) -> void:
-	if is_built == new_state:
-		return
-	is_built = new_state
-	finish_building.emit()
-	# update built color
-	_updates_visuals()
 
 # Sets the deactivated state of the building.
 # Called by BuildingManager.
@@ -180,9 +150,9 @@ func set_deactivated_state(deactivate: bool) -> void:
 	else:
 		deactivated_sprite.visible = false
 
-# -------------------------------
-# --- Packet In Flight ----------
-# -------------------------------
+# ----------------------------------
+# --- Packets In Flight Handling ---
+# ----------------------------------
 # Called by PacketManager
 func increment_packets_in_flight() -> void:
 	packets_in_flight += 1
@@ -200,6 +170,7 @@ func reset_packets_in_flight() -> void:
 	packets_in_flight = 0
 	if not is_built:
 		is_scheduled_to_build = false
+
 # -------------------------------
 # --- Packet Reception ----------
 # -------------------------------
@@ -210,19 +181,6 @@ func received_packet(packet_type: GlobalData.PACKETS):
 			_handle_received_building_packet()
 		_:
 			push_warning("Unknown packet type received: %s" % str(packet_type))
-
-# -------------------------------
-# --- Packet Processing ----------
-# -------------------------------
-func _handle_received_building_packet() -> void:
-	if is_built:
-		return
-	construction_progress += 1
-	state_updated.emit()
-	_update_construction_progress_bar(construction_progress)
-
-	if construction_progress >= cost_to_build:
-		is_built = true
 
 # -------------------------------
 # --- Packet Demand Query -------
@@ -237,9 +195,18 @@ func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 		#GlobalData.PACKETS.AMMO:
 			## Needs ammo if built, powered, and not fully stocked
 			#return false
-
 		_:
 			return false
+
+# -----------------------------------------
+# ------ Get Building Upkeep --------------
+# -----------------------------------------
+# Returns current upkeep 
+# Called by Command Center on tick
+func get_upkeep_cost() -> float:
+	if not is_built or not is_powered or is_deactivated:
+		return 0.0
+	return upkeep_cost
 
 # -------------------------------
 # --- Destroy and Clean ---------
@@ -260,26 +227,75 @@ func destroy():
 
 	queue_free()
 
-# -----------------------------------------
-# ------ Building Energy Consumption ------
-# -----------------------------------------
-# Returns current upkeep 
-# Called by Command Center on tick
-func get_upkeep_cost() -> float:
-	if not is_built or not is_powered or is_deactivated:
-		return 0.0
-	return upkeep_cost
+# --------------------------------------------------------------
+# ----------------------- Private Methods ----------------------
+# --------------------------------------------------------------
+
+# -----------------------------------
+# --- Building Configuration --------
+# -----------------------------------
+# Config building with data from GlobalData
+func _config_building_settings() -> void:
+	connection_range = GlobalData.get_connection_range(building_type)
+	cost_to_build = GlobalData.get_cost_to_build(building_type)
+	is_relay = GlobalData.get_is_relay(building_type)
+	upkeep_cost = GlobalData.get_upkeep_cost(building_type)
+	# Connect signal for click detection
+	building_hurt_box.area_clicked.connect(_on_hurtbox_clicked)
+
+func _config_construction_bar() -> void:
+	construction_progress_bar.max_value = cost_to_build
+	construction_progress_bar.step = 1
+	construction_progress_bar.value = 0
+	# Starts hidden is activated after receiving the first building packet
+	construction_progress_bar.visible = false
+
+func _register_with_managers() -> void:
+	grid_manager = get_tree().get_first_node_in_group("grid_manager")
+	if grid_manager:
+		grid_manager.register_to_grid(self)
+
+	building_manager = get_tree().get_first_node_in_group("building_manager")
+	if building_manager:
+		building_manager.register_building(self)
+# -------------------------------
+# --- Built State Setter --------
+# -------------------------------
+func _set_built_state(new_state: bool) -> void:
+	if is_built == new_state:
+		return
+	is_built = new_state
+	finish_building.emit()
+	# update built color
+	_update_is_built_visuals()
+
+# -------------------------------
+# --- Packet Processing ---------
+# -------------------------------
+func _handle_received_building_packet() -> void:
+	if is_built:
+		return
+	construction_progress += 1
+	state_updated.emit()
+	_update_construction_progress_bar(construction_progress)
+
+	if construction_progress >= cost_to_build:
+		is_built = true
+
+# -------------------------------
+# --- Signal / Click Handling ---
+# -------------------------------
+func _on_hurtbox_clicked() -> void:
+	clicked.emit(self)
 
 # -------------------------------
 # --- Visuals Updating ----------
 # -------------------------------
 # Make it abstract
-# change method name
-func _updates_visuals() -> void:
-# Implemented by child classes (e.g., change color or glow)
+func _update_is_built_visuals() -> void:
+# Implemented by child classes
 	pass
 
-# Update ammo bar
 func _update_construction_progress_bar(new_value: float) -> void:
 	construction_progress_bar.value = new_value
 	# Only show bar if not full

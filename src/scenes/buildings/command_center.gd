@@ -32,7 +32,7 @@ const ENERGY_CRITICAL_THRESHOLD: float = 0.12  # 12% energy
 # Smoothed energy ratio (EMA). Single value since only one Command Center is allowed.
 var _smoothed_energy_ratio: float = 0.0
 
-var generators_accumulated_bonus: float = 0.0 # accumulated generator bonus each tick
+var reactors_accumulated_bonus: float = 0.0 # accumulated generator bonus each tick
 var packet_manager: PacketManager
 
 # -----------------------------------------
@@ -66,10 +66,10 @@ func _on_timer_tick():
 		if building.is_powered and building.is_built:
 			packets_consumed += building.get_upkeep_cost()
 	
-	# --- Stage 2: Add Generator bonuses to Command Center ---
+	# --- Stage 2: Add Reactor bonuses to Command Center ---
 	for generator in grid_manager.registered_buildings:
-		if generator is EnergyGenerator and generator.is_powered and generator.is_built:
-			generators_accumulated_bonus += generator.get_packet_production_bonus()
+		if generator is Reactor and generator.is_powered and generator.is_built:
+			reactors_accumulated_bonus += generator.get_packet_production_bonus()
 
 	# --- Stage 3: Command Center generates packets ---
 	packets_produced = _produce_packets()
@@ -185,12 +185,12 @@ func _compute_packet_quota() -> int:
 # --- Packet Production -------------------
 # -----------------------------------------
 func _produce_packets() -> float:
-	# Total packets produced this tick = base + generators 
-	var total_generated := default_packet_production + generators_accumulated_bonus
+	# Total packets produced this tick = base + reactors 
+	var total_generated := default_packet_production + reactors_accumulated_bonus
 	stored_packets = min(max_packet_capacity, stored_packets + total_generated)
 	
-	# Reset generator contribution after applying
-	generators_accumulated_bonus = 0
+	# Reset reactors contribution after applying
+	reactors_accumulated_bonus = 0
 	return total_generated
 	
 # -----------------------------------------

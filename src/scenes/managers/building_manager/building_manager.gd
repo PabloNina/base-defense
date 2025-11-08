@@ -25,19 +25,16 @@ var tile_position: Vector2i
 var tile_source_id: int
 var local_tile_position: Vector2
 # -----------------------------------------
-# --- Building Tile IDs -------------------
-# -----------------------------------------
-var is_command_center_placed: bool = false
-# -----------------------------------------
 # --- Construction State ------------------
 # -----------------------------------------
+var is_command_center_placed: bool = false
 var is_construction_state: bool = false
 var is_building_placeable: bool = true
 var building_to_build_type: GlobalData.BUILDING_TYPE
 var ghost_tile_position: Vector2i
 var buildable_tile_id: int = 0
 var single_preview: GhostPreview = null
-# --- Line Construction ---
+# Line Construction
 var is_line_construction_state: bool = false
 var line_construction_start_pos: Vector2i
 var construction_line_previews: Array[GhostPreview] = []
@@ -49,7 +46,7 @@ var relay_line_previews: Array[ConnectionLine] = []
 var is_move_state: bool = false
 var buildings_to_move_group: Array[Building] = []
 var formation_offsets: Array[Vector2] = []
-# --- Formation Scaling ---
+# Formation Scaling
 # Adjusts the tightness of the group formation.
 var formation_scale: float = 1.0
 var formation_angle: float = 0.0
@@ -63,9 +60,7 @@ var landing_markers = {} # Key: building instance, Value: marker instance
 var move_previews: Array[GhostPreview] = []
 # Tracks the validity of each preview in a group move.
 var move_previews_validity: Dictionary = {}
-# ---------------------------------------
-# --- Multi Selection (Box) State -------
-# ---------------------------------------
+# Multi Selection (Box) State
 var is_box_selecting_state: bool = false
 var selection_start_pos: Vector2 = Vector2.ZERO
 var selection_end_pos: Vector2 = Vector2.ZERO
@@ -74,7 +69,7 @@ var selection_end_pos: Vector2 = Vector2.ZERO
 # -----------------------------------------
 var selected_buildings: Array[Building] = []
 var buildings: Array[Building] = []  # All active buildings
-# --- Double Click Selection ---
+# Double Click Selection
 var last_clicked_building: Building = null
 # Window in seconds for double-click detection
 var double_click_window: float = 0.2 
@@ -91,6 +86,7 @@ signal building_deselected()
 func _ready() -> void:
 	# Ensure BuildingManager processes even when game is paused 
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Group adding
 	add_to_group("building_manager")
 	# Connect timer signal for double click detection
 	double_click_timer.timeout.connect(_on_double_click_timer_timeout)
@@ -111,8 +107,8 @@ func _ready() -> void:
 	InputManager.box_selection_started.connect(_on_InputManager_box_selection_started)
 	InputManager.box_selection_ended.connect(_on_InputManager_box_selection_ended)
 	InputManager.build_relay_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.RELAY))
-	InputManager.build_gun_turret_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.GUN_TURRET))
-	InputManager.build_generator_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.GENERATOR))
+	InputManager.build_gun_turret_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.CANNON))
+	InputManager.build_reactor_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.REACTOR))
 	InputManager.build_command_center_pressed.connect(func(): _select_building_to_build(GlobalData.BUILDING_TYPE.COMMAND_CENTER))
 	InputManager.formation_tighter_pressed.connect(_on_InputManager_formation_tighter_pressed)
 	InputManager.formation_looser_pressed.connect(_on_InputManager_formation_looser_pressed)

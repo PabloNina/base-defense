@@ -1,8 +1,29 @@
-# =========================================
-# GridManager.gd
-# =========================================
+# GridManager - grid_manager.gd
+# ============================================================================
+# This manager is the central authority for maintaining and querying the game's
+# energy grid. It is responsible for managing connections between buildings,
+# distributing power, and providing efficient pathfinding data for packet
+# propagation.
+#
+# Key Responsibilities:
+# - Grid Construction & Maintenance: Handles the registration and unregistration
+#   of buildings, dynamically updating connections based on proximity and type
+#   (e.g., relays). It also manages the visual representation of these connections.
+#
+# - Grid Integrity & Power Distribution: Recalculates the power state of all
+#   buildings based on their connection to Command Centers and updates visual
+#   feedback (e.g., connection line colors, building power indicators).
+#
+# - Pathfinding & Caching: Performs breadth-first searches to determine
+#   reachable buildings from Command Centers and caches these paths, along with
+#   distances, to optimize packet routing by the PacketManager.
+#
+# - Performance Optimization: Utilizes caching mechanisms for paths, distances,
+#   and reachable buildings to minimize redundant calculations and improve
+#   overall game performance. It also employs a ConnectionLinePool for efficient
+#   management of connection line objects.
+# ============================================================================
 class_name GridManager extends Node
-
 # -----------------------------------------
 # --- Onready Variables -------------------
 # -----------------------------------------
@@ -31,16 +52,9 @@ func _ready():
 	add_to_group("grid_manager")
 	_rebuild_all_connections()
 
-# -----------------------------------------
-# --- Connection Line Pool Wrappers -------
-# -----------------------------------------
-# Retrieves a ConnectionLine from the pool
-# Also called by BuildingManager and GhostPreview
-func get_connection_line_from_pool() -> ConnectionLine:
-	return connection_line_pool.get_connection_line()
-
-func return_connection_line_to_pool(line: ConnectionLine) -> void:
-	connection_line_pool.return_connection_line(line)
+# -------------------------------------------------------
+# ----------------- Public Methods ----------------------
+# -------------------------------------------------------
 
 # -----------------------------------------
 # --- Buildings Registration --------------
@@ -97,7 +111,42 @@ func unregister_to_grid(building: Building):
 	_update_grid_integrity()
 
 # -----------------------------------------
-# --- Grid Construction ----------------
+# --- Connection Line Pool Wrappers -------
+# -----------------------------------------
+# Retrieves a ConnectionLine from the pool
+# Also called by BuildingManager and GhostPreview
+func get_connection_line_from_pool() -> ConnectionLine:
+	return connection_line_pool.get_connection_line()
+
+func return_connection_line_to_pool(line: ConnectionLine) -> void:
+	connection_line_pool.return_connection_line(line)
+
+# -----------------------------------------
+# --- Grid Public Checks ------------------
+# -----------------------------------------
+# Helper for packet manager:
+# Checks if building is connected to the grid
+func are_connected(base: Command_Center, building: Building) -> bool:
+	if not reachable_from_base_cache.has(base):
+		return false
+	return building in reachable_from_base_cache[base]
+	
+# Helper for placement preview: 
+# checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
+func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
+	if not is_relay_a and not is_relay_b:
+		return false
+	var range_a = GlobalData.get_connection_range(type_a)
+	var range_b = GlobalData.get_connection_range(type_b)
+	var dist = pos_a.distance_to(pos_b)
+	return dist <= min(range_a, range_b)
+
+# --------------------------------------------------------
+# ----------------- Private Methods ----------------------
+# --------------------------------------------------------
+
+# -----------------------------------------
+# --- Grid Construction -------------------
 # -----------------------------------------
 # Fully clears and rebuilds all physical connections in the grid.
 # This is more expensive and is only needed after mass changes or a full reset.
@@ -143,22 +192,6 @@ func _are_buildings_in_range(building_a: Building, building_b: Building) -> bool
 	distance_cache[key] = dist
 	return dist <= min(building_a.connection_range, building_b.connection_range)
 	
-# Helper for packet manager:
-# Checks if building is connected to the grid
-func are_connected(base: Command_Center, building: Building) -> bool:
-	if not reachable_from_base_cache.has(base):
-		return false
-	return building in reachable_from_base_cache[base]
-	
-# Helper for placement preview: 
-# checks if two buildings (or a ghost) would connect, given their types, positions, and is_relay flags.
-func can_buildings_connect(type_a: int, pos_a: Vector2, is_relay_a: bool, type_b: int, pos_b: Vector2, is_relay_b: bool) -> bool:
-	if not is_relay_a and not is_relay_b:
-		return false
-	var range_a = GlobalData.get_connection_range(type_a)
-	var range_b = GlobalData.get_connection_range(type_b)
-	var dist = pos_a.distance_to(pos_b)
-	return dist <= min(range_a, range_b)
 
 # Establishes a bidirectional connection between two buildings and creates the visual line for it.
 func _connect_buildings(building_a: Building, building_b: Building):

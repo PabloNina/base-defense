@@ -25,8 +25,8 @@ class_name GhostPreview extends Node2D
 # --------------------------------------------
 # --- Signals --------------------------------
 # --------------------------------------------
-# Emitted when placement validity changes, passing itself for identification.
-# Listener BuildingManager
+## Emitted when placement validity changes passing itself for identification.
+## Listener BuildingManager
 signal is_placeable(is_valid: bool, preview: GhostPreview)
 # --------------------------------------------
 # --- Onready References ---------------------

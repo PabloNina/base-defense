@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://dlgb1bhcttdy2" path="res://src/scenes/managers/packet_manager/packet_manager.tscn" id="3_kxm1r"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="4_w5cc4"]
 [ext_resource type="PackedScene" uid="uid://cpoaqe645mbpq" path="res://src/scenes/buildings/reactor.tscn" id="5_432pi"]
-[ext_resource type="PackedScene" uid="uid://bmwseob8yf20s" path="res://src/scenes/buildings/cannon.tscn" id="6_rpnwt"]
+[ext_resource type="PackedScene" uid="uid://bmwseob8yf20s" path="res://src/scenes/buildings/gun_turret.tscn" id="6_rpnwt"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="7_sacgr"]
 [ext_resource type="PackedScene" uid="uid://dgmo3j2e5gny0" path="res://src/scenes/ui/user_interface.tscn" id="8_mqxgr"]
 

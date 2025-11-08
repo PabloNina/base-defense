@@ -20,7 +20,7 @@ signal camera_pan(delta: Vector2)
 # Building selection
 signal build_relay_pressed
 signal build_gun_turret_pressed
-signal build_generator_pressed
+signal build_reactor_pressed
 signal build_command_center_pressed
 
 # Formation
@@ -77,7 +77,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("key_2"):
 		build_gun_turret_pressed.emit()
 	elif event.is_action_pressed("key_3"):
-		build_generator_pressed.emit()
+		build_reactor_pressed.emit()
 	elif event.is_action_pressed("key_4"):
 		build_command_center_pressed.emit()
 	elif event.is_action_pressed("formation_tighter"):

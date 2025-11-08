@@ -51,7 +51,7 @@ const BLUE_PACKET_TEXTURE:Texture2D = preload("res://assets/sprites/objects/buil
 # Packet types
 enum PACKETS {NULL, BUILDING, ENERGY, AMMO, ORE, TECH}
 # Player Buildings 
-enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, GENERATOR, GUN_TURRET, MORTAR, ORE_MINE, FACTORY, RESEARCH_CENTER}
+enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, REACTOR, CANNON, MORTAR, ORE_MINE, FACTORY, RESEARCH_CENTER}
 # Buildings categories
 enum BUILDING_CATEGORY {NULL, INFRASTRUCTURE, WEAPON, SPECIAL}
 # Buildings actions
@@ -103,8 +103,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"building_actions": [BUILDING_ACTIONS.DESTROY]
 		# Relay class only
 	},
-	BUILDING_TYPE.GENERATOR: {
-		"packed_scene": preload("res://src/scenes/buildings/generator.tscn"),
+	BUILDING_TYPE.REACTOR: {
+		"packed_scene": preload("res://src/scenes/buildings/reactor.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/energy_generator.png"),
 		"display_name": "Reactor",
 		"cost_to_build": 5,
@@ -115,10 +115,10 @@ const BUILDINGS_DATA: Dictionary = {
 		"building_category": BUILDING_CATEGORY.INFRASTRUCTURE,
 		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE],
 		# Generator class only
-		# packet bonus
+		"packet_production_bonus": 5.0
 	},
-	BUILDING_TYPE.GUN_TURRET: {
-		"packed_scene": preload("res://src/scenes/buildings/gun_turret.tscn"),
+	BUILDING_TYPE.CANNON: {
+		"packed_scene": preload("res://src/scenes/buildings/cannon.tscn"),
 		"ghost_texture": preload("res://assets/sprites/buildings/cannon_base.png"),
 		"display_name": "Cannon",
 		"cost_to_build": 3,
@@ -128,8 +128,9 @@ const BUILDINGS_DATA: Dictionary = {
 		"optimal_building_distance_tiles": 3,
 		"building_category": BUILDING_CATEGORY.WEAPON,
 		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE, BUILDING_ACTIONS.MOVE],
-		# Weapon class only
+		# MovableBuilding class only
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
+		# Weapon class only
 		"max_ammo_storage": 10,
 		"cost_per_shot": 0.25,
 		"fire_rate": 0.5,
@@ -143,6 +144,7 @@ const BUILDINGS_DATA: Dictionary = {
 static func get_building_data(building_type: int) -> Dictionary:
 	return BUILDINGS_DATA.get(building_type, {})
 
+# Building Base Class
 static func get_ghost_texture(building_type: int) -> Texture2D:
 	var data = get_building_data(building_type)
 	return data.get("ghost_texture", null)
@@ -159,14 +161,6 @@ static func get_connection_range(building_type: int) -> float:
 static func get_is_relay(building_type: int) -> bool:
 	var data = get_building_data(building_type)
 	return data.get("is_relay", null)
-
-static func get_landing_marker_texture(building_type: int) -> Texture2D:
-	var data = get_building_data(building_type)
-	return data.get("landing_marker_texture", null)
-
-static func get_fire_range(building_type: GlobalData.BUILDING_TYPE) -> int:
-	var data = get_building_data(building_type)
-	return data.get("fire_range", -1)
 
 static func get_optimal_building_distance(building_type: GlobalData.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
@@ -189,10 +183,6 @@ static func get_building_category(building_type: GlobalData.BUILDING_TYPE) -> Gl
 	var data = get_building_data(building_type)
 	return data.get("building_category", -1)
 
-static func get_max_ammo_storage(building_type: GlobalData.BUILDING_TYPE) -> int:
-	var data = get_building_data(building_type)
-	return data.get("max_ammo_storage", -1)
-
 static func get_building_actions(building_type: GlobalData.BUILDING_TYPE) -> Array[GlobalData.BUILDING_ACTIONS]:
 	var data = get_building_data(building_type)
 	# Retrieve the raw actions data, which is a generic Array from the dictionary.
@@ -202,3 +192,30 @@ static func get_building_actions(building_type: GlobalData.BUILDING_TYPE) -> Arr
 	# Assign the elements from the generic array to the newly created typed array.
 	typed_actions.assign(actions_data)
 	return typed_actions
+
+# Generator class only
+static func get_packet_production_bonus(building_type: GlobalData.BUILDING_TYPE) -> float:
+	var data = get_building_data(building_type)
+	return data.get("packet_production_bonus", -1.0)
+
+# MovableBuilding Class
+static func get_landing_marker_texture(building_type: int) -> Texture2D:
+	var data = get_building_data(building_type)
+	return data.get("landing_marker_texture", null)
+
+# Weapon Class
+static func get_max_ammo_storage(building_type: GlobalData.BUILDING_TYPE) -> int:
+	var data = get_building_data(building_type)
+	return data.get("max_ammo_storage", -1)
+
+static func get_fire_range(building_type: GlobalData.BUILDING_TYPE) -> int:
+	var data = get_building_data(building_type)
+	return data.get("fire_range", -1)
+
+static func get_cost_per_shot(building_type: GlobalData.BUILDING_TYPE) -> float:
+	var data = get_building_data(building_type)
+	return data.get("cost_per_shot", -1.0)
+
+static func get_fire_rate(building_type: GlobalData.BUILDING_TYPE) -> float:
+	var data = get_building_data(building_type)
+	return data.get("fire_rate", -1.0)

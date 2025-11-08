@@ -45,10 +45,10 @@ func _on_relay_button_pressed() -> void:
 	construction_button_pressed.emit(GlobalData.BUILDING_TYPE.RELAY)
 	
 func _on_reactor_button_pressed() -> void:
-	construction_button_pressed.emit(GlobalData.BUILDING_TYPE.GENERATOR)
+	construction_button_pressed.emit(GlobalData.BUILDING_TYPE.REACTOR)
 
 func _on_cannon_button_pressed() -> void:
-	construction_button_pressed.emit(GlobalData.BUILDING_TYPE.GUN_TURRET)
+	construction_button_pressed.emit(GlobalData.BUILDING_TYPE.CANNON)
 
 func _on_base_button_pressed() -> void:
 	construction_button_pressed.emit(GlobalData.BUILDING_TYPE.COMMAND_CENTER)
