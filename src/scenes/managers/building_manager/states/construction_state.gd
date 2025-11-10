@@ -36,22 +36,8 @@ func _on_next_transitions() -> void:
 
 func _on_enter() -> void:
 	super()
-
 	# When entering the state, create a single preview for the selected building
-	if not is_instance_valid(single_preview):
-		single_preview = building_manager.get_placement_preview_from_pool()
-		building_manager.add_child(single_preview)
-		if not single_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
-			single_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
-	
-	single_preview.initialize_ghost_preview(
-		building_to_build_type,
-		building_manager.grid_manager,
-		GlobalData.get_ghost_texture(building_to_build_type),
-		building_manager.ground_layer,
-		building_manager.buildable_tile_id
-	)
-	single_preview.visible = true
+	update_ghost_preview()
 
 
 func _on_exit() -> void:
@@ -87,7 +73,7 @@ func _on_InputManager_map_left_released(_release_position: Vector2i) -> void:
 		
 		# If we havent placed the command center yet exit to selection state
 		if not building_manager.is_command_center_placed:
-			building_manager.state_machine.transition_to("SelectingState")
+			transition.emit("SelectingState")
 		else:
 			# Re-show the single preview
 			if is_instance_valid(single_preview):
@@ -95,7 +81,7 @@ func _on_InputManager_map_left_released(_release_position: Vector2i) -> void:
 
 func _on_InputManager_map_right_clicked(_click_position: Vector2i) -> void:
 	# Right click cancels construction and returns to selection state
-	building_manager.state_machine.transition_to("SelectingState")
+	transition.emit("SelectingState")
 
 
 # -----------------------------------------
@@ -110,7 +96,7 @@ func _place_building() -> void:
 	if not building_manager.is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		building_manager.is_command_center_placed = true
 		building_manager.construct_building(building_scene, building_manager.local_tile_position)
-		building_manager.state_machine.transition_to("SelectingState") # Exit construction after placing CC
+		transition.emit("SelectingState")
 	elif building_manager.is_command_center_placed and building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
 		print("You can only have 1 Command Center!")
 	elif building_manager.is_command_center_placed:
@@ -129,9 +115,27 @@ func _place_building_line() -> void:
 		if preview.visible and construction_previews_validity.get(preview, false):
 			building_manager.construct_building(building_scene, preview.global_position)
 
+# ----------------------------------------------
+# ------ Ghost Preview Update ------------------
+# ----------------------------------------------
+func update_ghost_preview() -> void:
+	if not is_instance_valid(single_preview):
+		single_preview = building_manager.get_placement_preview_from_pool()
+		building_manager.add_child(single_preview)
+		if not single_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
+			single_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
+	
+	single_preview.initialize_ghost_preview(
+		building_to_build_type,
+		building_manager.grid_manager,
+		GlobalData.get_ghost_texture(building_to_build_type),
+		building_manager.ground_layer,
+		building_manager.buildable_tile_id
+	)
+	single_preview.visible = true
 
 # ----------------------------------------------
-# ------ Preview Feedback ----------------------
+# ------ Ghost Preview Validity Feedback -------
 # ----------------------------------------------
 # Called when a preview's placement validity changes.
 func _on_ghost_preview_is_placeable(is_valid: bool, preview: GhostPreview) -> void:

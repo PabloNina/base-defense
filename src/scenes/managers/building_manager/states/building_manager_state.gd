@@ -10,4 +10,5 @@ func _ready() -> void:
 	assert(building_manager is BuildingManager)
 
 func _on_enter() -> void:
-	building_manager.current_state = self.state
+	if building_manager.current_state != self.state:
+		building_manager.current_state = self.state

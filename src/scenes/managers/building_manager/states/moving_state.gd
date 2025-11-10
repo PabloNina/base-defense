@@ -71,28 +71,29 @@ func _on_exit() -> void:
 func _on_InputManager_map_left_clicked(_click_position: Vector2i) -> void:
 	if is_building_placeable:
 		_move_building_selection()
-		building_manager.state_machine.transition_to("SelectingState") # Return to selection after move
+		# Return to selection after move
+		transition.emit("SelectingState")
 
 func _on_InputManager_map_right_clicked(_click_position: Vector2i) -> void:
 	# Cancel move and return to selection state
-	building_manager.state_machine.transition_to("SelectingState")
+	transition.emit("SelectingState")
 
-func _on_InputManager_formation_tighter_pressed() -> void:
+func move_formation_tighter() -> void:
 	formation_scale = clamp(formation_scale - FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
 	_update_move_previews()
 
-func _on_InputManager_formation_looser_pressed() -> void:
+func move_formation_looser() -> void:
 	formation_scale = clamp(formation_scale + FORMATION_SCALE_STEP, MIN_FORMATION_SCALE, MAX_FORMATION_SCALE)
 	_update_move_previews()
 
-func _on_InputManager_formation_rotate_pressed() -> void:
+func move_formation_rotate() -> void:
 	formation_angle = fmod(formation_angle + 90.0, 360.0)
 	_update_move_previews()
 
 
-# -----------------------------------------
-# --- Moving State Placement / Signals ----
-# -----------------------------------------
+# -----------------------------------
+# --- Move Placement ----------------
+# -----------------------------------
 func _move_building_selection() -> void:
 	var new_centroid = building_manager.local_tile_position
 	
@@ -113,7 +114,7 @@ func _move_building_selection() -> void:
 
 
 # ----------------------------------------------
-# ------ Preview Feedback ----------------------
+# ------ Move Preview Feedback -----------------
 # ----------------------------------------------
 # Called when a preview's placement validity changes.
 func _on_ghost_preview_is_placeable(is_valid: bool, preview: GhostPreview) -> void:
