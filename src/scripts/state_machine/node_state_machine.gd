@@ -1,5 +1,4 @@
-class_name NodeStateMachine
-extends Node
+class_name NodeStateMachine extends Node
 
 @export var initial_node_state : NodeState
 
@@ -16,7 +15,9 @@ func _ready() -> void:
 		if child is NodeState:
 			node_states[child.name.to_lower()] = child
 			child.transition.connect(transition_to)
-	
+
+
+func start() -> void:
 	if initial_node_state:
 		initial_node_state._on_enter()
 		current_node_state = initial_node_state
@@ -36,7 +37,7 @@ func _physics_process(delta: float) -> void:
 
 
 func transition_to(node_state_name : String) -> void:
-	if node_state_name == current_node_state.name.to_lower():
+	if current_node_state and node_state_name == current_node_state.name.to_lower():
 		return
 	
 	var new_node_state = node_states.get(node_state_name.to_lower())

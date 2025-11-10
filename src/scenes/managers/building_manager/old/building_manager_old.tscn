@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://djmvdkm5sqdyf"]
+
+[ext_resource type="Script" uid="uid://b3xo0u50w173i" path="res://src/scenes/managers/building_manager/old/building_manager_old.gd" id="1_52wft"]
+[ext_resource type="PackedScene" uid="uid://cc3je7d1u8jvx" path="res://src/scenes/managers/building_manager/ghost_preview_pool.tscn" id="2_b84nn"]
+
+[node name="BuildingManagerOld" type="Node2D"]
+z_index = 1
+script = ExtResource("1_52wft")
+
+[node name="GhostPreviewPool" parent="." instance=ExtResource("2_b84nn")]
+
+[node name="DoubleClickTimer" type="Timer" parent="."]
+one_shot = true

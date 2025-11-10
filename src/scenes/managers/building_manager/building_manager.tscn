@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://b343w2e4y27v"]
+[gd_scene load_steps=7 format=3 uid="uid://b343w2e4y27v"]
 
 [ext_resource type="Script" uid="uid://cymhc3rmgng4k" path="res://src/scenes/managers/building_manager/building_manager.gd" id="1_t5t3c"]
+[ext_resource type="Script" uid="uid://x2tpd2baqde4" path="res://src/scripts/state_machine/node_state_machine.gd" id="3_jq1eb"]
 [ext_resource type="PackedScene" uid="uid://cc3je7d1u8jvx" path="res://src/scenes/managers/building_manager/ghost_preview_pool.tscn" id="3_lcaib"]
+[ext_resource type="Script" uid="uid://b8pjl371pfgkp" path="res://src/scenes/managers/building_manager/states/construction_state.gd" id="4_iqva8"]
+[ext_resource type="Script" uid="uid://dqeol41pkg13y" path="res://src/scenes/managers/building_manager/states/selecting_state.gd" id="5_qqnp7"]
+[ext_resource type="Script" uid="uid://b5me4rl83t6rs" path="res://src/scenes/managers/building_manager/states/moving_state.gd" id="6_wn1x2"]
 
 [node name="BuildingManager" type="Node2D"]
 z_index = 1
@@ -11,3 +15,19 @@ script = ExtResource("1_t5t3c")
 
 [node name="DoubleClickTimer" type="Timer" parent="."]
 one_shot = true
+
+[node name="StateMachine" type="Node" parent="." node_paths=PackedStringArray("initial_node_state")]
+script = ExtResource("3_jq1eb")
+initial_node_state = NodePath("SelectingState")
+
+[node name="ConstructionState" type="Node" parent="StateMachine"]
+script = ExtResource("4_iqva8")
+state = 1
+
+[node name="SelectingState" type="Node" parent="StateMachine"]
+script = ExtResource("5_qqnp7")
+state = 2
+
+[node name="MovingState" type="Node" parent="StateMachine"]
+script = ExtResource("6_wn1x2")
+state = 3

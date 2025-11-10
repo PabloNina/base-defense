@@ -93,6 +93,10 @@ func initialize_ghost_preview(p_building_type: GlobalData.BUILDING_TYPE, p_grid_
 	buildable_tile_id = p_buildable_tile_id
 	show_visual_feedback = p_show_feedback
 	
+	# Return if texture is not valid
+	if not sprite.texture:
+		return
+		
 	# Configure collision shape based on texture size
 	var shape_size = sprite.texture.get_size() * sprite.scale
 	collision_shape.shape.size = shape_size

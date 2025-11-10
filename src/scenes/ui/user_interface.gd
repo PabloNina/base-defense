@@ -5,16 +5,14 @@ class_name UserInterface extends CanvasLayer
 @onready var building_actions_and_info_panel: BuildingActionsAndInfoPanel = $MainMarginContainer/BuildingActionsAndInfoPanel
 @onready var buildings_construction_panel: BuildingsConstructionPanel = $MainMarginContainer/BuildingsConstructionPanel
 @onready var packets_stats_panel: PacketsStatsPanel = $MainMarginContainer/PacketsStatsPanel
-
 # -----------------------------------------
 # --- Signals ------------------------------
 # -----------------------------------------
 # Listener: BuildingManager
 signal building_button_pressed(building_to_build: GlobalData.BUILDING_TYPE)
-signal destroy_button_pressed(building_to_destroy: Building)
-signal deactivate_button_pressed(building_to_deactivate: Building)
+signal destroy_button_pressed()
+signal deactivate_button_pressed()
 signal move_selection_pressed()
-
 # -----------------------------------------
 # --- Managers References ---------------
 # -----------------------------------------
@@ -33,7 +31,6 @@ func _ready() -> void:
 	# Subscribe to building manager signals
 	building_manager = get_tree().get_first_node_in_group("building_manager")
 	if building_manager:
-		#building_manager.building_selected.connect(show_building_actions_and_info_panel)
 		building_manager.selection_changed.connect(_show_building_actions_and_info_panel)
 		building_manager.building_deselected.connect(_hide_building_actions_and_info_panel)
 
@@ -74,20 +71,20 @@ func _hide_building_actions_and_info_panel() -> void:
 func _on_update_packets(stored: float, max_storage: float, produced: float, consumed: float, net_balance: float) -> void:
 	packets_stats_panel.update_stats(stored, max_storage, produced, consumed, net_balance)
 	
-# -------------------------------------------------
-# --- Building Actions Buttons Signal Handling ----
-# -------------------------------------------------
-func _on_destroy_action_pressed(building: Building) -> void:
-	destroy_button_pressed.emit(building)
+# ----------------------------------------------------
+# --- Construction&Actions Buttons Signal Handling ---
+# ----------------------------------------------------
+func _on_construction_button_pressed(building_type: GlobalData.BUILDING_TYPE) -> void:
+	building_button_pressed.emit(building_type)
 
-func _on_deactivate_action_pressed(building: Building) -> void:
-	deactivate_button_pressed.emit(building)
+func _on_destroy_action_pressed() -> void:
+	destroy_button_pressed.emit()
+
+func _on_deactivate_action_pressed() -> void:
+	deactivate_button_pressed.emit()
 
 func _on_move_action_pressed() -> void:
 	move_selection_pressed.emit()
-
-func _on_construction_button_pressed(building_type: GlobalData.BUILDING_TYPE) -> void:
-	building_button_pressed.emit(building_type)
 
 # -----------------------------------------------
 # --- Buildings Construction Panel Visibility ---

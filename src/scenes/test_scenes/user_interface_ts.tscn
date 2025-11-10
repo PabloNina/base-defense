@@ -43,6 +43,5 @@ position = Vector2(264, 296)
 position = Vector2(296, 296)
 
 [node name="Camera2D" parent="." instance=ExtResource("7_sacgr")]
-position = Vector2(643, 480)
 
 [node name="UserInterface" parent="." instance=ExtResource("8_mqxgr")]

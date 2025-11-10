@@ -20,8 +20,8 @@ InputManager="*res://src/scenes/autoloaded/input_manager.gd"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=960
+window/size/viewport_width=1600
+window/size/viewport_height=900
 window/stretch/mode="viewport"
 window/stretch/aspect="keep_height"
 window/stretch/scale_mode="integer"

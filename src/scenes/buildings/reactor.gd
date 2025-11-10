@@ -14,6 +14,7 @@ var packet_production_bonus: float = 0.0
 func _ready():
 	super._ready()
 	add_to_group("reactors")
+	_config_reactor_settings()
 
 # -----------------------------------------
 # --- Public Methods ----------------------

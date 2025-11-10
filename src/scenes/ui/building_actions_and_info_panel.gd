@@ -10,8 +10,8 @@ class_name BuildingActionsAndInfoPanel extends PanelContainer
 # --- Signals -----------------------------
 # -----------------------------------------
 # Listener: UserInterface
-signal destroy_action_pressed(building_to_destroy: Building)
-signal deactivate_action_pressed(building_to_deactivate: Building)
+signal destroy_action_pressed()
+signal deactivate_action_pressed()
 signal move_action_pressed()
 # -----------------------------------------
 # --- RunTime Data ------------------------
@@ -137,8 +137,7 @@ func _update_ammo_label(building: Building) -> void:
 # -----------------------------------------
 func _on_destroy_button_pressed() -> void:
 	if not current_selection.is_empty():
-		for building in current_selection:
-			destroy_action_pressed.emit(building)
+		destroy_action_pressed.emit()
 
 func _on_move_button_pressed() -> void:
 	if not current_selection.is_empty():
@@ -146,5 +145,4 @@ func _on_move_button_pressed() -> void:
 		
 func _on_deactivate_button_pressed() -> void:
 	if not current_selection.is_empty():
-		for building in current_selection:
-			deactivate_action_pressed.emit(building)
+		deactivate_action_pressed.emit()
