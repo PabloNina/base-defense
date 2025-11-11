@@ -11,7 +11,9 @@ var last_clicked_building: Building = null
 # Window in seconds for double-click detection
 var double_click_window: float = 0.2 
 
-
+# -----------------------------------------
+# ------------ State Logic ----------------
+# -----------------------------------------
 func _on_process(_delta: float) -> void:
 	# If we are dragging a selection box, update its end position and request a redraw
 	if is_box_selecting_state:

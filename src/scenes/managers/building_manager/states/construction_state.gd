@@ -17,8 +17,9 @@ var construction_line_previews: Array[GhostPreview] = []
 var construction_previews_validity: Dictionary = {}
 var relay_line_previews: Array[ConnectionLine] = []
 
-
-
+# -----------------------------------------
+# ------------ State Logic ----------------
+# -----------------------------------------
 func _on_process(_delta: float) -> void:
 	# Update previews based on the current mode (single or line)
 	if is_line_construction_state:

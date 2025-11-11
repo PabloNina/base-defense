@@ -28,18 +28,20 @@ var local_tile_position: Vector2
 # -----------------------------------------
 # --- Shared State ------------------------
 # -----------------------------------------
+# All available States
 enum STATES {NULL, CONSTRUCTION, SELECTING, MOVING}
+# Keeps track of current state
 var current_state: STATES = STATES.NULL
-
+# Flag to check is the base is placed
 var is_command_center_placed: bool = false
-var buildable_tile_id: int = 0 # should go to globaldata?
+# should go to globaldata?
+var buildable_tile_id: int = 0 
 # All registered buildings
 var buildings: Array[Building] = []
 # List if selected buildings
 var selected_buildings: Array[Building] = []
 # Dictionary of active landing markers for buildings currently moving.
-var landing_markers = {} # Key: building instance, Value: marker instance
-
+var landing_markers: Dictionary = {} # Key: building instance, Value: marker instance
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -111,17 +113,6 @@ func construct_building(building_scene: PackedScene, building_position: Vector2)
 	new_building.global_position = building_position
 	buildings_container.add_child(new_building)
 
-# Connected to ui and input manager signals
-func _select_building_to_construct(new_building_type: GlobalData.BUILDING_TYPE) -> void:
-	# Pass data to the state through the state machine or a shared context if needed
-	var construction_state = state_machine.node_states["constructionstate"]
-	if current_state == STATES.CONSTRUCTION:
-		construction_state.building_to_build_type = new_building_type
-		construction_state.update_ghost_preview()
-
-	if current_state == STATES.SELECTING:
-		construction_state.building_to_build_type = new_building_type
-		current_state = STATES.CONSTRUCTION
 
 # -----------------------------------------
 # --- Building Selection ------------------
@@ -219,6 +210,21 @@ func _on_double_click_timer_timeout() -> void:
 	if current_state == STATES.SELECTING:
 		var selecting_state = state_machine.current_node_state
 		selecting_state.single_click_selection()
+
+# --------------------------------------------------
+# --- UserInterface&InputManager Signal Handling ---
+# --------------------------------------------------
+# Connected to ui and input manager signals
+func _select_building_to_construct(new_building_type: GlobalData.BUILDING_TYPE) -> void:
+	# Pass data to the state through the state machine or a shared context if needed
+	var construction_state = state_machine.node_states["constructionstate"]
+	if current_state == STATES.CONSTRUCTION:
+		construction_state.building_to_build_type = new_building_type
+		construction_state.update_ghost_preview()
+
+	if current_state == STATES.SELECTING:
+		construction_state.building_to_build_type = new_building_type
+		current_state = STATES.CONSTRUCTION
 
 # -----------------------------------------
 # --- UserInterface Signal Subscribing ----

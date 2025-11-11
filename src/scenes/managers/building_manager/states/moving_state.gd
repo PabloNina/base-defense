@@ -20,8 +20,9 @@ var move_previews: Array[GhostPreview] = []
 # Tracks the validity of each preview in a group move.
 var move_previews_validity: Dictionary = {}
 
-
-
+# -----------------------------------------
+# ------------ State Logic ----------------
+# -----------------------------------------
 func _on_process(_delta: float) -> void:
 	_update_move_previews()
 
