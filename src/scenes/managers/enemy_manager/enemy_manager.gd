@@ -59,15 +59,50 @@ func _physics_process(delta: float) -> void:
 
 ## Adds a specified amount of ooze to a given tile.
 ## This is the primary way other nodes (like emitters) interact with the ooze simulation.
+## This function handles overflow by distributing excess ooze to neighbors.
 func add_ooze(tile_coord: Vector2i, amount: float) -> void:
-	# Prevent adding ooze directly onto a wall tile.
-	if _is_wall(tile_coord):
-		return
+	# Use a queue to process ooze additions, allowing for cascading overflows.
+	var processing_queue: Array[Dictionary] = [{"coord": tile_coord, "amount": amount}]
+	# Keep track of how many times we've processed a coordinate in this call to prevent infinite loops.
+	var process_counts: Dictionary = {}
+
+	while not processing_queue.is_empty():
+		var current_job: Dictionary = processing_queue.pop_front()
+		var coord: Vector2i = current_job["coord"]
+		var job_amount: float = current_job["amount"]
+
+		# Stop if a tile is being processed too many times in one frame, which indicates a feedback loop.
+		process_counts[coord] = process_counts.get(coord, 0) + 1
+		if process_counts[coord] > 8: # A tile shouldn't be processed more than its neighbors + self.
+			continue
+
+		# Do not add ooze to walls.
+		if _is_wall(coord):
+			continue
+			
+		var current_ooze: float = ooze_map.get(coord, 0.0)
+		var new_ooze_amount: float = current_ooze + job_amount
 		
-	var current_ooze: float = ooze_map.get(tile_coord, 0.0)
-	# Add the new amount and ensure it does not exceed the maximum allowed value.
-	var new_ooze_amount: float = clamp(current_ooze + amount, 0, max_ooze_per_tile)
-	ooze_map[tile_coord] = new_ooze_amount
+		if new_ooze_amount <= max_ooze_per_tile:
+			# The tile can hold the new ooze without overflowing.
+			ooze_map[coord] = new_ooze_amount
+		else:
+			# The tile overflows. Set it to max and distribute the excess.
+			ooze_map[coord] = max_ooze_per_tile
+			var overflow_amount: float = new_ooze_amount - max_ooze_per_tile
+			
+			# Find valid neighbors to receive the overflow.
+			var neighbors: Array[Vector2i] = enemy_layer.get_surrounding_cells(coord)
+			var valid_neighbors: Array[Vector2i] = []
+			for neighbor_coord in neighbors:
+				if not _is_wall(neighbor_coord):
+					valid_neighbors.append(neighbor_coord)
+			
+			# If there are valid neighbors, add the overflow amount to the queue for processing.
+			if not valid_neighbors.is_empty():
+				var amount_per_neighbor: float = overflow_amount / valid_neighbors.size()
+				for neighbor_coord in valid_neighbors:
+					processing_queue.append({"coord": neighbor_coord, "amount": amount_per_neighbor})
 
 # --------------------------------------------------
 # ---------------- Private Methods -----------------
@@ -112,7 +147,7 @@ func _setup_multimesh() -> void:
 	# Create a simple quad mesh to represent the ooze on a single tile.
 	# All instances in the multimesh will share this same mesh geometry.
 	var quad_mesh := QuadMesh.new()
-	var tile_size: Vector2 = ground_layer.tile_set.tile_size
+	var tile_size: Vector2 = enemy_layer.tile_set.tile_size
 	quad_mesh.size = tile_size
 	_multimesh.mesh = quad_mesh
 
@@ -128,31 +163,43 @@ func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 
 		# Get the 4 direct neighbors of the current tile.
 		var neighbors: Array[Vector2i] = enemy_layer.get_surrounding_cells(tile_coord)
-		var total_flow_out: float = 0.0
+		var valid_lower_neighbors: Array[Vector2i] = []
+		var total_potential_flow_to_lower: float = 0.0
 
+		# First pass: Identify valid lower neighbors and calculate total potential flow to them
 		for neighbor_coord in neighbors:
-			# Do not flow into walls.
 			if _is_wall(neighbor_coord):
-				continue
+				continue # Skip walls entirely
 
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
 
-			# Ooze only flows from a tile with more ooze to one with less.
 			if current_ooze > neighbor_ooze:
+				valid_lower_neighbors.append(neighbor_coord)
 				var diff: float = current_ooze - neighbor_ooze
-				# The amount of flow is proportional to half the difference, which creates a stable equalization effect.
-				# Multiplying by 'delta' makes the flow rate independent of the frame rate.
-				var flow_amount: float = (diff / 2.0) * flow_rate * delta
-				
-				# Precaution: ensure we don't try to flow more ooze than is available on the current tile.
-				flow_amount = min(flow_amount, current_ooze - total_flow_out)
-				if flow_amount <= 0:
-					continue
+				# This is the amount that *would* flow to this neighbor if it were the only one
+				var potential_flow_to_this_neighbor: float = (diff / 2.0) * flow_rate * delta
+				total_potential_flow_to_lower += potential_flow_to_this_neighbor
+		
+		if valid_lower_neighbors.is_empty() or total_potential_flow_to_lower <= 0:
+			continue # Nothing to flow, or no valid places to flow to
 
-				# Record the change in ooze for both the current tile and its neighbor.
-				flow_deltas[neighbor_coord] = flow_deltas.get(neighbor_coord, 0.0) + flow_amount
-				flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - flow_amount
-				total_flow_out += flow_amount
+		# Determine the actual amount of ooze that can flow out from the current tile.
+		# It's either the total potential flow, or the current ooze, whichever is smaller.
+		var actual_flow_out_from_current_tile: float = min(current_ooze, total_potential_flow_to_lower)
+		
+		# Second pass: Distribute the actual flow among valid lower neighbors
+		for neighbor_coord in valid_lower_neighbors:
+			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
+			var diff: float = current_ooze - neighbor_ooze
+			var potential_flow_to_this_neighbor: float = (diff / 2.0) * flow_rate * delta
+			
+			# Scale the flow to this neighbor based on its proportion of the total potential flow
+			var scaled_flow_to_neighbor: float = 0.0
+			if total_potential_flow_to_lower > 0: # Avoid division by zero
+				scaled_flow_to_neighbor = actual_flow_out_from_current_tile * (potential_flow_to_this_neighbor / total_potential_flow_to_lower)
+			
+			flow_deltas[neighbor_coord] = flow_deltas.get(neighbor_coord, 0.0) + scaled_flow_to_neighbor
+			flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - scaled_flow_to_neighbor
 
 ## Applies the calculated flow amounts from `flow_deltas` to the main `ooze_map`.
 ## Also handles clamping values and removing tiles with negligible ooze.
