@@ -1,9 +1,7 @@
 class_name EnemyManager extends Node
 
-# A dictionary mapping tile coordinates (Vector2i) to ooze depth (float).
-var ooze_map: Dictionary = {}
-# A dictionary to keep track of instantiated EnemyOoze objects, mapped by their tile coordinates.
-var ooze_instances: Dictionary = {}
+@onready var active_ooze_container: Node = $ActiveOozeContainer
+@onready var ooze_pool: OozePool = $OozePool
 
 @export var enemy_ooze_scene: PackedScene
 @export var enemy_map_layer: TileMapLayer # Used for coordinate conversion
@@ -14,6 +12,11 @@ var ooze_instances: Dictionary = {}
 # The minimum amount of ooze a tile must have to be considered "active" and remain in the ooze_map.
 # Tiles with ooze levels below this threshold are removed to optimize performance and clean up negligible amounts.
 @export var min_ooze_threshold: float = 0.01 
+
+# A dictionary mapping tile coordinates (Vector2i) to ooze depth (float).
+var ooze_map: Dictionary = {}
+# A dictionary to keep track of instantiated EnemyOoze objects, mapped by their tile coordinates.
+var ooze_instances: Dictionary = {}
 
 # Adds a specified amount of ooze to a given tile.
 # If the tile already has ooze, the amount is added to the existing value.
@@ -27,11 +30,6 @@ func _ready() -> void:
 	add_to_group("enemy_manager")
 
 func _physics_process(delta: float) -> void:
-	# The simulation is done in three main steps for stability and clarity.
-	# 1. Calculate Flow: Determine ooze movement between tiles without changing the map yet.
-	# 2. Apply Flow: Update the ooze map with the calculated movements.
-	# 3. Cleanup: Remove tiles with negligible amounts of ooze to keep the simulation efficient.
-	
 	# Temporary dictionary to store changes in ooze levels for the current frame.
 	# This prevents modifying ooze_map while iterating over it, ensuring stable calculations.
 	var flow_deltas: Dictionary = {}
@@ -39,9 +37,13 @@ func _physics_process(delta: float) -> void:
 	# typically because their ooze level has dropped below the minimum threshold.
 	var tiles_to_remove: Array[Vector2i] = []
 
+	# The simulation is done in three main steps for stability and clarity.
 	if not ooze_map.is_empty():
+		# 1. Calculate Flow: Determine ooze movement between tiles without changing the map yet.
 		_calculate_flow(delta, flow_deltas, tiles_to_remove)
+		# 2. Apply Flow: Update the ooze map with the calculated movements.
 		_apply_flow(flow_deltas, tiles_to_remove)
+		# 3. Cleanup: Remove tiles with negligible amounts of ooze to keep the simulation efficient.
 		_cleanup_ooze(tiles_to_remove)
 	
 	# After the simulation step, update the visual representation of the ooze on the tilemap.
@@ -60,7 +62,6 @@ func _calculate_flow(delta: float, flow_deltas: Dictionary, tiles_to_remove: Arr
 			continue
 
 		# Get the surrounding cells for flow calculation.
-		# This leverages the TileMapLayer's built-in method for neighbor retrieval.
 		var neighbors: Array[Vector2i] = enemy_map_layer.get_surrounding_cells(tile_coord)
 
 		for neighbor_coord in neighbors:

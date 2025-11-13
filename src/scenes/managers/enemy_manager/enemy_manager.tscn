@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://bx5vc63i3b6p1"]
+[gd_scene load_steps=3 format=3 uid="uid://bx5vc63i3b6p1"]
 
 [ext_resource type="Script" uid="uid://cc8mko03woey4" path="res://src/scenes/managers/enemy_manager/enemy_manager.gd" id="1_vsxqy"]
+[ext_resource type="PackedScene" uid="uid://dc7cqerujf5pa" path="res://src/scenes/managers/enemy_manager/ooze_pool.tscn" id="2_aehdt"]
 
 [node name="EnemyManager" type="Node"]
 script = ExtResource("1_vsxqy")
+
+[node name="ActiveOozeContainer" type="Node" parent="."]
+
+[node name="OozePool" parent="." instance=ExtResource("2_aehdt")]

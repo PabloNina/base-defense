@@ -38,13 +38,14 @@ const FIRE_RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 # --- Preloads -------------------------------
 # --------------------------------------------
 # PackedScenes
-const CONNECTION_LINE_SCENE: PackedScene = preload("res://src/scenes/objects/connection_lines/connection_line.tscn")
-const GHOST_PREVIEW_SCENE: PackedScene = preload("res://src/scenes/objects/ghost_previews/ghost_preview.tscn")
-const PACKET_SCENE: PackedScene = preload("res://src/scenes/objects/packets/base_packet.tscn")
-# Textures2D
-const GREEN_PACKET_TEXTURE: Texture2D = preload("res://assets/sprites/objects/energy_packet.png")
-const RED_PACKET_TEXTURE:Texture2D = preload("res://assets/sprites/objects/ammo_packet.png")
-const BLUE_PACKET_TEXTURE:Texture2D = preload("res://assets/sprites/objects/building_packet.png")
+const CONNECTION_LINE_SCENE: PackedScene = preload("uid://bxt6vth3tar67")
+const GHOST_PREVIEW_SCENE: PackedScene = preload("uid://c8t5w2j2qg3j")
+const PACKET_SCENE: PackedScene = preload("uid://by7nkqhi30wjd")
+const ENEMY_OOZE_SCENE: PackedScene = preload("uid://bxpf6ni16fbxa")
+#Textures2D
+const GREEN_PACKET_TEXTURE: Texture2D = preload("uid://bxdghtbrpoc1r")
+const RED_PACKET_TEXTURE:Texture2D = preload("uid://dumwgtbqb3ci8")
+const BLUE_PACKET_TEXTURE:Texture2D = preload("uid://dbuicd3klgwq1")
 # --------------------------------------------
 # --- Enumerations ---------------------------
 # --------------------------------------------

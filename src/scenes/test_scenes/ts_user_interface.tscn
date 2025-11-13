@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="7_sacgr"]
 [ext_resource type="PackedScene" uid="uid://dgmo3j2e5gny0" path="res://src/scenes/ui/user_interface.tscn" id="8_mqxgr"]
 
-[node name="UserInterfaceTestScene" type="Node2D"]
+[node name="TestSceneUserInterface" type="Node2D"]
 
 [node name="BuildingManager" parent="." node_paths=PackedStringArray("ground_layer", "buildings_container", "user_interface", "grid_manager") instance=ExtResource("1_mqxgr")]
 ground_layer = NodePath("../TileMap/GroundLayer")

@@ -18,6 +18,10 @@ config/icon="res://icon.svg"
 
 InputManager="*res://src/scenes/autoloaded/input_manager.gd"
 
+[debug]
+
+settings/stdout/print_fps=true
+
 [display]
 
 window/size/viewport_width=1600

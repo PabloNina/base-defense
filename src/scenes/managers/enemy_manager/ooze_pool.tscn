@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dc7cqerujf5pa"]
+
+[ext_resource type="Script" uid="uid://da74gehcuicko" path="res://src/scenes/managers/enemy_manager/ooze_pool.gd" id="1_6hxw2"]
+
+[node name="OozePool" type="Node"]
+script = ExtResource("1_6hxw2")
