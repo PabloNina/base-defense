@@ -2,7 +2,7 @@ class_name EnemyManager extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
-## Used for coordinate conversion and getting tile size.
+## The TileMap layer used for ooze coordinate conversion and rendering.
 @export var enemy_layer: TileMapLayer
 ## The TileMap layer that contains the ground and wall terrain information.
 @export var ground_layer: TileMapLayer
@@ -10,7 +10,7 @@ class_name EnemyManager extends Node
 @export var wall_terrain_id: int = 1
 ## Determines how quickly ooze spreads. A higher value means faster flow.
 @export var flow_rate: float = 0.25
-## Ooze levels below this threshold are removed to optimize performance.
+## Ooze levels below this threshold are removed from the simulation to optimize performance.
 @export var min_ooze_threshold: float = 0.01
 ## The maximum amount of ooze that can accumulate on a single tile.
 @export var max_ooze_per_tile: float = 100.0
@@ -72,8 +72,9 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 		var job_amount: float = current_job["amount"]
 
 		# Stop if a tile is being processed too many times in one frame, which indicates a feedback loop.
+		# The limit (8) is chosen to be higher than the maximum number of neighbors (4) to allow for some back-and-forth.
 		process_counts[coord] = process_counts.get(coord, 0) + 1
-		if process_counts[coord] > 8: # A tile shouldn't be processed more than its neighbors + self.
+		if process_counts[coord] > 8:
 			continue
 
 		# Do not add ooze to walls.
@@ -130,13 +131,13 @@ func _is_wall(tile_coord: Vector2i) -> bool:
 # --- Multimesh Setup ---------------------
 # -----------------------------------------
 ## Sets up the MultiMeshInstance2D node and the MultiMesh resource programmatically.
-## This is called once when the manager is ready.
 func _setup_multimesh() -> void:
 	# Create the node that will render our multimesh.
 	_multimesh_instance = MultiMeshInstance2D.new()
 	# Create the multimesh resource itself.
 	_multimesh = MultiMesh.new()
 	_multimesh_instance.multimesh = _multimesh
+	# Add the multimesh instance as a child of this manager.
 	add_child(_multimesh_instance)
 
 	# Configure the multimesh resource.
@@ -147,7 +148,8 @@ func _setup_multimesh() -> void:
 	# Create a simple quad mesh to represent the ooze on a single tile.
 	# All instances in the multimesh will share this same mesh geometry.
 	var quad_mesh := QuadMesh.new()
-	var tile_size: Vector2 = enemy_layer.tile_set.tile_size
+	#var tile_size: Vector2 = enemy_layer.tile_set.tile_size
+	var tile_size: Vector2 = GlobalData.TILE_SIZE_VECTOR2
 	quad_mesh.size = tile_size
 	_multimesh.mesh = quad_mesh
 
@@ -166,7 +168,8 @@ func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 		var valid_lower_neighbors: Array[Vector2i] = []
 		var total_potential_flow_to_lower: float = 0.0
 
-		# First pass: Identify valid lower neighbors and calculate total potential flow to them
+		# First pass: Identify valid lower neighbors and calculate the total amount of ooze that
+		# could potentially flow out of the current tile.
 		for neighbor_coord in neighbors:
 			if _is_wall(neighbor_coord):
 				continue # Skip walls entirely
@@ -176,31 +179,37 @@ func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			if current_ooze > neighbor_ooze:
 				valid_lower_neighbors.append(neighbor_coord)
 				var diff: float = current_ooze - neighbor_ooze
-				# This is the amount that *would* flow to this neighbor if it were the only one
-				var potential_flow_to_this_neighbor: float = (diff / 2.0) * flow_rate * delta
-				total_potential_flow_to_lower += potential_flow_to_this_neighbor
+				# The amount of flow is proportional to half the difference, which creates a stable equalization effect.
+				# Multiplying by 'delta' makes the flow rate independent of the frame rate.
+				var potential_flow: float = (diff / 2.0) * flow_rate * delta
+				total_potential_flow_to_lower += potential_flow
 		
 		if valid_lower_neighbors.is_empty() or total_potential_flow_to_lower <= 0:
 			continue # Nothing to flow, or no valid places to flow to
 
 		# Determine the actual amount of ooze that can flow out from the current tile.
-		# It's either the total potential flow, or the current ooze, whichever is smaller.
-		var actual_flow_out_from_current_tile: float = min(current_ooze, total_potential_flow_to_lower)
+		# It's either the total potential flow, or all the ooze on the tile, whichever is smaller.
+		var actual_flow_out: float = min(current_ooze, total_potential_flow_to_lower)
 		
-		# Second pass: Distribute the actual flow among valid lower neighbors
+		# Second pass: Distribute the actual flow among the valid lower neighbors.
+		# The flow to each neighbor is proportional to its pressure difference relative to the total.
 		for neighbor_coord in valid_lower_neighbors:
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
 			var diff: float = current_ooze - neighbor_ooze
-			var potential_flow_to_this_neighbor: float = (diff / 2.0) * flow_rate * delta
+			var potential_flow: float = (diff / 2.0) * flow_rate * delta
 			
-			# Scale the flow to this neighbor based on its proportion of the total potential flow
-			var scaled_flow_to_neighbor: float = 0.0
+			# Scale the flow to this neighbor based on its proportion of the total potential flow.
+			var scaled_flow: float = 0.0
 			if total_potential_flow_to_lower > 0: # Avoid division by zero
-				scaled_flow_to_neighbor = actual_flow_out_from_current_tile * (potential_flow_to_this_neighbor / total_potential_flow_to_lower)
+				scaled_flow = actual_flow_out * (potential_flow / total_potential_flow_to_lower)
 			
-			flow_deltas[neighbor_coord] = flow_deltas.get(neighbor_coord, 0.0) + scaled_flow_to_neighbor
-			flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - scaled_flow_to_neighbor
+			# Record the change in ooze for both the current tile and its neighbor.
+			flow_deltas[neighbor_coord] = flow_deltas.get(neighbor_coord, 0.0) + scaled_flow
+			flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - scaled_flow
 
+# -----------------------------------------
+# --- State Update & Sync -----------------
+# -----------------------------------------
 ## Applies the calculated flow amounts from `flow_deltas` to the main `ooze_map`.
 ## Also handles clamping values and removing tiles with negligible ooze.
 func _apply_map_flow(flow_deltas: Dictionary) -> void:
@@ -220,18 +229,12 @@ func _apply_map_flow(flow_deltas: Dictionary) -> void:
 		if ooze_map.has(tile_coord) and ooze_map[tile_coord] <= min_ooze_threshold:
 			ooze_map.erase(tile_coord)
 
-# -----------------------------------------
-# --- Visual Synchronization --------------
-# -----------------------------------------
 ## Updates the MultiMesh to reflect the current state of the `ooze_map`.
 ## This function is the bridge between the simulation data and the visuals.
 func _update_ooze_visuals() -> void:
-	var ooze_tile_count: int = ooze_map.size()
-	# Set the number of instances to be rendered.
-	_multimesh.instance_count = ooze_tile_count
-
-	# If there's no ooze, there's nothing to draw.
-	if ooze_tile_count == 0:
+	# Set the number of instances to be rendered to match the number of tiles with ooze.
+	_multimesh.instance_count = ooze_map.size()
+	if ooze_map.is_empty():
 		return
 
 	var idx: int = 0

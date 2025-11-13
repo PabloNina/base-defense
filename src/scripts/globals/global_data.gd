@@ -29,6 +29,7 @@ class_name GlobalData extends Node
 # --- Constants ------------------------------
 # --------------------------------------------
 const TILE_SIZE: int = 16
+const TILE_SIZE_VECTOR2: Vector2 = Vector2(TILE_SIZE, TILE_SIZE)
 const BOX_VALID_COLOR: Color = Color.GREEN
 const BOX_INVALID_COLOR: Color = Color.RED
 const LINE_VALID_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)

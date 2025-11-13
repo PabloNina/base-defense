@@ -15,6 +15,8 @@ ground_map_layer = NodePath("TileMap/GroundLayer")
 [node name="EnemyManager" parent="." node_paths=PackedStringArray("enemy_layer", "ground_layer") instance=ExtResource("2_tsm1q")]
 enemy_layer = NodePath("../TileMap/EnemyLayer")
 ground_layer = NodePath("../TileMap/GroundLayer")
+flow_rate = 1.0
+ooze_color = Color(1, 1, 0, 1)
 
 [node name="TileMap" type="Node2D" parent="."]
 
