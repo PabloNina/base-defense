@@ -2,12 +2,14 @@ class_name EnemyManager extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
+@export_group("Manager Configuration")
 ## The TileMap layer used for ooze coordinate conversion and rendering.
 @export var enemy_layer: TileMapLayer
 ## The TileMap layer that contains the ground and wall terrain information.
 @export var ground_layer: TileMapLayer
 ## The terrain ID of wall tiles. Ooze will not flow into tiles with this terrain ID.
 @export var wall_terrain_id: int = 1
+@export_group("Flow Configuration")
 ## Determines how quickly ooze spreads. A higher value means faster flow.
 @export var flow_rate: float = 0.25
 ## Ooze levels below this threshold are removed from the simulation to optimize performance.
@@ -16,12 +18,18 @@ class_name EnemyManager extends Node
 @export var max_ooze_per_tile: float = 100.0
 ## The color of the ooze. The alpha component will be updated based on depth.
 @export var ooze_color: Color = Color.PURPLE
+@export_group("Simulation Configuration")
+## How many times per second the ooze flow simulation should run.
+## A lower value increases performance but makes the simulation less granular.
+@export var simulation_steps_per_second: int = 10
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
-# A reference to the MultiMeshInstance2D node in the scene tree.
 # This node is configured in the editor and used for rendering all ooze visuals.
-@onready var ooze_multi_mesh: MultiMeshInstance2D = $OozeMultiMesh
+@onready var ooze_multimesh_instance: MultiMeshInstance2D = $OozeMultiMesh
+# This timer controls the frequency of the expensive flow simulation.
+@onready var flow_simulation_timer: Timer = $FlowSimulationTimer
+
 # -----------------------------------------
 # --- Private Variables -------------------
 # -----------------------------------------
@@ -37,32 +45,13 @@ var ooze_map: Dictionary = {}
 func _ready() -> void:
 	# Add to group for easy access from other nodes (like emitters).
 	add_to_group("enemy_manager")
-	
-	# Ensure the multimesh instance is valid before proceeding.
-	if not is_instance_valid(ooze_multi_mesh):
-		push_error("MultiMeshInstance2D node not found!")
-		return
+	# Setup OozeMultiMesh and the simulation timer.
+	_config_ooze_multimesh()
+	_config_flow_simulation_timer()
 
-	# Get the multimesh resource from the instance node.
-	multimesh = ooze_multi_mesh.multimesh
-	# Ensure the multimesh is cleared at the start.
-	multimesh.instance_count = 0
-	# Set the multimesh mesh size
-	multimesh.mesh.size = GlobalData.TILE_SIZE_VECTOR2
-
-func _physics_process(delta: float) -> void:
-	# Only run the simulation if there is ooze on the map.
-	if not ooze_map.is_empty():
-		# This dictionary will store the amount of ooze to be added or removed from each tile in the current frame.
-		# This prevents race conditions and ensures calculations for a frame are based on the state at the start of the frame.
-		var flow_deltas: Dictionary = {}
-		
-		# 1. Calculate Flow: Determine ooze movement between tiles based on pressure differences.
-		_calculate_map_flow(delta, flow_deltas)
-		# 2. Apply Flow: Update the ooze map with the calculated movements.
-		_apply_map_flow(flow_deltas)
-	
-	# 3. After the map simulation, update the visual representation of the ooze.
+func _physics_process(_delta: float) -> void:
+	# The visual representation of the ooze is updated every physics frame.
+	# This ensures smooth graphics even if the simulation itself runs at a lower frequency.
 	_update_ooze_visuals()
 
 # --------------------------------------------------
@@ -87,6 +76,7 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 		# The limit (8) is chosen to be higher than the maximum number of neighbors (4) to allow for some back-and-forth.
 		process_counts[coord] = process_counts.get(coord, 0) + 1
 		if process_counts[coord] > 8:
+			print("Tile max process counts reached: " + str(tile_coord))
 			continue
 
 		# Do not add ooze to walls.
@@ -117,9 +107,51 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 				for neighbor_coord in valid_neighbors:
 					processing_queue.append({"coord": neighbor_coord, "amount": amount_per_neighbor})
 
+
+## Removes a specified amount of ooze from a given tile.
+func remove_ooze(tile_coord: Vector2i, amount: float) -> void:
+	# Only try to remove ooze if the tile exists in the map.
+	if ooze_map.has(tile_coord):
+		var new_amount: float = ooze_map[tile_coord] - amount
+		# If the ooze drops below the threshold, remove the tile completely.
+		if new_amount <= min_ooze_threshold:
+			ooze_map.erase(tile_coord)
+		else:
+			# Otherwise, just update the amount.
+			ooze_map[tile_coord] = new_amount
+
 # --------------------------------------------------
 # ---------------- Private Methods -----------------
 # --------------------------------------------------
+
+# -----------------------------------------
+# --- Timer Configuration ---------------
+# -----------------------------------------
+## Configures and starts the timer for the flow simulation.
+func _config_flow_simulation_timer() -> void:
+	# Set the timer's wait time based on the desired steps per second.
+	# This ensures the simulation runs at a consistent rate.
+	flow_simulation_timer.wait_time = 1.0 / simulation_steps_per_second
+	# Connect the timer's timeout signal to the function that runs the simulation step.
+	flow_simulation_timer.timeout.connect(_run_simulation_step)
+	# Start the timer.
+	flow_simulation_timer.start()
+
+# -----------------------------------------
+# --- Ooze MultiMesh Configuration --------
+# -----------------------------------------
+func _config_ooze_multimesh() -> void:
+	# Ensure the multimesh instance is valid before proceeding.
+	if not is_instance_valid(ooze_multimesh_instance):
+		push_error("MultiMeshInstance2D node not found!")
+		return
+
+	# Get the multimesh resource from the instance node.
+	multimesh = ooze_multimesh_instance.multimesh
+	# Ensure the multimesh is cleared at the start.
+	multimesh.instance_count = 0
+	# Set the multimesh mesh size to match game tile size
+	multimesh.mesh.size = GlobalData.TILE_SIZE_VECTOR2
 
 # -----------------------------------------
 # --- Wall Detection ----------------------
@@ -142,6 +174,25 @@ func _is_wall(tile_coord: Vector2i) -> bool:
 # -----------------------------------------
 # --- Flow Simulation ---------------------
 # -----------------------------------------
+## This function is called by the timer and executes one step of the ooze flow simulation.
+## It contains the expensive calculations that are now decoupled from the physics frame rate.
+func _run_simulation_step() -> void:
+	# Only run the simulation if there is ooze on the map.
+	if ooze_map.is_empty():
+		return
+		
+	# This dictionary will store the amount of ooze to be added or removed from each tile in this simulation step.
+	var flow_deltas: Dictionary = {}
+	# The delta value is the timer's wait time, ensuring the flow rate is consistent
+	# regardless of the simulation frequency.
+	var delta: float = flow_simulation_timer.wait_time
+	
+	# 1. Calculate Flow: Determine ooze movement between tiles.
+	_calculate_map_flow(delta, flow_deltas)
+	# 2. Apply Flow: Update the ooze map with the calculated movements.
+	_apply_map_flow(flow_deltas)
+
+
 ## Calculates the flow of ooze between adjacent tiles for one physics frame.
 ## It populates the `flow_deltas` dictionary with the changes.
 func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
@@ -194,7 +245,7 @@ func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - scaled_flow
 
 # -----------------------------------------
-# --- State Update & Sync -----------------
+# --- Flow Update & Sync ------------------
 # -----------------------------------------
 ## Applies the calculated flow amounts from `flow_deltas` to the main `ooze_map`.
 ## Also handles clamping values and removing tiles with negligible ooze.

@@ -9,16 +9,14 @@ func _ready() -> void:
 	InputManager.ground_layer = ground_map_layer
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
+	if event is InputEventMouseButton and event.is_pressed():
 		var mouse_pos: Vector2 = ground_map_layer.get_local_mouse_position()
 		var tile_coord: Vector2i = ground_map_layer.local_to_map(mouse_pos)
-		
-		# Add a fixed amount of creeper for testing
-		var creeper_amount: float = 100.0
-		enemy_manager.add_ooze(tile_coord, creeper_amount)
-		
-		# Print the entire map for debugging
-		#print("Ooze map updated: ", enemy_manager.ooze_map)
+		var ooze_amount: float = 100.0
 
-		# Mark the event as handled
-		get_viewport().set_input_as_handled()
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			enemy_manager.add_ooze(tile_coord, ooze_amount)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			enemy_manager.remove_ooze(tile_coord, ooze_amount)
+			get_viewport().set_input_as_handled()

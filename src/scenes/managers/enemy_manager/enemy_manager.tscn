@@ -15,3 +15,5 @@ script = ExtResource("1_vsxqy")
 [node name="OozeMultiMesh" type="MultiMeshInstance2D" parent="."]
 multimesh = SubResource("MultiMesh_topxs")
 texture = ExtResource("2_aehdt")
+
+[node name="FlowSimulationTimer" type="Timer" parent="."]
