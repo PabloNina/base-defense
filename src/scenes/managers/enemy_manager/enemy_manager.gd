@@ -49,11 +49,6 @@ func _ready() -> void:
 	_config_ooze_multimesh()
 	_config_flow_simulation_timer()
 
-func _physics_process(_delta: float) -> void:
-	# The visual representation of the ooze is updated every physics frame.
-	# This ensures smooth graphics even if the simulation itself runs at a lower frequency.
-	_update_ooze_visuals()
-
 # --------------------------------------------------
 # ---------------- Public Methods ------------------
 # --------------------------------------------------
@@ -188,14 +183,15 @@ func _run_simulation_step() -> void:
 	var delta: float = flow_simulation_timer.wait_time
 	
 	# 1. Calculate Flow: Determine ooze movement between tiles.
-	_calculate_map_flow(delta, flow_deltas)
+	_calculate_ooze_map_flow(delta, flow_deltas)
 	# 2. Apply Flow: Update the ooze map with the calculated movements.
-	_apply_map_flow(flow_deltas)
-
+	_apply_ooze_map_flow(flow_deltas)
+	# 3. Show Visuals: Update ooze multi mesh using ooze map data 
+	_update_ooze_visuals()
 
 ## Calculates the flow of ooze between adjacent tiles for one physics frame.
 ## It populates the `flow_deltas` dictionary with the changes.
-func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
+func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 	# Iterate over a copy of keys, as the underlying ooze_map can change if a tile is added mid-frame.
 	for tile_coord in ooze_map.keys():
 		var current_ooze: float = ooze_map[tile_coord]
@@ -249,7 +245,7 @@ func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 # -----------------------------------------
 ## Applies the calculated flow amounts from `flow_deltas` to the main `ooze_map`.
 ## Also handles clamping values and removing tiles with negligible ooze.
-func _apply_map_flow(flow_deltas: Dictionary) -> void:
+func _apply_ooze_map_flow(flow_deltas: Dictionary) -> void:
 	var tiles_to_remove: Array[Vector2i] = []
 	for tile_coord in flow_deltas.keys():
 		var new_amount: float = ooze_map.get(tile_coord, 0.0) + flow_deltas[tile_coord]
