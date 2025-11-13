@@ -4,3 +4,5 @@
 
 [node name="OozePool" type="Node"]
 script = ExtResource("1_6hxw2")
+pool_size = 300
+pool_grow_value = 100

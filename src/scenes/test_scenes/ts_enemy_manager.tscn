@@ -1,8 +1,7 @@
-[gd_scene load_steps=8 format=4 uid="uid://dftoacajc0hqq"]
+[gd_scene load_steps=7 format=4 uid="uid://dftoacajc0hqq"]
 
 [ext_resource type="Script" uid="uid://bm24bsxgssehr" path="res://src/scenes/test_scenes/ts_enemy_manager.gd" id="1_15146"]
 [ext_resource type="PackedScene" uid="uid://bx5vc63i3b6p1" path="res://src/scenes/managers/enemy_manager/enemy_manager.tscn" id="2_tsm1q"]
-[ext_resource type="PackedScene" uid="uid://bxpf6ni16fbxa" path="res://src/scenes/enemies/enemy_ooze.tscn" id="3_kvp4d"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="4_y6818"]
 [ext_resource type="PackedScene" uid="uid://c0vp1q3jeftsd" path="res://src/scenes/enemies/enemy_emitter.tscn" id="5_jje0x"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="6_1tuyf"]
@@ -14,7 +13,6 @@ enemy_manager = NodePath("EnemyManager")
 ground_map_layer = NodePath("TileMap/GroundLayer")
 
 [node name="EnemyManager" parent="." node_paths=PackedStringArray("enemy_map_layer") instance=ExtResource("2_tsm1q")]
-enemy_ooze_scene = ExtResource("3_kvp4d")
 enemy_map_layer = NodePath("../TileMap/EnemyLayer")
 flow_rate = 2.0
 
@@ -30,9 +28,10 @@ tile_set = ExtResource("4_y6818")
 [node name="EnemiesContainer" type="Node2D" parent="."]
 
 [node name="EnemyEmitter" parent="EnemiesContainer" node_paths=PackedStringArray("enemy_map_layer") instance=ExtResource("5_jje0x")]
-position = Vector2(584, 344)
+position = Vector2(56, 56)
 enemy_map_layer = NodePath("../../TileMap/EnemyLayer")
 
 [node name="Camera2D" parent="." instance=ExtResource("6_1tuyf")]
 
 [node name="UserInterface" parent="." instance=ExtResource("7_1qld0")]
+visible = false

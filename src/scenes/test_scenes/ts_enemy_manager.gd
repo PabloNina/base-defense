@@ -18,7 +18,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		enemy_manager.add_ooze(tile_coord, creeper_amount)
 		
 		# Print the entire map for debugging
-		#print("Creeper map updated: ", enemy_manager.ooze_map)
+		#print("Ooze map updated: ", enemy_manager.ooze_map)
 
 		# Mark the event as handled
 		get_viewport().set_input_as_handled()

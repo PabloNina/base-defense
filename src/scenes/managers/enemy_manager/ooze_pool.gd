@@ -59,11 +59,11 @@ func _populate_pool(size: int) -> void:
 # Retrieves a object from the pool. If the pool is empty it creates more.
 # Initializes the object with the provided parameters.
 # Returns the configured object.
-func get_ooze(position: Vector2) -> EnemyOoze:
+func get_ooze() -> EnemyOoze:
 	# Add more objects if the pool runs dry.
 	# This makes the pool grow dynamically as needed.
 	if object_pool.is_empty():
-		print("Object pool empty. Growing pool!")
+		print("Ooze pool empty. Growing pool!")
 		_populate_pool(pool_grow_value)
 
 	# Get a object from the front of the pool.
@@ -74,7 +74,7 @@ func get_ooze(position: Vector2) -> EnemyOoze:
 		remove_child(object)
 
 	# Initialize the object's properties
-	object.global_position = position
+	#object.global_position = position
 
 	# Enable the object for processing and visibility
 	object.visible = true
