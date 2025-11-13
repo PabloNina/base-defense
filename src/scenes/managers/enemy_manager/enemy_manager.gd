@@ -112,7 +112,8 @@ func _update_ooze_visuals() -> void:
 		if not is_instance_valid(ooze_instance):
 			# Create new ooze instance
 			ooze_instance = enemy_ooze_scene.instantiate()
-			add_child(ooze_instance) # Add as child of EnemyManager
+			# Add as child of EnemyManager ooze container
+			active_ooze_container.add_child(ooze_instance)
 			ooze_instance.position = enemy_map_layer.map_to_local(tile_coord)# + Vector2(enemy_map_layer.tile_set.tile_size) / 2.0 # Center on tile
 			ooze_instances[tile_coord] = ooze_instance
 		
