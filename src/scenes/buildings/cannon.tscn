@@ -8,8 +8,8 @@
 [ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="6_1asgj"]
 [ext_resource type="Texture2D" uid="uid://cptw35ufyg47x" path="res://assets/sprites/icons/small_selection_box.png" id="7_s5qg5"]
 [ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/hurt&hit_boxes/building_hurt_box.tscn" id="8_1f470"]
-[ext_resource type="PackedScene" uid="uid://d0ajmo65lf84p" path="res://src/scenes/components/ammo_stock_bar.tscn" id="9_r8yqc"]
-[ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/construction_progress_bar.tscn" id="10_q3h02"]
+[ext_resource type="PackedScene" uid="uid://d0ajmo65lf84p" path="res://src/scenes/components/progress_bars/ammo_stock_bar.tscn" id="9_r8yqc"]
+[ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/progress_bars/construction_progress_bar.tscn" id="10_q3h02"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3m2l5"]
 size = Vector2(14, 14)

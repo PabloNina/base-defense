@@ -1,0 +1,6 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://b1jrxw2h1o11g"]
+
+[ext_resource type="Shader" uid="uid://qp70pxx23v3j" path="res://src/resources/shaders/ooze_shader.gdshader" id="1_s4xwc"]
+
+[resource]
+shader = ExtResource("1_s4xwc")

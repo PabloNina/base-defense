@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://c0vp1q3jeftsd"]
+
+[ext_resource type="Script" uid="uid://dhia8hhkx4gpt" path="res://src/scenes/enemies/enemy_emitter.gd" id="1_psp5v"]
+[ext_resource type="Texture2D" uid="uid://bps65f6milxa6" path="res://assets/sprites/buildings/cannon_base.png" id="2_8ni37"]
+
+[node name="EnemyEmitter" type="Node2D"]
+script = ExtResource("1_psp5v")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_8ni37")

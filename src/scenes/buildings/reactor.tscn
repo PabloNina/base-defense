@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="4_qv62t"]
 [ext_resource type="Texture2D" uid="uid://cptw35ufyg47x" path="res://assets/sprites/icons/small_selection_box.png" id="5_h1t7h"]
 [ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/hurt&hit_boxes/building_hurt_box.tscn" id="6_vxa3k"]
-[ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/construction_progress_bar.tscn" id="7_cpvej"]
+[ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/progress_bars/construction_progress_bar.tscn" id="7_cpvej"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_efbft"]
 size = Vector2(14, 14)
