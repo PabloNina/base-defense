@@ -1,6 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://bx5vc63i3b6p1"]
+[gd_scene load_steps=5 format=3 uid="uid://bx5vc63i3b6p1"]
 
 [ext_resource type="Script" uid="uid://cc8mko03woey4" path="res://src/scenes/managers/enemy_manager/enemy_manager.gd" id="1_vsxqy"]
+[ext_resource type="Texture2D" uid="uid://bialj7o6nw861" path="res://assets/tilesets/white_square.png" id="2_aehdt"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_aehdt"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_topxs"]
+use_colors = true
+mesh = SubResource("QuadMesh_aehdt")
 
 [node name="EnemyManager" type="Node"]
 script = ExtResource("1_vsxqy")
+
+[node name="OozeMultiMesh" type="MultiMeshInstance2D" parent="."]
+multimesh = SubResource("MultiMesh_topxs")
+texture = ExtResource("2_aehdt")

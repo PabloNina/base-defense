@@ -16,18 +16,20 @@ class_name EnemyManager extends Node
 @export var max_ooze_per_tile: float = 100.0
 ## The color of the ooze. The alpha component will be updated based on depth.
 @export var ooze_color: Color = Color.PURPLE
-
+# -----------------------------------------
+# --- Onready References ------------------
+# -----------------------------------------
+# A reference to the MultiMeshInstance2D node in the scene tree.
+# This node is configured in the editor and used for rendering all ooze visuals.
+@onready var ooze_multi_mesh: MultiMeshInstance2D = $OozeMultiMesh
 # -----------------------------------------
 # --- Private Variables -------------------
 # -----------------------------------------
+# The MultiMesh resource that holds the geometry and instance data for rendering.
+var multimesh: MultiMesh
 # A dictionary mapping tile coordinates (Vector2i) to ooze depth (float).
 # This stores the core simulation data, separate from the visuals.
 var ooze_map: Dictionary = {}
-# The MultiMeshInstance used to render all ooze visuals in a single draw call.
-# This is highly performant as it avoids managing thousands of individual nodes.
-var _multimesh_instance: MultiMeshInstance2D
-# The MultiMesh resource that holds the geometry and instance data for rendering.
-var _multimesh: MultiMesh
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -35,8 +37,18 @@ var _multimesh: MultiMesh
 func _ready() -> void:
 	# Add to group for easy access from other nodes (like emitters).
 	add_to_group("enemy_manager")
-	# Programmatically create and configure the MultiMesh for rendering ooze.
-	_setup_multimesh()
+	
+	# Ensure the multimesh instance is valid before proceeding.
+	if not is_instance_valid(ooze_multi_mesh):
+		push_error("MultiMeshInstance2D node not found!")
+		return
+
+	# Get the multimesh resource from the instance node.
+	multimesh = ooze_multi_mesh.multimesh
+	# Ensure the multimesh is cleared at the start.
+	multimesh.instance_count = 0
+	# Set the multimesh mesh size
+	multimesh.mesh.size = GlobalData.TILE_SIZE_VECTOR2
 
 func _physics_process(delta: float) -> void:
 	# Only run the simulation if there is ooze on the map.
@@ -128,32 +140,6 @@ func _is_wall(tile_coord: Vector2i) -> bool:
 	return tile_data.terrain == wall_terrain_id
 
 # -----------------------------------------
-# --- Multimesh Setup ---------------------
-# -----------------------------------------
-## Sets up the MultiMeshInstance2D node and the MultiMesh resource programmatically.
-func _setup_multimesh() -> void:
-	# Create the node that will render our multimesh.
-	_multimesh_instance = MultiMeshInstance2D.new()
-	# Create the multimesh resource itself.
-	_multimesh = MultiMesh.new()
-	_multimesh_instance.multimesh = _multimesh
-	# Add the multimesh instance as a child of this manager.
-	add_child(_multimesh_instance)
-
-	# Configure the multimesh resource.
-	# We need Transform (position, rotation, scale) and Color data for each instance.
-	_multimesh.transform_format = MultiMesh.TRANSFORM_2D
-	_multimesh.use_colors = true
-	
-	# Create a simple quad mesh to represent the ooze on a single tile.
-	# All instances in the multimesh will share this same mesh geometry.
-	var quad_mesh := QuadMesh.new()
-	#var tile_size: Vector2 = enemy_layer.tile_set.tile_size
-	var tile_size: Vector2 = GlobalData.TILE_SIZE_VECTOR2
-	quad_mesh.size = tile_size
-	_multimesh.mesh = quad_mesh
-
-# -----------------------------------------
 # --- Flow Simulation ---------------------
 # -----------------------------------------
 ## Calculates the flow of ooze between adjacent tiles for one physics frame.
@@ -233,7 +219,7 @@ func _apply_map_flow(flow_deltas: Dictionary) -> void:
 ## This function is the bridge between the simulation data and the visuals.
 func _update_ooze_visuals() -> void:
 	# Set the number of instances to be rendered to match the number of tiles with ooze.
-	_multimesh.instance_count = ooze_map.size()
+	multimesh.instance_count = ooze_map.size()
 	if ooze_map.is_empty():
 		return
 
@@ -245,12 +231,12 @@ func _update_ooze_visuals() -> void:
 		# Set the position for this instance.
 		var position: Vector2 = enemy_layer.map_to_local(tile_coord)
 		var transform := Transform2D(0.0, position)
-		_multimesh.set_instance_transform_2d(idx, transform)
+		multimesh.set_instance_transform_2d(idx, transform)
 		
 		# Set the color for this instance, modulating alpha based on ooze depth.
 		var color: Color = ooze_color
 		# The alpha is proportional to the ooze depth. Here, it reaches full opacity at half the max depth.
 		color.a = clamp(depth / (max_ooze_per_tile / 2.0), 0.1, 1.0)
-		_multimesh.set_instance_color(idx, color)
+		multimesh.set_instance_color(idx, color)
 		
 		idx += 1
