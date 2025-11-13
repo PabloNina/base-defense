@@ -3,7 +3,11 @@ class_name EnemyManager extends Node
 # --- Editor Exports ----------------------
 # -----------------------------------------
 ## Used for coordinate conversion and getting tile size.
-@export var enemy_map_layer: TileMapLayer
+@export var enemy_layer: TileMapLayer
+## The TileMap layer that contains the ground and wall terrain information.
+@export var ground_layer: TileMapLayer
+## The terrain ID of wall tiles. Ooze will not flow into tiles with this terrain ID.
+@export var wall_terrain_id: int = 1
 ## Determines how quickly ooze spreads. A higher value means faster flow.
 @export var flow_rate: float = 0.25
 ## Ooze levels below this threshold are removed to optimize performance.
@@ -56,6 +60,10 @@ func _physics_process(delta: float) -> void:
 ## Adds a specified amount of ooze to a given tile.
 ## This is the primary way other nodes (like emitters) interact with the ooze simulation.
 func add_ooze(tile_coord: Vector2i, amount: float) -> void:
+	# Prevent adding ooze directly onto a wall tile.
+	if _is_wall(tile_coord):
+		return
+		
 	var current_ooze: float = ooze_map.get(tile_coord, 0.0)
 	# Add the new amount and ensure it does not exceed the maximum allowed value.
 	var new_ooze_amount: float = clamp(current_ooze + amount, 0, max_ooze_per_tile)
@@ -64,6 +72,24 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 # --------------------------------------------------
 # ---------------- Private Methods -----------------
 # --------------------------------------------------
+
+# -----------------------------------------
+# --- Wall Detection ----------------------
+# -----------------------------------------
+## Checks if a given tile coordinate corresponds to a wall.
+func _is_wall(tile_coord: Vector2i) -> bool:
+	# If the ground layer isn't set or the wall terrain ID is not set, assume nothing is a wall.
+	if not is_instance_valid(ground_layer) or wall_terrain_id == -1:
+		return false
+
+	# Get the data resource for the tile at the given coordinate.
+	var tile_data: TileData = ground_layer.get_cell_tile_data(tile_coord)
+	# If there is no tile data (e.g., an empty cell), it's not a wall.
+	if not is_instance_valid(tile_data):
+		return false
+
+	# Check the terrain ID of the tile against the configured wall terrain ID.
+	return tile_data.terrain == wall_terrain_id
 
 # -----------------------------------------
 # --- Multimesh Setup ---------------------
@@ -86,7 +112,7 @@ func _setup_multimesh() -> void:
 	# Create a simple quad mesh to represent the ooze on a single tile.
 	# All instances in the multimesh will share this same mesh geometry.
 	var quad_mesh := QuadMesh.new()
-	var tile_size: Vector2 = enemy_map_layer.tile_set.tile_size
+	var tile_size: Vector2 = ground_layer.tile_set.tile_size
 	quad_mesh.size = tile_size
 	_multimesh.mesh = quad_mesh
 
@@ -101,10 +127,14 @@ func _calculate_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 		var current_ooze: float = ooze_map[tile_coord]
 
 		# Get the 4 direct neighbors of the current tile.
-		var neighbors: Array[Vector2i] = enemy_map_layer.get_surrounding_cells(tile_coord)
+		var neighbors: Array[Vector2i] = enemy_layer.get_surrounding_cells(tile_coord)
 		var total_flow_out: float = 0.0
 
 		for neighbor_coord in neighbors:
+			# Do not flow into walls.
+			if _is_wall(neighbor_coord):
+				continue
+
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
 
 			# Ooze only flows from a tile with more ooze to one with less.
@@ -163,7 +193,7 @@ func _update_ooze_visuals() -> void:
 		var depth: float = ooze_map[tile_coord]
 		
 		# Set the position for this instance.
-		var position: Vector2 = enemy_map_layer.map_to_local(tile_coord)
+		var position: Vector2 = enemy_layer.map_to_local(tile_coord)
 		var transform := Transform2D(0.0, position)
 		_multimesh.set_instance_transform_2d(idx, transform)
 		
