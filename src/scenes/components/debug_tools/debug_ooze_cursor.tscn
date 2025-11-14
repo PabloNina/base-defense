@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://bti7jlnn42wpx"]
+[gd_scene load_steps=3 format=3 uid="uid://bti7jlnn42wpx"]
 
 [ext_resource type="Script" uid="uid://durh6wyrrsie8" path="res://src/scenes/components/debug_tools/debug_ooze_cursor.gd" id="1_5xs8k"]
+[ext_resource type="Texture2D" uid="uid://b64u4pnx1bjqq" path="res://assets/ui/mouse_icon.png" id="2_d3njw"]
 
 [node name="DebugOozeCursor" type="Node"]
 script = ExtResource("1_5xs8k")
+cursor_component_texture = ExtResource("2_d3njw")

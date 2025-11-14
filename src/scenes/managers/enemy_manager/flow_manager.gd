@@ -7,6 +7,8 @@ class_name FlowManager extends Node
 @export var ooze_tilemap_layer: TileMapLayer
 ## The TileMap layer that contains the ground and wall terrain information.
 @export var ground_tilemap_layer: TileMapLayer
+## The BuildingManager node, used to get a list of all buildings.
+@export var building_manager: BuildingManager
 ## The terrain ID of wall tiles. Ooze will not flow into tiles with this terrain ID.
 @export var wall_terrain_id: int = 1
 @export_group("Flow Configuration")
@@ -227,6 +229,8 @@ func _run_simulation_step() -> void:
 	_apply_ooze_map_flow(flow_deltas)
 	# 3. Show Visuals: Update ooze multi mesh using ooze map data 
 	_update_ooze_visuals()
+	# 4. Check for Buildings: See if any buildings are on ooze and destroy them.
+	_check_for_buildings_on_ooze()
 
 ## Calculates the flow of ooze between adjacent tiles for one physics frame.
 ## It populates the `flow_deltas` dictionary with the changes.
@@ -277,6 +281,35 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			# Record the change in ooze for both the current tile and its neighbor.
 			flow_deltas[neighbor_coord] = flow_deltas.get(neighbor_coord, 0.0) + scaled_flow
 			flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - scaled_flow
+
+# -----------------------------------------
+# --- Building Destruction ----------------
+# -----------------------------------------
+## Checks if any buildings are on tiles with ooze and calls the BuildingManager to destroy them.
+func _check_for_buildings_on_ooze() -> void:
+	# Ensure the BuildingManager is set and valid before proceeding.
+	if not is_instance_valid(building_manager):
+		return
+
+	var buildings_to_destroy: Array[Building] = []
+	# We must get a fresh copy of the buildings array, as the original array might be modified
+	# by the destroy() method, which would cause issues while iterating.
+	var all_buildings: Array[Building] = building_manager.get("buildings").duplicate()
+
+	# Iterate over all buildings to check their position against the ooze map.
+	for building in all_buildings:
+		if not is_instance_valid(building):
+			continue
+
+		var building_tile_coord: Vector2i = ooze_tilemap_layer.local_to_map(building.global_position)
+		# If a building is on a tile that has ooze, add it to the destruction list.
+		if ooze_map.has(building_tile_coord):
+			buildings_to_destroy.append(building)
+	
+	# If there are buildings to destroy, call the manager to handle their removal.
+	if not buildings_to_destroy.is_empty():
+		#building_manager.call("destroy_buildings", buildings_to_destroy)
+		building_manager.destroy_buildings(buildings_to_destroy)
 
 # -----------------------------------------
 # --- Flow Update & Sync ------------------

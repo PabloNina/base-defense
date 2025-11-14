@@ -26,6 +26,9 @@ signal formation_looser_pressed
 signal formation_rotate_pressed
 signal game_paused(is_paused: bool)
 
+# Debug tools hotkeys
+signal debug_ooze_cursor_enabled
+
 # -----------------------------------------
 # --- References --------------------------
 # -----------------------------------------
@@ -62,13 +65,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed():
 			map_right_clicked.emit(tile_position)
 
-	# --- Keyboard ---
 	# Camera Zoom
 	if event.is_action_pressed("camera_zoom_in"):
 		camera_zoom_in.emit()
 	elif event.is_action_pressed("camera_zoom_out"):
 		camera_zoom_out.emit()
-	
+
+	# --- Keyboard ---
 	# Building Hotkeys
 	elif event.is_action_pressed("key_1"):
 		build_relay_pressed.emit()
@@ -92,7 +95,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().paused = not get_tree().paused
 		game_paused.emit(get_tree().paused)
 	
-	# --- Keyboard Camera Movement ---
+	# Debug tools hotkeys
+	elif event.is_action_pressed("enable_debug_ooze_cursor"):
+		debug_ooze_cursor_enabled.emit()
+	
+	# Keyboard Camera Movement
 	var current_camera_direction: Vector2 = Vector2.ZERO
 	if Input.is_action_pressed("camera_move_up"):
 		current_camera_direction.y -= 1

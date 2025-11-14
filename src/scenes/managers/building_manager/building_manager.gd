@@ -67,7 +67,7 @@ func _ready() -> void:
 	# Subscribe to InputManager signals
 	_connect_to_input_manager_signals()
 	# Immediately transition to building the Command Center at the start of the game.
-	_select_building_to_construct(GlobalData.BUILDING_TYPE.COMMAND_CENTER)
+	#_select_building_to_construct(GlobalData.BUILDING_TYPE.COMMAND_CENTER)
 
 func _process(_delta: float) -> void:
 	if current_state == STATES.CONSTRUCTION or STATES.MOVING:
@@ -142,6 +142,17 @@ func update_selection() -> void:
 			if is_instance_valid(building):
 				building.show_selection_sprite()
 		selection_changed.emit(selected_buildings)
+
+# -----------------------------------------
+# --- Building Destruction ----------------
+# -----------------------------------------
+## Destroys a list of buildings. This function is designed to be called by other systems
+## (like the FlowManager) that need to request the destruction of multiple buildings at once.
+func destroy_buildings(buildings_to_destroy: Array[Building]) -> void:
+	# Iterate through the provided list and call the destroy method on each building.
+	for building in buildings_to_destroy:
+		if is_instance_valid(building):
+			building.destroy()
 
 # -----------------------------------------
 # --- GhostPreview Pool Wrappers ----------
