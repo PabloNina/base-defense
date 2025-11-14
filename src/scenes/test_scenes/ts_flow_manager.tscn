@@ -1,21 +1,30 @@
-[gd_scene load_steps=8 format=4 uid="uid://dftoacajc0hqq"]
+[gd_scene load_steps=10 format=4 uid="uid://dftoacajc0hqq"]
 
-[ext_resource type="Script" uid="uid://bm24bsxgssehr" path="res://src/scenes/test_scenes/ts_flow_manager.gd" id="1_bvagn"]
+[ext_resource type="PackedScene" uid="uid://b343w2e4y27v" path="res://src/scenes/managers/building_manager/building_manager.tscn" id="2_o57tl"]
 [ext_resource type="PackedScene" uid="uid://bx5vc63i3b6p1" path="res://src/scenes/managers/enemy_manager/flow_manager.tscn" id="2_p7sh5"]
+[ext_resource type="PackedScene" uid="uid://cjr2r4qtmpky6" path="res://src/scenes/managers/grid_manager/grid_manager.tscn" id="3_ipbq6"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="3_o57tl"]
 [ext_resource type="PackedScene" uid="uid://c0vp1q3jeftsd" path="res://src/scenes/enemies/ooze_emitter.tscn" id="4_ipbq6"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="5_1ycab"]
 [ext_resource type="PackedScene" uid="uid://bti7jlnn42wpx" path="res://src/scenes/components/debug_tools/debug_ooze_cursor.tscn" id="6_nhj08"]
 [ext_resource type="PackedScene" uid="uid://3gxa1mqvipmg" path="res://src/scenes/ui/debug_panel.tscn" id="7_y2en3"]
+[ext_resource type="PackedScene" uid="uid://dgmo3j2e5gny0" path="res://src/scenes/ui/user_interface.tscn" id="9_ipbq6"]
 
 [node name="TestSceneFlowManager" type="Node2D"]
-script = ExtResource("1_bvagn")
 
-[node name="EnemyManager" parent="." node_paths=PackedStringArray("ooze_tilemap_layer", "ground_tilemap_layer") instance=ExtResource("2_p7sh5")]
+[node name="BuildingManager" parent="." node_paths=PackedStringArray("ground_layer", "buildings_container", "user_interface", "grid_manager") instance=ExtResource("2_o57tl")]
+ground_layer = NodePath("../TileMap/GroundLayer")
+buildings_container = NodePath("../BuildingsContainer")
+user_interface = NodePath("../UserInterface")
+grid_manager = NodePath("../GridManager")
+
+[node name="GridManager" parent="." instance=ExtResource("3_ipbq6")]
+
+[node name="FlowManager" parent="." node_paths=PackedStringArray("ooze_tilemap_layer", "ground_tilemap_layer", "building_manager") instance=ExtResource("2_p7sh5")]
 ooze_tilemap_layer = NodePath("../TileMap/OozeLayer")
 ground_tilemap_layer = NodePath("../TileMap/GroundLayer")
+building_manager = NodePath("../BuildingManager")
 flow_rate = 1.0
-ooze_color = Color(1, 1, 0, 1)
 
 [node name="TileMap" type="Node2D" parent="."]
 
@@ -26,33 +35,39 @@ tile_set = ExtResource("3_o57tl")
 [node name="OozeLayer" type="TileMapLayer" parent="TileMap"]
 tile_set = ExtResource("3_o57tl")
 
+[node name="BuildingsContainer" type="Node2D" parent="."]
+
 [node name="EnemiesContainer" type="Node2D" parent="."]
 
-[node name="EnemyEmitter" parent="EnemiesContainer" instance=ExtResource("4_ipbq6")]
-position = Vector2(56, 56)
-emission_amount = null
-emissions_per_second = null
-
-[node name="EnemyEmitter2" parent="EnemiesContainer" instance=ExtResource("4_ipbq6")]
+[node name="OozeEmitter" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("4_ipbq6")]
 position = Vector2(-104, 56)
-emission_amount = null
-emissions_per_second = null
+ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 
-[node name="EnemyEmitter3" parent="EnemiesContainer" instance=ExtResource("4_ipbq6")]
-position = Vector2(-104, -152)
-emission_amount = null
-emissions_per_second = null
+[node name="OozeEmitter2" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("4_ipbq6")]
+position = Vector2(56, 56)
+ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
+
+[node name="OozeEmitter3" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("4_ipbq6")]
+position = Vector2(312, 56)
+ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 
 [node name="Camera2D" parent="." instance=ExtResource("5_1ycab")]
 
-[node name="DebugOozeCursor" parent="." node_paths=PackedStringArray("ooze_flow_manager", "ground_map_layer") instance=ExtResource("6_nhj08")]
-ooze_flow_manager = NodePath("../EnemyManager")
+[node name="DebugOozeCursor" parent="." node_paths=PackedStringArray("flow_manager", "ground_map_layer") instance=ExtResource("6_nhj08")]
+flow_manager = NodePath("../FlowManager")
 ground_map_layer = NodePath("../TileMap/GroundLayer")
+enabled = true
+
+[node name="UserInterface" parent="." instance=ExtResource("9_ipbq6")]
+visible = false
 
 [node name="DebugPanel" parent="." instance=ExtResource("7_y2en3")]
-offset_left = -32.0
-offset_top = -80.0
-offset_right = 22.0
-offset_bottom = -57.0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_right = 54.0
+offset_bottom = 23.0
+grow_horizontal = 1
+grow_vertical = 1
 size_flags_horizontal = 0
 size_flags_vertical = 0

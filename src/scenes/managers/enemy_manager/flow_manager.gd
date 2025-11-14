@@ -19,7 +19,7 @@ class_name FlowManager extends Node
 ## The maximum amount of ooze that can accumulate on a single tile.
 @export var max_ooze_per_tile: float = 100.0
 ## The color of the ooze. The alpha component will be updated based on depth.
-@export var ooze_color: Color = Color.PURPLE
+@export var ooze_color: Color = Color.YELLOW
 @export_group("Simulation Configuration")
 ## How many times per second the ooze flow simulation should run.
 ## A lower value increases performance but makes the simulation less granular.

@@ -50,27 +50,39 @@ position = Vector2(264, 456)
 [node name="EnergyGenerator2" parent="BuildingsContainer" instance=ExtResource("5_axyvp")]
 position = Vector2(296, 456)
 
+[node name="EnergyGenerator3" parent="BuildingsContainer" instance=ExtResource("5_axyvp")]
+position = Vector2(-264, -40)
+
 [node name="GunTurret" parent="BuildingsContainer" instance=ExtResource("6_36y22")]
-position = Vector2(264, 296)
+position = Vector2(56, 88)
 
 [node name="GunTurret2" parent="BuildingsContainer" instance=ExtResource("6_36y22")]
-position = Vector2(296, 296)
+position = Vector2(280, 328)
 
 [node name="GunTurret3" parent="BuildingsContainer" instance=ExtResource("6_36y22")]
 position = Vector2(-104, -40)
 
 [node name="Relay" parent="BuildingsContainer" instance=ExtResource("12_axyvp")]
-position = Vector2(-217, -104)
+position = Vector2(56, -40)
 
 [node name="EnemiesContainer" type="Node2D" parent="."]
 
 [node name="OozeEmitter" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("8_k8gt1")]
-position = Vector2(-104, -104)
+position = Vector2(-104, 56)
+ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
+
+[node name="OozeEmitter3" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("8_k8gt1")]
+position = Vector2(-264, 56)
+ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
+
+[node name="OozeEmitter2" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("8_k8gt1")]
+position = Vector2(56, 56)
 ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 
 [node name="Camera2D" parent="." instance=ExtResource("7_rt2vf")]
 
 [node name="UserInterface" parent="." instance=ExtResource("8_8w3wy")]
+visible = false
 
 [node name="DebugOozeCursor" parent="." node_paths=PackedStringArray("flow_manager", "ground_map_layer") instance=ExtResource("11_twlv4")]
 flow_manager = NodePath("../FlowManager")
