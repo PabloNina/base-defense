@@ -52,3 +52,5 @@ value = 10.0
 offset_left = -8.0
 offset_right = 8.0
 value = 10.0
+
+[node name="FireRateTimer" type="Timer" parent="."]

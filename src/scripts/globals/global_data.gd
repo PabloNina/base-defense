@@ -42,6 +42,7 @@ const FIRE_RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
 const CONNECTION_LINE_SCENE: PackedScene = preload("uid://bxt6vth3tar67")
 const GHOST_PREVIEW_SCENE: PackedScene = preload("uid://c8t5w2j2qg3j")
 const PACKET_SCENE: PackedScene = preload("uid://by7nkqhi30wjd")
+const BULLET_SCENE: PackedScene = preload("uid://b0pme20rpv8x4")
 #Textures2D
 const GREEN_PACKET_TEXTURE: Texture2D = preload("uid://bxdghtbrpoc1r")
 const RED_PACKET_TEXTURE:Texture2D = preload("uid://dumwgtbqb3ci8")
@@ -134,7 +135,7 @@ const BUILDINGS_DATA: Dictionary = {
 		# Weapon class only
 		"max_ammo_storage": 10,
 		"cost_per_shot": 0.25,
-		"fire_rate": 0.5,
+		"fire_rate": 2,
 		"fire_range": 100,
 	},
 }

@@ -125,6 +125,8 @@ func remove_ooze(tile_coords: Array[Vector2i], amount_per_tile: float) -> void:
 			_activate_tile_and_neighbors(tile_coord)
 			
 			var new_amount: float = ooze_map[tile_coord] - amount_per_tile
+			print("Removed " + str(amount_per_tile) + " Ooze from " + str(tile_coord) + " Current Ooze: " + str(ooze_map.get(tile_coord)))
+
 			# If the ooze drops below the threshold, remove the tile completely.
 			if new_amount <= min_ooze_per_tile:
 				ooze_map.erase(tile_coord)
@@ -132,6 +134,31 @@ func remove_ooze(tile_coords: Array[Vector2i], amount_per_tile: float) -> void:
 				# Otherwise, just update the amount.
 				ooze_map[tile_coord] = new_amount
 
+
+## Finds the nearest ooze tile to a given position within a specified range.
+## This function is used by weapons to identify ooze targets.
+##
+## Parameters:
+## - position: The global position from which to search for ooze.
+## - max_distance: The maximum distance (in pixels) to search for ooze.
+##
+## Returns:
+## - A Vector2i representing the tile coordinates of the nearest ooze tile found within range.
+## - Vector2i(-1, -1) if no ooze tile is found within the specified range.
+func get_nearest_ooze_tile(position: Vector2, max_distance: float) -> Vector2i:
+	var closest_tile: Vector2i = Vector2i(-1, -1)
+	var min_dist_sq: float = -1.0
+
+	for tile_coord in ooze_map.keys():
+		var tile_pos: Vector2 = ooze_tilemap_layer.map_to_local(tile_coord)
+		var dist_sq: float = position.distance_squared_to(tile_pos)
+
+		if dist_sq <= max_distance * max_distance:
+			if min_dist_sq == -1.0 or dist_sq < min_dist_sq:
+				min_dist_sq = dist_sq
+				closest_tile = tile_coord
+	
+	return closest_tile
 # --------------------------------------------------
 # ---------------- Private Methods -----------------
 # --------------------------------------------------

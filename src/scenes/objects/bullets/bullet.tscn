@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0pme20rpv8x4"]
+
+[ext_resource type="Texture2D" uid="uid://dumwgtbqb3ci8" path="res://assets/sprites/objects/ammo_packet.png" id="1_c885k"]
+[ext_resource type="Script" uid="uid://ck6ybm1waagda" path="res://src/scenes/objects/bullets/bullet.gd" id="1_o3uwy"]
+
+[node name="Bullet" type="Node2D"]
+script = ExtResource("1_o3uwy")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_c885k")

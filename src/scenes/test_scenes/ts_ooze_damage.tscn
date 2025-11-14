@@ -31,7 +31,7 @@ ooze_tilemap_layer = NodePath("../TileMap/OozeLayer")
 ground_tilemap_layer = NodePath("../TileMap/GroundLayer")
 building_manager = NodePath("../BuildingManager")
 flow_rate = 1.0
-ooze_color = Color(1, 1, 0, 1)
+min_ooze_per_tile = 0.09
 
 [node name="TileMap" type="Node2D" parent="."]
 
@@ -57,7 +57,7 @@ position = Vector2(-264, -40)
 position = Vector2(56, 88)
 
 [node name="GunTurret2" parent="BuildingsContainer" instance=ExtResource("6_36y22")]
-position = Vector2(280, 328)
+position = Vector2(56, 248)
 
 [node name="GunTurret3" parent="BuildingsContainer" instance=ExtResource("6_36y22")]
 position = Vector2(-104, -40)

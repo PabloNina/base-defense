@@ -30,6 +30,12 @@ class_name Weapon extends MovableBuilding
 @onready var turret_sprite: Sprite2D = $TurretSprite
 @onready var ammo_stock_bar: ProgressBar = $AmmoStockBar
 @onready var out_of_ammo_sprite: Sprite2D = $OutOfAmmoSprite
+@onready var fire_rate_timer: Timer = $FireRateTimer
+# -----------------------------------------
+# --- Manager References ------------------
+# -----------------------------------------
+# A reference to the FlowManager used to query for ooze targets.
+var flow_manager: FlowManager
 # -----------------------------------------
 # --- Weapon Settings ---------------------
 # -----------------------------------------
@@ -37,6 +43,11 @@ var max_ammo_storage: int = 0
 var cost_per_shot: float = 0.0
 var fire_rate: float = 0.0
 var fire_range: int = 0
+# -----------------------------------------
+# --- Private Variables -------------------
+# -----------------------------------------
+# This timer controls how often the weapon scans for a new target.
+#var fire_rate_timer: Timer
 # -------------------------------
 # --- Runtime States ------------
 # -------------------------------
@@ -51,21 +62,29 @@ func _ready():
 	super._ready()
 	# group adding
 	add_to_group("weapons")
+	# Get manager references to enable communication with the ooze simulation.
+	flow_manager = get_tree().get_first_node_in_group("enemy_manager")
+	# Setup the weapon
 	_config_weapon_settings()
 	_config_ammo_bar()
+	# Configure the timer that dictates the weapon's fire rate.
+	_config_fire_rate_timer()
 
 func _process(_delta: float) -> void:
-	if is_deactivated:
+	# The weapon should only attempt to fire if it is not deactivated, fully built, and powered.
+	if is_deactivated or not is_built or not is_powered:
 		return
-	# Add shooting logic here
-	pass
+
+	# If the fire rate timer is stopped, it means the weapon is ready to fire again.
+	if fire_rate_timer.is_stopped():
+		fire_rate_timer.start()
 
 # -----------------------------------------
 # -------- Public Methods -----------------
 # -----------------------------------------
 
 # -------------------------------
-# --- Packet In Flight ----------
+# -- PacketInFlight Management --
 # -------------------------------
 func increment_packets_in_flight() -> void:
 	super.increment_packets_in_flight()
@@ -121,6 +140,34 @@ func needs_packet(packet_type: GlobalData.PACKETS) -> bool:
 # -----------------------------------------
 
 # -----------------------------------
+# --- Ooze Targeting / Shooting -----
+# -----------------------------------
+## This function is called by the fire_rate_timer to find and engage ooze targets.
+func _find_target() -> void:
+	# Ensure the FlowManager is available before attempting to find a target.
+	if not is_instance_valid(flow_manager):
+		return
+
+	# Request the nearest ooze tile from the FlowManager within the weapon's fire range.
+	var target_tile: Vector2i = flow_manager.get_nearest_ooze_tile(global_position, fire_range)
+	# If a valid target is found (i.e., not the default invalid vector), proceed.
+	if target_tile != Vector2i(-1, -1):
+		print("Target found at: ", target_tile)
+		# TODO: Implement the actual shooting logic here.
+		# Call shoot method
+		_shoot_target(target_tile)
+		# This would involve creating a projectile and firing it towards the target tile.
+
+func _shoot_target(target_tile: Vector2i) -> void:
+	var bullet: Bullet = GlobalData.BULLET_SCENE.instantiate()
+	bullet.flow_manager = self.flow_manager
+	bullet.target_tile = target_tile
+	bullet.global_position = self.global_position
+	add_child(bullet)
+	if is_instance_valid(bullet):
+		current_ammo -= cost_per_shot
+
+# -----------------------------------
 # --- Weapon Configuration ----------
 # -----------------------------------
 func _config_weapon_settings() -> void:
@@ -138,6 +185,15 @@ func _config_ammo_bar() -> void:
 	# Starts hidden is activated after receiving the first ammo packet
 	ammo_stock_bar.visible = false
 
+func _config_fire_rate_timer() -> void:
+	#fire_rate_timer = Timer.new()
+	#add_child(fire_rate_timer)
+	fire_rate_timer.wait_time = 1.0 / fire_rate
+	# The timer will be restarted manually after each shot.
+	fire_rate_timer.one_shot = true 
+	# Connect the timer's timeout signal to the target-finding logic.
+	fire_rate_timer.timeout.connect(_find_target)
+	
 # ----------------------
 # --- Ammo Setter ------
 # ----------------------
@@ -149,6 +205,9 @@ func _set_ammo(new_ammo: float) -> void:
 	_update_ammo_stock_bar(current_ammo)
 	if current_ammo >= max_ammo_storage:
 		is_full_ammo = true
+		is_scheduled_to_full_ammo = false
+	else:
+		is_full_ammo = false
 	#prints("Current ammo:", current_ammo, "Full ammo:", is_full_ammo)
 	if current_ammo <= 0.0:
 		out_of_ammo_sprite.visible = true
