@@ -137,14 +137,7 @@ func remove_ooze(tile_coords: Array[Vector2i], amount_per_tile: float) -> void:
 
 ## Finds the nearest ooze tile to a given position within a specified range.
 ## This function is used by weapons to identify ooze targets.
-##
-## Parameters:
-## - position: The global position from which to search for ooze.
-## - max_distance: The maximum distance (in pixels) to search for ooze.
-##
-## Returns:
-## - A Vector2i representing the tile coordinates of the nearest ooze tile found within range.
-## - Vector2i(-1, -1) if no ooze tile is found within the specified range.
+## Returns Vector2i(-1, -1) if no ooze tile is found.
 func get_nearest_ooze_tile(position: Vector2, max_distance: float) -> Vector2i:
 	var closest_tile: Vector2i = Vector2i(-1, -1)
 	var min_dist_sq: float = -1.0
@@ -234,8 +227,7 @@ func _activate_tile_and_neighbors(tile_coord: Vector2i) -> void:
 ## This function is called by the timer and executes one step of the ooze flow simulation.
 ## It contains the expensive calculations that are now decoupled from the physics frame rate.
 func _run_simulation_step() -> void:
-	# --- Active List Swap ---
-	# The list for the next step becomes the list for the current step.
+	# Active List Swap the list for the next step becomes the list for the current step.
 	active_list = next_step_active_list.duplicate(true)
 	# Clear the next step's list so it can be repopulated during this step.
 	next_step_active_list.clear()
@@ -258,6 +250,7 @@ func _run_simulation_step() -> void:
 	_update_ooze_visuals()
 	# 4. Check for Buildings: See if any buildings are on ooze and destroy them.
 	_check_for_buildings_on_ooze()
+
 
 ## Calculates the flow of ooze between adjacent tiles for one physics frame.
 ## It populates the `flow_deltas` dictionary with the changes.

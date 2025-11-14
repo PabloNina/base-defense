@@ -32,6 +32,7 @@ ground_tilemap_layer = NodePath("../TileMap/GroundLayer")
 building_manager = NodePath("../BuildingManager")
 flow_rate = 1.0
 min_ooze_per_tile = 0.09
+simulation_steps_per_second = 5
 
 [node name="TileMap" type="Node2D" parent="."]
 
