@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bti7jlnn42wpx"]
+
+[ext_resource type="Script" uid="uid://durh6wyrrsie8" path="res://src/scenes/components/debug_tools/debug_ooze_cursor.gd" id="1_5xs8k"]
+
+[node name="DebugOozeCursor" type="Node"]
+script = ExtResource("1_5xs8k")

@@ -1,4 +1,4 @@
-class_name EnemyEmitter extends Node2D
+class_name OozeEmitter extends Node2D
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------

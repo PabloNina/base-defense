@@ -1,9 +1,9 @@
 [gd_scene load_steps=3 format=3 uid="uid://c0vp1q3jeftsd"]
 
-[ext_resource type="Script" uid="uid://dhia8hhkx4gpt" path="res://src/scenes/enemies/enemy_emitter.gd" id="1_psp5v"]
+[ext_resource type="Script" uid="uid://dhia8hhkx4gpt" path="res://src/scenes/enemies/ooze_emitter.gd" id="1_psp5v"]
 [ext_resource type="Texture2D" uid="uid://dbuicd3klgwq1" path="res://assets/sprites/objects/building_packet.png" id="2_8ni37"]
 
-[node name="EnemyEmitter" type="Node2D"]
+[node name="OozeEmitter" type="Node2D"]
 z_index = 1
 script = ExtResource("1_psp5v")
 
