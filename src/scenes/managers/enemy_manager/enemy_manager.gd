@@ -112,20 +112,23 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 					processing_queue.append({"coord": neighbor_coord, "amount": amount_per_neighbor})
 
 
-## Removes a specified amount of ooze from a given tile.
-func remove_ooze(tile_coord: Vector2i, amount: float) -> void:
-	# Only try to remove ooze if the tile exists in the map.
-	if ooze_map.has(tile_coord):
-		# Mark this tile and its neighbors as active since its state is changing.
-		_activate_tile_and_neighbors(tile_coord)
-		
-		var new_amount: float = ooze_map[tile_coord] - amount
-		# If the ooze drops below the threshold, remove the tile completely.
-		if new_amount <= min_ooze_per_tile:
-			ooze_map.erase(tile_coord)
-		else:
-			# Otherwise, just update the amount.
-			ooze_map[tile_coord] = new_amount
+## Removes a specified amount of ooze from a given list of tiles.
+## This can be used for single-tile removal or for area-of-effect weapons.
+func remove_ooze(tile_coords: Array[Vector2i], amount_per_tile: float) -> void:
+	# Iterate through each tile coordinate provided.
+	for tile_coord in tile_coords:
+		# Only try to remove ooze if the tile exists in the map.
+		if ooze_map.has(tile_coord):
+			# Mark this tile and its neighbors as active since its state is changing.
+			_activate_tile_and_neighbors(tile_coord)
+			
+			var new_amount: float = ooze_map[tile_coord] - amount_per_tile
+			# If the ooze drops below the threshold, remove the tile completely.
+			if new_amount <= min_ooze_per_tile:
+				ooze_map.erase(tile_coord)
+			else:
+				# Otherwise, just update the amount.
+				ooze_map[tile_coord] = new_amount
 
 # --------------------------------------------------
 # ---------------- Private Methods -----------------

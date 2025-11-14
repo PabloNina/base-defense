@@ -18,5 +18,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			enemy_manager.add_ooze(tile_coord, ooze_amount)
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			enemy_manager.remove_ooze(tile_coord, ooze_amount)
+			# Call remove_ooze with an array containing the single tile to match the new signature.
+			enemy_manager.remove_ooze([tile_coord], ooze_amount)
 			get_viewport().set_input_as_handled()

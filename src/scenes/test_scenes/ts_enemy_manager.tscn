@@ -5,7 +5,7 @@
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="4_y6818"]
 [ext_resource type="PackedScene" uid="uid://c0vp1q3jeftsd" path="res://src/scenes/enemies/enemy_emitter.tscn" id="5_jje0x"]
 [ext_resource type="PackedScene" uid="uid://bc6whhbqw615e" path="res://src/scenes/components/camera_2d.tscn" id="6_1tuyf"]
-[ext_resource type="PackedScene" uid="uid://dgmo3j2e5gny0" path="res://src/scenes/ui/user_interface.tscn" id="7_1qld0"]
+[ext_resource type="PackedScene" uid="uid://3gxa1mqvipmg" path="res://src/scenes/ui/debug_panel.tscn" id="7_15146"]
 
 [node name="TestSceneEnemyManager" type="Node2D" node_paths=PackedStringArray("enemy_manager", "ground_map_layer")]
 script = ExtResource("1_15146")
@@ -43,5 +43,10 @@ ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 
 [node name="Camera2D" parent="." instance=ExtResource("6_1tuyf")]
 
-[node name="UserInterface" parent="." instance=ExtResource("7_1qld0")]
-visible = false
+[node name="DebugPanel" parent="." instance=ExtResource("7_15146")]
+offset_left = -32.0
+offset_top = -80.0
+offset_right = 22.0
+offset_bottom = -57.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
