@@ -1,4 +1,4 @@
-class_name EnemyManager extends Node
+class_name FlowManager extends Node
 # -----------------------------------------
 # --- Editor Exports ----------------------
 # -----------------------------------------
@@ -38,7 +38,7 @@ var multimesh: MultiMesh
 # A dictionary mapping tile coordinates (Vector2i) to ooze depth (float).
 # This stores the core simulation data, separate from the visuals.
 var ooze_map: Dictionary = {}
-# --- Active List Optimization ---
+# --- Tiles Active List Optimization ---
 # A dictionary (used as a set) of tile coordinates that need to be processed in the current simulation step.
 # This prevents iterating over the entire ooze_map, providing a significant performance boost.
 var active_list: Dictionary = {}

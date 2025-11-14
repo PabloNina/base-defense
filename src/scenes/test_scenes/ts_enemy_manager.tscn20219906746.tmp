@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=4 uid="uid://dftoacajc0hqq"]
 
 [ext_resource type="Script" uid="uid://bm24bsxgssehr" path="res://src/scenes/test_scenes/ts_enemy_manager.gd" id="1_15146"]
-[ext_resource type="PackedScene" uid="uid://bx5vc63i3b6p1" path="res://src/scenes/managers/enemy_manager/enemy_manager.tscn" id="2_tsm1q"]
+[ext_resource type="PackedScene" uid="uid://bx5vc63i3b6p1" path="res://src/scenes/managers/enemy_manager/ooze_flow_manager.tscn" id="2_tsm1q"]
 [ext_resource type="PackedScene" uid="uid://bti7jlnn42wpx" path="res://src/scenes/components/debug_tools/debug_ooze_cursor.tscn" id="3_15146"]
 [ext_resource type="TileSet" uid="uid://b30a01b7mh2pr" path="res://src/tilesets/game_tileset.tres" id="4_y6818"]
 [ext_resource type="PackedScene" uid="uid://c0vp1q3jeftsd" path="res://src/scenes/enemies/ooze_emitter.tscn" id="5_jje0x"]
