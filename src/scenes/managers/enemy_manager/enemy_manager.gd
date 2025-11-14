@@ -51,7 +51,7 @@ var next_step_active_list: Dictionary = {}
 func _ready() -> void:
 	# Add to group for easy access from other nodes (like emitters).
 	add_to_group("enemy_manager")
-	# Setup OozeMultiMesh and the simulation timer.
+	# Setup Ooze MultiMesh and the simulation timer.
 	_config_ooze_multimesh()
 	_config_flow_simulation_timer()
 
