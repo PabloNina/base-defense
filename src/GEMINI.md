@@ -44,4 +44,4 @@ The project is organized into the following directories:
 
 ## Influences
 
-This game is highly influenced by Creeper World 3. Many of the systems in this game are inspired by or are direct replications of systems in Creeper World 3. When adding new features, it is likely that they will be very similar to existing fe3atures in Creeper World 3.
+This game is highly influenced by Creeper World 3. Many of the systems in this game are inspired by or are direct replications of systems in Creeper World 3. When adding new features, it is likely that they will be very similar to existing features in Creeper World 3.

@@ -4,16 +4,16 @@ class_name EnemyManager extends Node
 # -----------------------------------------
 @export_group("Manager Configuration")
 ## The TileMap layer used for ooze coordinate conversion and rendering.
-@export var enemy_layer: TileMapLayer
+@export var ooze_tilemap_layer: TileMapLayer
 ## The TileMap layer that contains the ground and wall terrain information.
-@export var ground_layer: TileMapLayer
+@export var ground_tilemap_layer: TileMapLayer
 ## The terrain ID of wall tiles. Ooze will not flow into tiles with this terrain ID.
 @export var wall_terrain_id: int = 1
 @export_group("Flow Configuration")
 ## Determines how quickly ooze spreads. A higher value means faster flow.
 @export var flow_rate: float = 0.25
 ## Ooze levels below this threshold are removed from the simulation to optimize performance.
-@export var min_ooze_threshold: float = 0.01
+@export var min_ooze_per_tile: float = 0.01
 ## The maximum amount of ooze that can accumulate on a single tile.
 @export var max_ooze_per_tile: float = 100.0
 ## The color of the ooze. The alpha component will be updated based on depth.
@@ -38,6 +38,12 @@ var multimesh: MultiMesh
 # A dictionary mapping tile coordinates (Vector2i) to ooze depth (float).
 # This stores the core simulation data, separate from the visuals.
 var ooze_map: Dictionary = {}
+# --- Active List Optimization ---
+# A dictionary (used as a set) of tile coordinates that need to be processed in the current simulation step.
+# This prevents iterating over the entire ooze_map, providing a significant performance boost.
+var active_list: Dictionary = {}
+# A dictionary to build up the list of active tiles for the *next* simulation step.
+var next_step_active_list: Dictionary = {}
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -68,7 +74,6 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 		var job_amount: float = current_job["amount"]
 
 		# Stop if a tile is being processed too many times in one frame, which indicates a feedback loop.
-		# The limit (8) is chosen to be higher than the maximum number of neighbors (4) to allow for some back-and-forth.
 		process_counts[coord] = process_counts.get(coord, 0) + 1
 		if process_counts[coord] > 8:
 			print("Tile max process counts reached: " + str(tile_coord))
@@ -81,6 +86,10 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 		var current_ooze: float = ooze_map.get(coord, 0.0)
 		var new_ooze_amount: float = current_ooze + job_amount
 		
+		# Mark this tile and its neighbors as active for the next simulation step,
+		# as its state is about to change.
+		_activate_tile_and_neighbors(coord)
+		
 		if new_ooze_amount <= max_ooze_per_tile:
 			# The tile can hold the new ooze without overflowing.
 			ooze_map[coord] = new_ooze_amount
@@ -90,7 +99,7 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 			var overflow_amount: float = new_ooze_amount - max_ooze_per_tile
 			
 			# Find valid neighbors to receive the overflow.
-			var neighbors: Array[Vector2i] = enemy_layer.get_surrounding_cells(coord)
+			var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(coord)
 			var valid_neighbors: Array[Vector2i] = []
 			for neighbor_coord in neighbors:
 				if not _is_wall(neighbor_coord):
@@ -107,9 +116,12 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 func remove_ooze(tile_coord: Vector2i, amount: float) -> void:
 	# Only try to remove ooze if the tile exists in the map.
 	if ooze_map.has(tile_coord):
+		# Mark this tile and its neighbors as active since its state is changing.
+		_activate_tile_and_neighbors(tile_coord)
+		
 		var new_amount: float = ooze_map[tile_coord] - amount
 		# If the ooze drops below the threshold, remove the tile completely.
-		if new_amount <= min_ooze_threshold:
+		if new_amount <= min_ooze_per_tile:
 			ooze_map.erase(tile_coord)
 		else:
 			# Otherwise, just update the amount.
@@ -154,11 +166,11 @@ func _config_ooze_multimesh() -> void:
 ## Checks if a given tile coordinate corresponds to a wall.
 func _is_wall(tile_coord: Vector2i) -> bool:
 	# If the ground layer isn't set or the wall terrain ID is not set, assume nothing is a wall.
-	if not is_instance_valid(ground_layer) or wall_terrain_id == -1:
+	if not is_instance_valid(ground_tilemap_layer) or wall_terrain_id == -1:
 		return false
 
 	# Get the data resource for the tile at the given coordinate.
-	var tile_data: TileData = ground_layer.get_cell_tile_data(tile_coord)
+	var tile_data: TileData = ground_tilemap_layer.get_cell_tile_data(tile_coord)
 	# If there is no tile data (e.g., an empty cell), it's not a wall.
 	if not is_instance_valid(tile_data):
 		return false
@@ -167,13 +179,37 @@ func _is_wall(tile_coord: Vector2i) -> bool:
 	return tile_data.terrain == wall_terrain_id
 
 # -----------------------------------------
-# --- Flow Simulation ---------------------
+# --- Active List Management --------------
+# -----------------------------------------
+## Marks a tile and its direct neighbors as "active" for the next simulation step.
+## This is the core of the active list optimization.
+func _activate_tile_and_neighbors(tile_coord: Vector2i) -> void:
+	# Add the tile itself to the next active list.
+	next_step_active_list[tile_coord] = true
+	# Add all its valid neighbors.
+	var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(tile_coord)
+	for neighbor_coord in neighbors:
+		if not _is_wall(neighbor_coord):
+			next_step_active_list[neighbor_coord] = true
+
+# --------------------------------------------------
+# ---------------- Main Flow Logic -----------------
+# --------------------------------------------------
+
+# -----------------------------------------
+# --- Flow Simulation Step ----------------
 # -----------------------------------------
 ## This function is called by the timer and executes one step of the ooze flow simulation.
 ## It contains the expensive calculations that are now decoupled from the physics frame rate.
 func _run_simulation_step() -> void:
-	# Only run the simulation if there is ooze on the map.
-	if ooze_map.is_empty():
+	# --- Active List Swap ---
+	# The list for the next step becomes the list for the current step.
+	active_list = next_step_active_list.duplicate(true)
+	# Clear the next step's list so it can be repopulated during this step.
+	next_step_active_list.clear()
+	
+	# If there are no active tiles to process, we can skip the simulation for this step.
+	if active_list.is_empty():
 		return
 		
 	# This dictionary will store the amount of ooze to be added or removed from each tile in this simulation step.
@@ -182,7 +218,7 @@ func _run_simulation_step() -> void:
 	# regardless of the simulation frequency.
 	var delta: float = flow_simulation_timer.wait_time
 	
-	# 1. Calculate Flow: Determine ooze movement between tiles.
+	# 1. Calculate Flow: Determine ooze movement only for the active tiles.
 	_calculate_ooze_map_flow(delta, flow_deltas)
 	# 2. Apply Flow: Update the ooze map with the calculated movements.
 	_apply_ooze_map_flow(flow_deltas)
@@ -191,18 +227,22 @@ func _run_simulation_step() -> void:
 
 ## Calculates the flow of ooze between adjacent tiles for one physics frame.
 ## It populates the `flow_deltas` dictionary with the changes.
+## This function now only iterates over the `active_list`, not the entire `ooze_map`.
 func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
-	# Iterate over a copy of keys, as the underlying ooze_map can change if a tile is added mid-frame.
-	for tile_coord in ooze_map.keys():
+	# Iterate only over the active tiles for this simulation step.
+	for tile_coord in active_list.keys():
+		# An active tile might have been cleared in a previous calculation, so check if it still has ooze.
+		if not ooze_map.has(tile_coord):
+			continue
+			
 		var current_ooze: float = ooze_map[tile_coord]
 
 		# Get the 4 direct neighbors of the current tile.
-		var neighbors: Array[Vector2i] = enemy_layer.get_surrounding_cells(tile_coord)
+		var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(tile_coord)
 		var valid_lower_neighbors: Array[Vector2i] = []
 		var total_potential_flow_to_lower: float = 0.0
 
-		# First pass: Identify valid lower neighbors and calculate the total amount of ooze that
-		# could potentially flow out of the current tile.
+		# First pass: Identify valid lower neighbors and calculate potential flow.
 		for neighbor_coord in neighbors:
 			if _is_wall(neighbor_coord):
 				continue # Skip walls entirely
@@ -212,8 +252,6 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			if current_ooze > neighbor_ooze:
 				valid_lower_neighbors.append(neighbor_coord)
 				var diff: float = current_ooze - neighbor_ooze
-				# The amount of flow is proportional to half the difference, which creates a stable equalization effect.
-				# Multiplying by 'delta' makes the flow rate independent of the frame rate.
 				var potential_flow: float = (diff / 2.0) * flow_rate * delta
 				total_potential_flow_to_lower += potential_flow
 		
@@ -221,17 +259,14 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			continue # Nothing to flow, or no valid places to flow to
 
 		# Determine the actual amount of ooze that can flow out from the current tile.
-		# It's either the total potential flow, or all the ooze on the tile, whichever is smaller.
 		var actual_flow_out: float = min(current_ooze, total_potential_flow_to_lower)
 		
 		# Second pass: Distribute the actual flow among the valid lower neighbors.
-		# The flow to each neighbor is proportional to its pressure difference relative to the total.
 		for neighbor_coord in valid_lower_neighbors:
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
 			var diff: float = current_ooze - neighbor_ooze
 			var potential_flow: float = (diff / 2.0) * flow_rate * delta
 			
-			# Scale the flow to this neighbor based on its proportion of the total potential flow.
 			var scaled_flow: float = 0.0
 			if total_potential_flow_to_lower > 0: # Avoid division by zero
 				scaled_flow = actual_flow_out * (potential_flow / total_potential_flow_to_lower)
@@ -245,21 +280,27 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 # -----------------------------------------
 ## Applies the calculated flow amounts from `flow_deltas` to the main `ooze_map`.
 ## Also handles clamping values and removing tiles with negligible ooze.
+## Crucially, it now also marks affected tiles as active for the next simulation step.
 func _apply_ooze_map_flow(flow_deltas: Dictionary) -> void:
 	var tiles_to_remove: Array[Vector2i] = []
 	for tile_coord in flow_deltas.keys():
+		# Any tile with a flow delta is inherently active, so activate it and its neighbors.
+		_activate_tile_and_neighbors(tile_coord)
+		
 		var new_amount: float = ooze_map.get(tile_coord, 0.0) + flow_deltas[tile_coord]
 		
 		# Clamp the new value to ensure it's within the valid range [0, max_ooze_per_tile].
 		ooze_map[tile_coord] = clamp(new_amount, 0, max_ooze_per_tile)
 
 		# If the ooze level on a tile drops below the minimum threshold, mark it for removal.
-		if ooze_map[tile_coord] <= min_ooze_threshold:
+		if ooze_map[tile_coord] <= min_ooze_per_tile:
 			tiles_to_remove.append(tile_coord)
 	
 	# Clean up: remove all tiles that were marked for removal to keep the simulation efficient.
 	for tile_coord in tiles_to_remove:
-		if ooze_map.has(tile_coord) and ooze_map[tile_coord] <= min_ooze_threshold:
+		if ooze_map.has(tile_coord) and ooze_map[tile_coord] <= min_ooze_per_tile:
+			# Also activate tiles being removed to update their neighbors.
+			_activate_tile_and_neighbors(tile_coord)
 			ooze_map.erase(tile_coord)
 
 ## Updates the MultiMesh to reflect the current state of the `ooze_map`.
@@ -276,7 +317,7 @@ func _update_ooze_visuals() -> void:
 		var depth: float = ooze_map[tile_coord]
 		
 		# Set the position for this instance.
-		var position: Vector2 = enemy_layer.map_to_local(tile_coord)
+		var position: Vector2 = ooze_tilemap_layer.map_to_local(tile_coord)
 		var transform := Transform2D(0.0, position)
 		multimesh.set_instance_transform_2d(idx, transform)
 		

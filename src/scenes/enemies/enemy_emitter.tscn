@@ -11,4 +11,3 @@ script = ExtResource("1_psp5v")
 texture = ExtResource("2_8ni37")
 
 [node name="EmissionTimer" type="Timer" parent="."]
-autostart = true
