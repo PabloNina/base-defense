@@ -83,7 +83,6 @@ ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 [node name="Camera2D" parent="." instance=ExtResource("7_rt2vf")]
 
 [node name="UserInterface" parent="." instance=ExtResource("8_8w3wy")]
-visible = false
 
 [node name="DebugOozeCursor" parent="." node_paths=PackedStringArray("flow_manager", "ground_map_layer") instance=ExtResource("11_twlv4")]
 flow_manager = NodePath("../FlowManager")

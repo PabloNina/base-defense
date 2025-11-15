@@ -33,7 +33,7 @@ signal move_completed(building: MovableBuilding)
 # -------- Move State Variables -----------
 # -----------------------------------------
 var is_moving: bool = false
-var landing_target_position: Vector2 = Vector2.ZERO
+var landing_position: Vector2 = Vector2.ZERO
 var move_speed: float = 100.0
 
 # -----------------------------------------
@@ -52,11 +52,11 @@ func start_move(target_pos: Vector2) -> void:
 		return
 	
 	# start moving animation
-	landing_target_position = target_pos
+	landing_position = target_pos
 	is_built = false
 	is_powered = false
 
-	move_started.emit(self, landing_target_position)
+	move_started.emit(self, landing_position)
 
 	is_moving = true
 	reset_packets_in_flight()
@@ -69,14 +69,11 @@ func start_move(target_pos: Vector2) -> void:
 # -----------------------------------------
 # Called in _physics_process if is_moving flag is turned on
 func _move_towards_target(delta: float) -> void:
-	var dir = (landing_target_position - global_position)
-	var dist = dir.length()
-
-	if dist < 1.0:
+	# Move towards the landing position at a constant speed
+	global_position = global_position.move_toward(landing_position, move_speed * delta)
+	# Check if the building has reached the landing position
+	if global_position.is_equal_approx(landing_position):
 		_complete_move()
-	else:
-		global_position += dir.normalized() * move_speed * delta
-
 
 func _complete_move() -> void:
 	is_moving = false

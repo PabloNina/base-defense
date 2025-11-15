@@ -1,4 +1,4 @@
-# Weapon - weapon.gd
+# MovableWeapon - movable_weapon.gd
 # ============================================================================
 # This is an abstract base class for all defensive structures in the game
 # that are capable of firing projectiles at enemies. It extends the
@@ -22,7 +22,7 @@
 #   its current stock, power status, and operational state.
 # ============================================================================
 @abstract
-class_name Weapon extends MovableBuilding
+class_name MovableWeapon extends MovableBuilding
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
@@ -61,7 +61,7 @@ var current_ammo: float = 0.0: set = _set_ammo
 func _ready():
 	super._ready()
 	# group adding
-	add_to_group("weapons")
+	add_to_group("movable_weapons")
 	# Get manager references to enable communication with the ooze simulation.
 	flow_manager = get_tree().get_first_node_in_group("enemy_manager")
 	# Setup the weapon
@@ -225,16 +225,16 @@ func _handle_received_ammo_packet() -> void:
 # -------------------------------
 # --- Visuals Updating ----------
 # -------------------------------
-func _update_is_built_visuals():
+#func _update_is_built_visuals():
 	# Color the sprite based on whether the building is built
-	if is_built:
-		# Built: full color
-		base_sprite.modulate = Color(1, 1, 1, 1)
-		turret_sprite.modulate = Color(1, 1, 1, 1)
-	else:
-		# Not built: dimmed / greyed out
-		base_sprite.modulate = Color(0.5, 0.5, 0.5, 1)
-		turret_sprite.modulate = Color(0.5, 0.5, 0.5, 1)
+	#if is_built:
+		## Built: full color
+		#base_sprite.modulate = Color(1, 1, 1, 1)
+		#turret_sprite.modulate = Color(1, 1, 1, 1)
+	#else:
+		## Not built: dimmed / greyed out
+		#base_sprite.modulate = Color(0.5, 0.5, 0.5, 1)
+		#turret_sprite.modulate = Color(0.5, 0.5, 0.5, 1)
 
 # Update ammo bar
 func _update_ammo_stock_bar(new_value: float) -> void:

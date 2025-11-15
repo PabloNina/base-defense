@@ -24,7 +24,8 @@ grid_manager = NodePath("../GridManager")
 ooze_tilemap_layer = NodePath("../TileMap/OozeLayer")
 ground_tilemap_layer = NodePath("../TileMap/GroundLayer")
 building_manager = NodePath("../BuildingManager")
-flow_rate = 1.0
+flow_rate = 2.0
+min_ooze_per_tile = 0.05
 
 [node name="TileMap" type="Node2D" parent="."]
 
@@ -49,6 +50,7 @@ ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 
 [node name="OozeEmitter3" parent="EnemiesContainer" node_paths=PackedStringArray("ooze_tilemap_layer") instance=ExtResource("4_ipbq6")]
 position = Vector2(312, 56)
+emission_amount = 50.0
 ooze_tilemap_layer = NodePath("../../TileMap/OozeLayer")
 
 [node name="Camera2D" parent="." instance=ExtResource("5_1ycab")]
@@ -65,8 +67,9 @@ visible = false
 anchors_preset = 0
 anchor_right = 0.0
 anchor_bottom = 0.0
+offset_top = -218.0
 offset_right = 54.0
-offset_bottom = 23.0
+offset_bottom = -195.0
 grow_horizontal = 1
 grow_vertical = 1
 size_flags_horizontal = 0

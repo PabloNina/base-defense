@@ -1,6 +1,7 @@
 class_name Bullet extends Node2D
 
-@export var speed: int = 600
+@export var speed: int = 500
+
 
 var flow_manager: FlowManager
 var target_tile: Vector2i = Vector2i.ZERO

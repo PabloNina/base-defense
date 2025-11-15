@@ -13,6 +13,7 @@ mesh = SubResource("QuadMesh_aehdt")
 script = ExtResource("1_vsxqy")
 
 [node name="OozeMultiMesh" type="MultiMeshInstance2D" parent="."]
+modulate = Color(18.892157, 18.892157, 18.892157, 1)
 multimesh = SubResource("MultiMesh_topxs")
 texture = ExtResource("2_aehdt")
 

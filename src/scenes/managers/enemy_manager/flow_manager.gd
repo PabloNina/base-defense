@@ -18,12 +18,15 @@ class_name FlowManager extends Node
 @export var min_ooze_per_tile: float = 0.01
 ## The maximum amount of ooze that can accumulate on a single tile.
 @export var max_ooze_per_tile: float = 100.0
-## The color of the ooze. The alpha component will be updated based on depth.
-@export var ooze_color: Color = Color.YELLOW
 @export_group("Simulation Configuration")
 ## How many times per second the ooze flow simulation should run.
 ## A lower value increases performance but makes the simulation less granular.
 @export var simulation_steps_per_second: int = 10
+@export_group("Ooze Visuals")
+## The color of the ooze. The alpha component will be updated based on depth.
+@export var ooze_color: Color = Color.YELLOW
+@export var ooze_min_alpha: float = 0.2
+@export var ooze_max_alpha: float = 1.0
 # -----------------------------------------
 # --- Onready References ------------------
 # -----------------------------------------
@@ -380,7 +383,7 @@ func _update_ooze_visuals() -> void:
 		# Set the color for this instance, modulating alpha based on ooze depth.
 		var color: Color = ooze_color
 		# The alpha is proportional to the ooze depth. Here, it reaches full opacity at half the max depth.
-		color.a = clamp(depth / (max_ooze_per_tile / 2.0), 0.1, 1.0)
+		color.a = clamp(depth / (max_ooze_per_tile / 2.0), 0.2, 2.0)
 		multimesh.set_instance_color(idx, color)
 		
 		idx += 1
