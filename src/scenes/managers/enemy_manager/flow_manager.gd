@@ -339,7 +339,7 @@ func _check_for_buildings_on_ooze() -> void:
 # -----------------------------------------
 ## Applies the calculated flow amounts from `flow_deltas` to the main `ooze_map`.
 ## Also handles clamping values and removing tiles with negligible ooze.
-## Crucially, it now also marks affected tiles as active for the next simulation step.
+## Crucially also marks affected tiles as active for the next simulation step.
 func _apply_ooze_map_flow(flow_deltas: Dictionary) -> void:
 	var tiles_to_remove: Array[Vector2i] = []
 	for tile_coord in flow_deltas.keys():
@@ -383,7 +383,7 @@ func _update_ooze_visuals() -> void:
 		# Set the color for this instance, modulating alpha based on ooze depth.
 		var color: Color = ooze_color
 		# The alpha is proportional to the ooze depth. Here, it reaches full opacity at half the max depth.
-		color.a = clamp(depth / (max_ooze_per_tile / 2.0), 0.2, 2.0)
+		color.a = clamp(depth / (max_ooze_per_tile / 2.0), ooze_min_alpha, ooze_max_alpha)
 		multimesh.set_instance_color(idx, color)
 		
 		idx += 1
