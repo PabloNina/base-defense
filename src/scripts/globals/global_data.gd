@@ -31,7 +31,14 @@ class_name GlobalData extends Node
 const TILE_SIZE: int = 16
 const TILE_SIZE_VECTOR2: Vector2 = Vector2(TILE_SIZE, TILE_SIZE)
 
+const BUILDABLE_TILE_ID = 0
 
+#const WALL_TERRAIN_ID = 0
+#const GROUND_LVL1_TERRAIN_ID = 1
+#const GROUND_LVL2_TERRAIN_ID = 2
+#const GROUND_LVL3_TERRAIN_ID = 3
+#const GROUND_LVL4_TERRAIN_ID = 4
+#const GROUND_LVL5_TERRAIN_ID = 5
 
 const BOX_VALID_COLOR: Color = Color.GREEN
 const BOX_INVALID_COLOR: Color = Color.RED
@@ -70,15 +77,6 @@ enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE}
 # --------------------------------------------
 # --- Buildings Metadata Dictionary ----------
 # --------------------------------------------
-# Each building entry stores:
-# - scene: packed scene for placement
-# - ghost_texture: preview placement sprite
-# - tilemap_id: ID used in tilemap collections
-# - display_name: for UI labels
-# - cost: for resource logic
-# - optimal_building_distance_tiles: in tile units
-# - connection_range_tiles: in tile units
-# - add more and comment
 const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),
@@ -135,7 +133,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE, BUILDING_ACTIONS.MOVE],
 		# MovableBuilding class only
 		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
-		# Weapon class only
+		# MovableWeapon class only
 		"max_ammo_storage": 10,
 		"cost_per_shot": 0.25,
 		"fire_rate": 2,

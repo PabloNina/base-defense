@@ -35,7 +35,7 @@ var current_state: STATES = STATES.NULL
 # Flag to check is the base is placed
 var is_command_center_placed: bool = false
 # should go to globaldata?
-var buildable_tile_id: int = 0 
+var buildable_tile_id: int = -1 
 # All registered buildings
 var buildings: Array[Building] = []
 # List if selected buildings
@@ -53,6 +53,8 @@ signal building_deselected()
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
+	# Get buildable tile from global data
+	buildable_tile_id = GlobalData.BUILDABLE_TILE_ID
 	# Ensure BuildingManager processes even when game is paused 
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Group adding
