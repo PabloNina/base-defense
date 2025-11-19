@@ -9,8 +9,6 @@ class_name FlowManager extends Node
 @export var ground_tilemap_layer: TileMapLayer
 ## The BuildingManager node, used to get a list of all buildings.
 @export var building_manager: BuildingManager
-## The terrain ID of wall tiles. Ooze will not flow into tiles with this terrain ID.
-@export var wall_terrain_id: int = 1
 @export_group("Flow Configuration")
 ## Determines how quickly ooze spreads. A higher value means faster flow.
 @export var flow_rate: float = 0.25
@@ -38,6 +36,10 @@ class_name FlowManager extends Node
 # -----------------------------------------
 # --- Private Variables -------------------
 # -----------------------------------------
+# The terrain ID of wall tiles. Ooze will not flow into tiles with this terrain ID.
+var wall_terrain_id: int = -1
+# The tile ID for buildable ground. Ooze can only flow on these tiles.
+var buildable_tile_id: int = -1
 # The MultiMesh resource that holds the geometry and instance data for rendering.
 var multimesh: MultiMesh
 # A dictionary mapping tile coordinates (Vector2i) to ooze depth (float).
@@ -54,6 +56,9 @@ var next_step_active_list: Dictionary = {}
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
+	# Get terrain ids from global data
+	wall_terrain_id = GlobalData.WALL_TERRAIN_ID
+	buildable_tile_id = GlobalData.BUILDABLE_TILE_ID
 	# Add to group for easy access from other nodes (like emitters).
 	add_to_group("enemy_manager")
 	# Setup Ooze MultiMesh and the simulation timer.
@@ -84,8 +89,8 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 			print("Tile max process counts reached: " + str(tile_coord))
 			continue
 
-		# Do not add ooze to walls.
-		if _is_wall(coord):
+		# Do not add ooze to non-buildable tiles.
+		if not _is_buildable_tile(coord):
 			continue
 			
 		var current_ooze: float = ooze_map.get(coord, 0.0)
@@ -107,7 +112,7 @@ func add_ooze(tile_coord: Vector2i, amount: float) -> void:
 			var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(coord)
 			var valid_neighbors: Array[Vector2i] = []
 			for neighbor_coord in neighbors:
-				if not _is_wall(neighbor_coord):
+				if _is_buildable_tile(neighbor_coord):
 					valid_neighbors.append(neighbor_coord)
 			
 			# If there are valid neighbors, add the overflow amount to the queue for processing.
@@ -191,6 +196,7 @@ func _config_ooze_multimesh() -> void:
 # -----------------------------------------
 # --- Wall Detection ----------------------
 # -----------------------------------------
+# NOT BEING USED ATM
 ## Checks if a given tile coordinate corresponds to a wall.
 func _is_wall(tile_coord: Vector2i) -> bool:
 	# If the ground layer isn't set or the wall terrain ID is not set, assume nothing is a wall.
@@ -207,6 +213,21 @@ func _is_wall(tile_coord: Vector2i) -> bool:
 	return tile_data.terrain == wall_terrain_id
 
 # -----------------------------------------
+# --- Buildable Tile Detection ------------
+# -----------------------------------------
+## Checks if a given tile coordinate is a valid ground tile for ooze to exist on.
+func _is_buildable_tile(tile_coord: Vector2i) -> bool:
+	# If the ground layer isn't set, assume it's not buildable.
+	if not is_instance_valid(ground_tilemap_layer):
+		return false
+
+	# Get the tile source ID. If it's -1, the cell is empty.
+	var source_id: int = ground_tilemap_layer.get_cell_source_id(tile_coord)
+
+	# Check if the source ID matches the configured buildable tile ID.
+	return source_id == buildable_tile_id
+
+# -----------------------------------------
 # --- Active List Management --------------
 # -----------------------------------------
 ## Marks a tile and its direct neighbors as "active" for the next simulation step.
@@ -217,7 +238,7 @@ func _activate_tile_and_neighbors(tile_coord: Vector2i) -> void:
 	# Add all its valid neighbors.
 	var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(tile_coord)
 	for neighbor_coord in neighbors:
-		if not _is_wall(neighbor_coord):
+		if _is_buildable_tile(neighbor_coord):
 			next_step_active_list[neighbor_coord] = true
 
 # --------------------------------------------------
@@ -274,8 +295,8 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 
 		# First pass: Identify valid lower neighbors and calculate potential flow.
 		for neighbor_coord in neighbors:
-			if _is_wall(neighbor_coord):
-				continue # Skip walls entirely
+			if not _is_buildable_tile(neighbor_coord):
+				continue # Skip non-buildable tiles
 
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
 
