@@ -52,16 +52,28 @@ var active_list: Dictionary = {}
 # A dictionary to build up the list of active tiles for the *next* simulation step.
 var next_step_active_list: Dictionary = {}
 
+# A dictionary mapping tile coordinates (Vector2i) to terrain height (int).
+var terrain_height_map: Dictionary = {}
+# A constant to map terrain IDs from GlobalData to integer height values.
+const TERRAIN_ID_TO_HEIGHT: Dictionary = {
+	GlobalData.GROUND_LVL1_TERRAIN_ID: 1,
+	GlobalData.GROUND_LVL2_TERRAIN_ID: 2,
+	GlobalData.GROUND_LVL3_TERRAIN_ID: 3,
+	GlobalData.GROUND_LVL4_TERRAIN_ID: 4,
+	GlobalData.GROUND_LVL5_TERRAIN_ID: 5,
+}
+
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
-	# Get terrain ids from global data
+	# Get tile and terrain ids from global data
 	wall_terrain_id = GlobalData.WALL_TERRAIN_ID
 	buildable_tile_id = GlobalData.BUILDABLE_TILE_ID
 	# Add to group for easy access from other nodes (like emitters).
 	add_to_group("enemy_manager")
-	# Setup Ooze MultiMesh and the simulation timer.
+	# Setup the terrain height map, ooze multimesh, and the simulation timer.
+	_create_terrain_height_map()
 	_config_ooze_multimesh()
 	_config_flow_simulation_timer()
 
@@ -71,55 +83,20 @@ func _ready() -> void:
 
 ## Adds a specified amount of ooze to a given tile.
 ## This is the primary way other nodes (like emitters) interact with the ooze simulation.
-## This function handles overflow by distributing excess ooze to neighbors.
 func add_ooze(tile_coord: Vector2i, amount: float) -> void:
-	# Use a queue to process ooze additions, allowing for cascading overflows.
-	var processing_queue: Array[Dictionary] = [{"coord": tile_coord, "amount": amount}]
-	# Keep track of how many times we've processed a coordinate in this call to prevent infinite loops.
-	var process_counts: Dictionary = {}
-
-	while not processing_queue.is_empty():
-		var current_job: Dictionary = processing_queue.pop_front()
-		var coord: Vector2i = current_job["coord"]
-		var job_amount: float = current_job["amount"]
-
-		# Stop if a tile is being processed too many times in one frame, which indicates a feedback loop.
-		process_counts[coord] = process_counts.get(coord, 0) + 1
-		if process_counts[coord] > 8:
-			print("Tile max process counts reached: " + str(tile_coord))
-			continue
-
-		# Do not add ooze to non-buildable tiles.
-		if not _is_buildable_tile(coord):
-			continue
-			
-		var current_ooze: float = ooze_map.get(coord, 0.0)
-		var new_ooze_amount: float = current_ooze + job_amount
+	# Do not add ooze to non-buildable tiles.
+	if not _is_valid_tile(tile_coord):
+		return
 		
-		# Mark this tile and its neighbors as active for the next simulation step,
-		# as its state is about to change.
-		_activate_tile_and_neighbors(coord)
-		
-		if new_ooze_amount <= max_ooze_per_tile:
-			# The tile can hold the new ooze without overflowing.
-			ooze_map[coord] = new_ooze_amount
-		else:
-			# The tile overflows. Set it to max and distribute the excess.
-			ooze_map[coord] = max_ooze_per_tile
-			var overflow_amount: float = new_ooze_amount - max_ooze_per_tile
-			
-			# Find valid neighbors to receive the overflow.
-			var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(coord)
-			var valid_neighbors: Array[Vector2i] = []
-			for neighbor_coord in neighbors:
-				if _is_buildable_tile(neighbor_coord):
-					valid_neighbors.append(neighbor_coord)
-			
-			# If there are valid neighbors, add the overflow amount to the queue for processing.
-			if not valid_neighbors.is_empty():
-				var amount_per_neighbor: float = overflow_amount / valid_neighbors.size()
-				for neighbor_coord in valid_neighbors:
-					processing_queue.append({"coord": neighbor_coord, "amount": amount_per_neighbor})
+	# Get the current ooze, add the new amount, and update the map.
+	# We allow the ooze to temporarily go above 'max_ooze_per_tile'.
+	# The main simulation loop will resolve and spread this "over-pressure" smoothly.
+	var current_ooze: float = ooze_map.get(tile_coord, 0.0)
+	ooze_map[tile_coord] = current_ooze + amount
+	
+	# Mark this tile and its neighbors as active so the main simulation
+	# can process the new ooze on the next step.
+	_activate_tile_and_neighbors(tile_coord)
 
 
 ## Removes a specified amount of ooze from a given list of tiles.
@@ -178,6 +155,31 @@ func _config_flow_simulation_timer() -> void:
 	flow_simulation_timer.start()
 
 # -----------------------------------------
+# --- Terrain Height Map Creation ---------
+# -----------------------------------------
+## Creates a map of terrain heights for every cell in the ground layer.
+## This is called once at the start to optimize flow calculations.
+func _create_terrain_height_map() -> void:
+	if not is_instance_valid(ground_tilemap_layer):
+		push_error("FlowManager: Ground TileMapLayer is not assigned!")
+		return
+
+	# Iterate over all cells that have tiles on them in the ground layer.
+	var used_cells: Array[Vector2i] = ground_tilemap_layer.get_used_cells()
+	for cell_coord in used_cells:
+		var tile_data: TileData = ground_tilemap_layer.get_cell_tile_data(cell_coord)
+		
+		# Ensure tile data is valid before proceeding.
+		if not is_instance_valid(tile_data):
+			continue
+
+		var terrain_id: int = tile_data.terrain
+		# Check if the terrain ID has a corresponding height in our map.
+		if TERRAIN_ID_TO_HEIGHT.has(terrain_id):
+			terrain_height_map[cell_coord] = TERRAIN_ID_TO_HEIGHT[terrain_id]
+
+
+# -----------------------------------------
 # --- Ooze MultiMesh Configuration --------
 # -----------------------------------------
 func _config_ooze_multimesh() -> void:
@@ -216,8 +218,8 @@ func _is_wall(tile_coord: Vector2i) -> bool:
 # --- Buildable Tile Detection ------------
 # -----------------------------------------
 ## Checks if a given tile coordinate is a valid ground tile for ooze to exist on.
-func _is_buildable_tile(tile_coord: Vector2i) -> bool:
-	# If the ground layer isn't set, assume it's not buildable.
+func _is_valid_tile(tile_coord: Vector2i) -> bool:
+	# If the ground layer isn't set, assume it's not valid.
 	if not is_instance_valid(ground_tilemap_layer):
 		return false
 
@@ -238,7 +240,7 @@ func _activate_tile_and_neighbors(tile_coord: Vector2i) -> void:
 	# Add all its valid neighbors.
 	var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(tile_coord)
 	for neighbor_coord in neighbors:
-		if _is_buildable_tile(neighbor_coord):
+		if _is_valid_tile(neighbor_coord):
 			next_step_active_list[neighbor_coord] = true
 
 # --------------------------------------------------
@@ -282,11 +284,13 @@ func _run_simulation_step() -> void:
 func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 	# Iterate only over the active tiles for this simulation step.
 	for tile_coord in active_list.keys():
-		# An active tile might have been cleared in a previous calculation, so check if it still has ooze.
-		if not ooze_map.has(tile_coord):
+		# The terrain height map may not contain the tile if it's outside the defined map area.
+		if not terrain_height_map.has(tile_coord):
 			continue
 			
-		var current_ooze: float = ooze_map[tile_coord]
+		var current_ooze: float = ooze_map.get(tile_coord, 0.0)
+		var current_terrain_height: int = terrain_height_map[tile_coord]
+		var current_total_height: float = current_terrain_height + current_ooze
 
 		# Get the 4 direct neighbors of the current tile.
 		var neighbors: Array[Vector2i] = ooze_tilemap_layer.get_surrounding_cells(tile_coord)
@@ -295,14 +299,19 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 
 		# First pass: Identify valid lower neighbors and calculate potential flow.
 		for neighbor_coord in neighbors:
-			if not _is_buildable_tile(neighbor_coord):
-				continue # Skip non-buildable tiles
+			# Ensure the neighbor is on the map and has a defined height.
+			if not terrain_height_map.has(neighbor_coord):
+				continue
 
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
+			var neighbor_terrain_height: int = terrain_height_map[neighbor_coord]
+			var neighbor_total_height: float = neighbor_terrain_height + neighbor_ooze
 
-			if current_ooze > neighbor_ooze:
+			if current_total_height > neighbor_total_height:
 				valid_lower_neighbors.append(neighbor_coord)
-				var diff: float = current_ooze - neighbor_ooze
+				var diff: float = current_total_height - neighbor_total_height
+				# The division by the number of neighbors is now handled in the second pass
+				# to correctly distribute the available ooze.
 				var potential_flow: float = (diff / 2.0) * flow_rate * delta
 				total_potential_flow_to_lower += potential_flow
 		
@@ -310,14 +319,20 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			continue # Nothing to flow, or no valid places to flow to
 
 		# Determine the actual amount of ooze that can flow out from the current tile.
+		# A tile cannot flow more ooze than it currently has.
 		var actual_flow_out: float = min(current_ooze, total_potential_flow_to_lower)
 		
-		# Second pass: Distribute the actual flow among the valid lower neighbors.
+		# Second pass: Distribute the actual flow among the valid lower neighbors
+		# proportionally to their potential to receive ooze.
 		for neighbor_coord in valid_lower_neighbors:
 			var neighbor_ooze: float = ooze_map.get(neighbor_coord, 0.0)
-			var diff: float = current_ooze - neighbor_ooze
+			var neighbor_terrain_height: int = terrain_height_map[neighbor_coord]
+			var neighbor_total_height: float = neighbor_terrain_height + neighbor_ooze
+			
+			var diff: float = current_total_height - neighbor_total_height
 			var potential_flow: float = (diff / 2.0) * flow_rate * delta
 			
+			# Distribute the actual flow proportionally.
 			var scaled_flow: float = 0.0
 			if total_potential_flow_to_lower > 0: # Avoid division by zero
 				scaled_flow = actual_flow_out * (potential_flow / total_potential_flow_to_lower)
@@ -326,34 +341,6 @@ func _calculate_ooze_map_flow(delta: float, flow_deltas: Dictionary) -> void:
 			flow_deltas[neighbor_coord] = flow_deltas.get(neighbor_coord, 0.0) + scaled_flow
 			flow_deltas[tile_coord] = flow_deltas.get(tile_coord, 0.0) - scaled_flow
 
-# -----------------------------------------
-# --- Building Destruction ----------------
-# -----------------------------------------
-## Checks if any buildings are on tiles with ooze and calls the BuildingManager to destroy them.
-func _check_for_buildings_on_ooze() -> void:
-	# Ensure the BuildingManager is set and valid before proceeding.
-	if not is_instance_valid(building_manager):
-		return
-
-	var buildings_to_destroy: Array[Building] = []
-	# We must get a fresh copy of the buildings array, as the original array might be modified
-	# by the destroy() method, which would cause issues while iterating.
-	var all_buildings: Array[Building] = building_manager.get("buildings").duplicate()
-
-	# Iterate over all buildings to check their position against the ooze map.
-	for building in all_buildings:
-		if not is_instance_valid(building):
-			continue
-
-		var building_tile_coord: Vector2i = ooze_tilemap_layer.local_to_map(building.global_position)
-		# If a building is on a tile that has ooze, add it to the destruction list.
-		if ooze_map.has(building_tile_coord):
-			buildings_to_destroy.append(building)
-	
-	# If there are buildings to destroy, call the manager to handle their removal.
-	if not buildings_to_destroy.is_empty():
-		#building_manager.call("destroy_buildings", buildings_to_destroy)
-		building_manager.destroy_buildings(buildings_to_destroy)
 
 # -----------------------------------------
 # --- Flow Update & Sync ------------------
@@ -408,3 +395,32 @@ func _update_ooze_visuals() -> void:
 		multimesh.set_instance_color(idx, color)
 		
 		idx += 1
+
+# -----------------------------------------
+# --- Building Destruction ----------------
+# -----------------------------------------
+## Checks if any buildings are on tiles with ooze and calls the BuildingManager to destroy them.
+func _check_for_buildings_on_ooze() -> void:
+	# Ensure the BuildingManager is set and valid before proceeding.
+	if not is_instance_valid(building_manager):
+		return
+
+	var buildings_to_destroy: Array[Building] = []
+	# We must get a fresh copy of the buildings array, as the original array might be modified
+	# by the destroy() method, which would cause issues while iterating.
+	var all_buildings: Array[Building] = building_manager.get("buildings").duplicate()
+
+	# Iterate over all buildings to check their position against the ooze map.
+	for building in all_buildings:
+		if not is_instance_valid(building):
+			continue
+
+		var building_tile_coord: Vector2i = ooze_tilemap_layer.local_to_map(building.global_position)
+		# If a building is on a tile that has ooze, add it to the destruction list.
+		if ooze_map.has(building_tile_coord):
+			buildings_to_destroy.append(building)
+	
+	# If there are buildings to destroy, call the manager to handle their removal.
+	if not buildings_to_destroy.is_empty():
+		#building_manager.call("destroy_buildings", buildings_to_destroy)
+		building_manager.destroy_buildings(buildings_to_destroy)

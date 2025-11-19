@@ -11,6 +11,7 @@ mesh = SubResource("QuadMesh_aehdt")
 
 [node name="FlowManager" type="Node"]
 script = ExtResource("1_vsxqy")
+max_ooze_per_tile = 10.0
 
 [node name="OozeMultiMesh" type="MultiMeshInstance2D" parent="."]
 modulate = Color(18.892157, 18.892157, 18.892157, 1)
