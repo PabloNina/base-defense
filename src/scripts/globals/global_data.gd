@@ -45,6 +45,8 @@ const BOX_INVALID_COLOR: Color = Color.RED
 const LINE_VALID_COLOR: Color = Color(0.2, 1.0, 0.0, 0.6)
 const LINE_INVALID_COLOR: Color = Color(1.0, 0.2, 0.2, 0.6)
 const FIRE_RANGE_COLOR: Color = Color(1.0, 0.2, 0.2, 0.2)
+const FIRE_RANGE_SAME_HEIGHT_COLOR: Color = Color(0.2, 1.0, 0.2, 0.2)
+const FIRE_RANGE_LOWER_HEIGHT_COLOR: Color = Color(1.0, 1.0, 0.2, 0.2)
 # --------------------------------------------
 # --- Preloads -------------------------------
 # --------------------------------------------
@@ -68,15 +70,25 @@ enum BUILDING_TYPE {NULL, COMMAND_CENTER, RELAY, REACTOR, CANNON, MORTAR, ORE_MI
 enum BUILDING_CATEGORY {NULL, INFRASTRUCTURE, WEAPON, SPECIAL}
 # Buildings actions
 enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE} 
+# Weapon Targeting Rules
+enum WEAPON_TARGETING_RULE {IGNORE_HEIGHT, SAME_OR_LOWER_HEIGHT}
 
 # Enemy Structures
 # TO DO
 # Enemy types
 # TO DO
+# --------------------------------------------
+# --- Game Data Dictionaries -----------------
+# --------------------------------------------
+## A dictionary to map terrain IDs from to integer height values.
+const TERRAIN_ID_TO_HEIGHT: Dictionary = {
+	GROUND_LVL1_TERRAIN_ID: 1,
+	GROUND_LVL2_TERRAIN_ID: 2,
+	GROUND_LVL3_TERRAIN_ID: 3,
+	GROUND_LVL4_TERRAIN_ID: 4,
+	GROUND_LVL5_TERRAIN_ID: 5,
+}
 
-# --------------------------------------------
-# --- Buildings Metadata Dictionary ----------
-# --------------------------------------------
 const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),
@@ -137,7 +149,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"max_ammo_storage": 10,
 		"cost_per_shot": 0.25,
 		"fire_rate": 2,
-		"fire_range": 100,
+		"fire_range_tiles": 6,
+		"targeting_rule": WEAPON_TARGETING_RULE.SAME_OR_LOWER_HEIGHT,
 	},
 }
 
@@ -165,10 +178,10 @@ static func get_is_relay(building_type: int) -> bool:
 	var data = get_building_data(building_type)
 	return data.get("is_relay", null)
 
-static func get_optimal_building_distance(building_type: GlobalData.BUILDING_TYPE) -> float:
+static func get_optimal_building_distance(building_type: GlobalData.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
 	var distance_in_tiles = data.get("optimal_building_distance_tiles", 0)
-	return float(distance_in_tiles * TILE_SIZE)
+	return int(distance_in_tiles * TILE_SIZE)
 
 static func get_cost_to_build(building_type: GlobalData.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
@@ -213,7 +226,8 @@ static func get_max_ammo_storage(building_type: GlobalData.BUILDING_TYPE) -> int
 
 static func get_fire_range(building_type: GlobalData.BUILDING_TYPE) -> int:
 	var data = get_building_data(building_type)
-	return data.get("fire_range", -1)
+	var fire_range_in_tiles = data.get("fire_range_tiles", -1)
+	return int(fire_range_in_tiles * TILE_SIZE)
 
 static func get_cost_per_shot(building_type: GlobalData.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
@@ -222,3 +236,14 @@ static func get_cost_per_shot(building_type: GlobalData.BUILDING_TYPE) -> float:
 static func get_fire_rate(building_type: GlobalData.BUILDING_TYPE) -> float:
 	var data = get_building_data(building_type)
 	return data.get("fire_rate", -1.0)
+
+static func get_targeting_rule(building_type: GlobalData.BUILDING_TYPE) -> WEAPON_TARGETING_RULE:
+	var data = get_building_data(building_type)
+	return data.get("targeting_rule", WEAPON_TARGETING_RULE.IGNORE_HEIGHT)
+
+# --------------------------------------------
+# --- Other Accessors ------------------------
+# --------------------------------------------
+# Returns an integer height value for a given terrain ID.
+static func get_height_from_terrain_id(terrain_id: int) -> int:
+	return TERRAIN_ID_TO_HEIGHT.get(terrain_id, -1)

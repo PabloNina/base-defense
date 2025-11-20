@@ -218,40 +218,85 @@ func _is_footprint_on_buildable_tiles() -> bool:
 
 # Draws the weapon's fire range by highlighting individual tiles.
 # This creates a "blocky" and accurate visual representation of the range.
+# It can be adjusted with new rules and colors in GlobalData.
 func _draw_fire_range_tiles() -> void:
+	# Retrieve the effective fire range of the building this ghost represents.
 	var fire_range = GlobalData.get_fire_range(building_type)
+	# If there's no fire range or the ground layer isn't valid, there's nothing to draw.
 	if fire_range <= 0 or not is_instance_valid(ground_layer):
 		return
 
+	# Get the targeting rule to determine how different heights affect validity.
+	var targeting_rule = GlobalData.get_targeting_rule(building_type)
+	# Obtain the size of a single tile from the ground layer's tile set.
 	var tile_size = ground_layer.tile_set.tile_size
-	# Determine the approximate number of tiles the range covers in one direction, adding a buffer.
+	# Calculate the maximum number of tiles to check in any direction based on fire range.
+	# We add 1 to ensure the full extent of the range is covered, even partially.
 	var range_in_tiles = int(ceil(fire_range / tile_size.x)) + 1
 	
-	# Get the tile coordinate at the ghost's current global position.
-	var origin_tile = ground_layer.local_to_map(global_position)
+	# Convert the ghost preview's global position to its local position within the TileMap.
+	var ghost_pos_in_map_space = ground_layer.to_local(global_position)
+	# Determine the tile coordinate where the center of the ghost preview is located.
+	var origin_tile_coord = ground_layer.local_to_map(ghost_pos_in_map_space)
+	
+	# Initialize origin_height to -1 (an invalid height) and calculate if a height-based
+	# targeting rule is active. This will be used to compare against target tile heights.
+	var origin_height = -1
+	if targeting_rule == GlobalData.WEAPON_TARGETING_RULE.SAME_OR_LOWER_HEIGHT:
+		var origin_tile_data: TileData = ground_layer.get_cell_tile_data(origin_tile_coord)
+		if origin_tile_data:
+			origin_height = GlobalData.get_height_from_terrain_id(origin_tile_data.terrain)
 
-	# Iterate over a square bounding box of tiles around the ghost.
+	# Iterate through a square grid of tiles around the origin tile.
 	for y_offset in range(-range_in_tiles, range_in_tiles + 1):
 		for x_offset in range(-range_in_tiles, range_in_tiles + 1):
-			var tile_coord = origin_tile + Vector2i(x_offset, y_offset)
+			# Calculate the current tile's coordinate in the tilemap grid.
+			var tile_coord = origin_tile_coord + Vector2i(x_offset, y_offset)
 			
-			# Get the global position of the center of the tile being checked.
-			var tile_center_global = ground_layer.map_to_local(tile_coord) + tile_size / 2.0
+			# Get the local position of the tile's center within the TileMap.
+			# As per user's clarification, `map_to_local` returns the center for these tiles.
+			var tile_center_in_map_space = ground_layer.map_to_local(tile_coord)
 			
-			# Symmetrically check the distance from the ghost's center to the tile's center.
-			if global_position.distance_to(tile_center_global) <= fire_range:
-				# To draw, convert the tile's global origin to the ghost's local space.
-				var tile_origin_global = ground_layer.map_to_local(tile_coord)
-				var tile_origin_local = tile_origin_global - global_position
+			# Check if the distance from the ghost's center to the current tile's center
+			# exceeds the fire range. If so, this tile is out of range.
+			if ghost_pos_in_map_space.distance_to(tile_center_in_map_space) > fire_range:
+				continue # Skip to the next tile.
+			
+			# Check if the tile is a buildable type. If not, it's not a valid target.
+			var source_id: int = ground_layer.get_cell_source_id(tile_coord)
+			if source_id != buildable_tile_id:
+				continue # Skip to the next tile.
 				
-				var rect = Rect2(tile_origin_local, tile_size)
-				draw_rect(rect, GlobalData.FIRE_RANGE_COLOR)
+			# Retrieve TileData to check terrain properties.
+			var target_tile_data: TileData = ground_layer.get_cell_tile_data(tile_coord)
+			# If there's no tile data, skip it.
+			if not target_tile_data:
+				continue
+			
+			# Calculate the drawing position of the tile relative to the ghost preview's origin.
+			# This transforms the tile's center (in tilemap space) to be relative to the ghost.
+			var draw_pos = ground_layer.map_to_local(tile_coord) - ghost_pos_in_map_space 
 
+			# Default color is for valid tiles (same height).
+			var color_to_draw = GlobalData.FIRE_RANGE_SAME_HEIGHT_COLOR
+			# Apply height-based targeting rules if applicable.
+			if targeting_rule == GlobalData.WEAPON_TARGETING_RULE.SAME_OR_LOWER_HEIGHT:
+				var target_height = GlobalData.get_height_from_terrain_id(target_tile_data.terrain)
+				
+				# If the target tile is higher than the origin, mark it as an invalid target (red).
+				if origin_height != -1 and target_height > origin_height:
+					color_to_draw = GlobalData.FIRE_RANGE_COLOR
+			
+			# Create a Rect2 for drawing. The position needs to be adjusted because `draw_rect`
+			# expects the top-left corner, but `draw_pos` currently points to the center
+			# of where the tile should be drawn (relative to the ghost's origin).
+			var rect = Rect2(draw_pos - (Vector2(tile_size) / 2.0), tile_size)
+			draw_rect(rect, color_to_draw)
 
 func _update_validity() -> void:
 	is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
 	is_placeable.emit(is_valid, self)
-
+	
 	if show_visual_feedback:
 		_update_connection_ghosts()
 		queue_redraw()

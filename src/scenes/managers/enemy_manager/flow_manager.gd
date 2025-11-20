@@ -54,14 +54,6 @@ var next_step_active_list: Dictionary = {}
 
 # A dictionary mapping tile coordinates (Vector2i) to terrain height (int).
 var terrain_height_map: Dictionary = {}
-# A constant to map terrain IDs from GlobalData to integer height values.
-const TERRAIN_ID_TO_HEIGHT: Dictionary = {
-	GlobalData.GROUND_LVL1_TERRAIN_ID: 1,
-	GlobalData.GROUND_LVL2_TERRAIN_ID: 2,
-	GlobalData.GROUND_LVL3_TERRAIN_ID: 3,
-	GlobalData.GROUND_LVL4_TERRAIN_ID: 4,
-	GlobalData.GROUND_LVL5_TERRAIN_ID: 5,
-}
 
 # -----------------------------------------
 # --- Engine Callbacks --------------------
@@ -189,9 +181,12 @@ func _create_terrain_height_map() -> void:
 			continue
 
 		var terrain_id: int = tile_data.terrain
-		# Check if the terrain ID has a corresponding height in our map.
-		if TERRAIN_ID_TO_HEIGHT.has(terrain_id):
-			terrain_height_map[cell_coord] = TERRAIN_ID_TO_HEIGHT[terrain_id]
+		# Get the height from the global data accessor.
+		var height: int = GlobalData.get_height_from_terrain_id(terrain_id)
+
+		# If the height is valid (not -1), add it to our map.
+		if height != -1:
+			terrain_height_map[cell_coord] = height
 
 
 # -----------------------------------------
