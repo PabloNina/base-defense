@@ -63,11 +63,9 @@ var show_visual_feedback: bool = true
 func _draw() -> void:
 	if not show_visual_feedback:
 		return
-	# Draws the weapon's fire range if applicable.
-	# Use building category instead
-	var fire_range = GlobalData.get_fire_range(building_type)
-	if fire_range > 0:
-		draw_circle(Vector2.ZERO, fire_range, GlobalData.FIRE_RANGE_COLOR)
+
+	# Draws the weapon's fire range by highlighting individual tiles.
+	_draw_fire_range_tiles()
 	
 	# Draws the validity box around the building
 	var texture = sprite.texture
@@ -218,11 +216,42 @@ func _is_footprint_on_buildable_tiles() -> bool:
 	# If we get here, all tiles are of the buildable type and on the same level.
 	return true
 
+# Draws the weapon's fire range by highlighting individual tiles.
+# This creates a "blocky" and accurate visual representation of the range.
+func _draw_fire_range_tiles() -> void:
+	var fire_range = GlobalData.get_fire_range(building_type)
+	if fire_range <= 0 or not is_instance_valid(ground_layer):
+		return
+
+	var tile_size = ground_layer.tile_set.tile_size
+	# Determine the approximate number of tiles the range covers in one direction, adding a buffer.
+	var range_in_tiles = int(ceil(fire_range / tile_size.x)) + 1
+	
+	# Get the tile coordinate at the ghost's current global position.
+	var origin_tile = ground_layer.local_to_map(global_position)
+
+	# Iterate over a square bounding box of tiles around the ghost.
+	for y_offset in range(-range_in_tiles, range_in_tiles + 1):
+		for x_offset in range(-range_in_tiles, range_in_tiles + 1):
+			var tile_coord = origin_tile + Vector2i(x_offset, y_offset)
+			
+			# Get the global position of the center of the tile being checked.
+			var tile_center_global = ground_layer.map_to_local(tile_coord) + tile_size / 2.0
+			
+			# Symmetrically check the distance from the ghost's center to the tile's center.
+			if global_position.distance_to(tile_center_global) <= fire_range:
+				# To draw, convert the tile's global origin to the ghost's local space.
+				var tile_origin_global = ground_layer.map_to_local(tile_coord)
+				var tile_origin_local = tile_origin_global - global_position
+				
+				var rect = Rect2(tile_origin_local, tile_size)
+				draw_rect(rect, GlobalData.FIRE_RANGE_COLOR)
+
 
 func _update_validity() -> void:
 	is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
 	is_placeable.emit(is_valid, self)
-	
+
 	if show_visual_feedback:
 		_update_connection_ghosts()
 		queue_redraw()

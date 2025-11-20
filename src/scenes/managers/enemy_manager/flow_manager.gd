@@ -132,10 +132,19 @@ func remove_ooze(tile_coords: Array[Vector2i], amount_per_tile: float) -> void:
 func get_nearest_ooze_tile(position: Vector2, max_distance: float) -> Vector2i:
 	var closest_tile: Vector2i = Vector2i(-1, -1)
 	var min_dist_sq: float = -1.0
+	
+	# Get tile size once for efficiency, assuming square tiles.
+	var tile_size = ooze_tilemap_layer.tile_set.tile_size
+	var half_tile_size_vector = tile_size / 2.0
 
 	for tile_coord in ooze_map.keys():
-		var tile_pos: Vector2 = ooze_tilemap_layer.map_to_local(tile_coord)
-		var dist_sq: float = position.distance_squared_to(tile_pos)
+		# Get the global position of the top-left corner of the ooze tile.
+		var tile_origin_pos: Vector2 = ooze_tilemap_layer.map_to_local(tile_coord)
+		# Calculate the global position of the center of the ooze tile.
+		var tile_center_pos: Vector2 = tile_origin_pos + half_tile_size_vector
+
+		# Calculate squared distance from the weapon's center to the ooze tile's center.
+		var dist_sq: float = position.distance_squared_to(tile_center_pos)
 
 		if dist_sq <= max_distance * max_distance:
 			if min_dist_sq == -1.0 or dist_sq < min_dist_sq:
