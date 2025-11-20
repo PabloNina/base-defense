@@ -9,12 +9,12 @@ This project is a real-time strategy base defense game built with the Godot Engi
 **Core Mechanics:**
 
 *   **Energy Network:** The central nervous system of your base is the energy network. The **Command Center**, the heart of your base, generates energy that is distributed through a network of **Relays**. All buildings must be connected to the Command Center through an unbroken chain of built relays to be powered.
-*   **Resource Management:** Energy is the primary resource, but defensive structures like **Gun Turrets** also require **Ammo**. Both resources are transported across the network in the form of packets. Players must balance energy production and consumption to keep their base operational.
+*   **Resource Management:** Energy is the primary resource, but defensive structures like **Cannons** also require **Ammo**. Both resources are transported across the network in the form of packets. Players must balance energy production and consumption to keep their base operational.
 *   **Building and Defense:** Players can build various structures:
     *   **Command Center:** The starting point and core of your base.
     *   **Relays:** Extend the reach of your energy network.
-    *   **Generators:** Boost your energy production.
-    *   **Gun Turrets:** Automatically defend against enemies, consuming ammo in the process.
+    *   **Reactors:** Boost your energy production.
+    *   **Cannons:** Automatically defend against enemies, consuming ammo in the process.
 *   **Objective:** The goal is to strategically expand your network, manage your resources, and build up your defenses to survive increasingly difficult waves of enemies.
 
 ## Getting Started

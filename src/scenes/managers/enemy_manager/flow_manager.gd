@@ -81,6 +81,12 @@ func _ready() -> void:
 # ---------------- Public Methods ------------------
 # --------------------------------------------------
 
+## Returns true if the specified tile coordinate has any amount of ooze.
+## This provides a clean public interface for other nodes to check for ooze.
+func has_ooze_on_tile(tile_coord: Vector2i) -> bool:
+	return ooze_map.has(tile_coord)
+
+
 ## Adds a specified amount of ooze to a given tile.
 ## This is the primary way other nodes (like emitters) interact with the ooze simulation.
 func add_ooze(tile_coord: Vector2i, amount: float) -> void:

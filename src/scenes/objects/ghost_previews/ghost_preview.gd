@@ -39,19 +39,22 @@ signal is_placeable(is_valid: bool, preview: GhostPreview)
 # --------------------------------------------
 # The type of building this preview represents.
 var building_type: GlobalData.BUILDING_TYPE = GlobalData.BUILDING_TYPE.NULL
-# Reference to the GridManager to check for connections.
+# Manager references for checking connections and ooze.
 var grid_manager: GridManager
+var flow_manager: FlowManager
 # Reference to TileMap ground layer and buildable tile for placement validity
 var ground_layer: TileMapLayer
 var buildable_tile_id: int = 0
 var is_on_buildable_tile: bool = true
+# The size of the building's footprint in tile units (e.g., 1x1, 2x2).
+var building_size_in_tiles: Vector2i = Vector2i.ONE
 var is_valid: bool = true
 # Keeps track of overlapping placement-blocking areas.
 var overlapping_areas: Array[Area2D] = []
 # Pool of Line2D nodes for drawing connection previews.
-var _ghost_lines: Array[ConnectionLine] = []
+var ghost_lines: Array[ConnectionLine] = []
 # Tracks if the preview has been configured.
-var _is_initialized: bool = false
+var is_initialized: bool = false
 var show_visual_feedback: bool = true
 
 # --------------------------------------------
@@ -81,7 +84,7 @@ func _draw() -> void:
 # Returns whether the preview has been initialized.
 # Called by BuildingManager
 func is_ghost_preview_initialized() -> bool:
-	return _is_initialized
+	return is_initialized
 
 # Initializes the preview's properties.
 # Called by BuildingManager
@@ -93,9 +96,22 @@ func initialize_ghost_preview(p_building_type: GlobalData.BUILDING_TYPE, p_grid_
 	buildable_tile_id = p_buildable_tile_id
 	show_visual_feedback = p_show_feedback
 	
+	# Get a reference to the FlowManager to check for ooze.
+	flow_manager = get_tree().get_first_node_in_group("enemy_manager")
+	
 	# Return if texture is not valid
 	if not sprite.texture:
 		return
+	
+	# Calculate the building's footprint size in tile units.
+	# This is crucial for ensuring multi-tile buildings are placed correctly.
+	if ground_layer and sprite.texture:
+		var tile_size = ground_layer.tile_set.tile_size
+		var scaled_texture_size = sprite.texture.get_size() * sprite.scale
+		building_size_in_tiles = Vector2i(
+			ceil(scaled_texture_size.x / tile_size.x),
+			ceil(scaled_texture_size.y / tile_size.y)
+		)
 		
 	# Configure collision shape based on texture size
 	var shape_size = sprite.texture.get_size() * sprite.scale
@@ -104,7 +120,7 @@ func initialize_ghost_preview(p_building_type: GlobalData.BUILDING_TYPE, p_grid_
 	# Ensure collision is enabled
 	collision_shape.set_deferred("disabled", false)
 	
-	_is_initialized = true
+	is_initialized = true
 	_update_validity()
 
 # Updates the preview's position and redraws connection lines.
@@ -113,9 +129,8 @@ func update_ghost_preview_position(new_position: Vector2) -> void:
 	global_position = new_position
 
 	if ground_layer:
-		var tile_pos = ground_layer.local_to_map(global_position)
-		var source_id = ground_layer.get_cell_source_id(tile_pos)
-		is_on_buildable_tile = (source_id == buildable_tile_id)
+		# Check if the entire building footprint is on valid ground.
+		is_on_buildable_tile = _is_footprint_on_buildable_tiles()
 	
 	_update_validity()
 
@@ -133,7 +148,7 @@ func clear_ghost_preview() -> void:
 		collision_shape.set_deferred("disabled", true)
 	# Clear the fire range circle.
 	queue_redraw()
-	_is_initialized = false
+	is_initialized = false
 
 # --------------------------------------------
 # --- Area2D Signal Handling -----------------
@@ -151,6 +166,59 @@ func _on_area_exited(area: Area2D) -> void:
 # --------------------------------------------
 # --- Validity Update / Visual Feedback ------
 # --------------------------------------------
+# Checks if every tile under the building's footprint is a valid buildable tile
+# AND that all tiles are on the same ground level.
+func _is_footprint_on_buildable_tiles() -> bool:
+	# Cannot perform check if the ground layer or sprite texture is missing.
+	if not ground_layer or not sprite.texture:
+		return false
+
+	# Step 1: Determine the top-left corner of the building's footprint in the tilemap.
+	var texture_size = sprite.texture.get_size() * sprite.scale
+	var top_left_global_pos = global_position - texture_size / 2.0
+	var top_left_tile = ground_layer.local_to_map(top_left_global_pos)
+
+	# This will be used to store the terrain ID of the first tile.
+	# Initialize to -2 to ensure it's different from any valid terrain ID (which start at -1).
+	var first_tile_terrain_id: int = -2
+
+	# Step 2: Iterate through each tile within the building's footprint.
+	for y in range(building_size_in_tiles.y):
+		for x in range(building_size_in_tiles.x):
+			var tile_to_check = top_left_tile + Vector2i(x, y)
+			
+			# Step 3: Check for ooze. Buildings cannot be placed on ooze.
+			if is_instance_valid(flow_manager) and flow_manager.has_ooze_on_tile(tile_to_check):
+				return false # Invalid: Tile is covered in ooze.
+			
+			# Step 4: Check if the tile is of the correct buildable type using its source ID.
+			# If the source ID is -1, the cell is empty.
+			var source_id: int = ground_layer.get_cell_source_id(tile_to_check)
+			if source_id != buildable_tile_id:
+				return false # Invalid: Not a buildable tile type (e.g., wall, or empty space).
+
+			# Step 5: Get the TileData to check the terrain for the ground level.
+			var tile_data: TileData = ground_layer.get_cell_tile_data(tile_to_check)
+			
+			# This is an extra safeguard. The source_id check should already handle empty tiles.
+			if not tile_data:
+				return false
+
+			# Step 6: Check if the tile is on the same level as the others using its terrain ID.
+			var current_terrain_id: int = tile_data.terrain
+			
+			if x == 0 and y == 0:
+				# For the very first tile, store its terrain ID as the reference.
+				first_tile_terrain_id = current_terrain_id
+			else:
+				# For all subsequent tiles, compare their terrain ID to the first one.
+				if current_terrain_id != first_tile_terrain_id:
+					return false # Invalid: This tile is on a different ground level.
+
+	# If we get here, all tiles are of the buildable type and on the same level.
+	return true
+
+
 func _update_validity() -> void:
 	is_valid = overlapping_areas.is_empty() and is_on_buildable_tile
 	is_placeable.emit(is_valid, self)
@@ -187,25 +255,25 @@ func _update_connection_ghosts() -> void:
 			targets.append(other)
 
 	# Get more lines from the pool if needed.
-	while _ghost_lines.size() < targets.size():
+	while ghost_lines.size() < targets.size():
 		var line: ConnectionLine = grid_manager.get_connection_line_from_pool()
 		connection_lines_container.add_child(line)
-		_ghost_lines.append(line)
+		ghost_lines.append(line)
 
 	# Return excess lines to the pool.
-	while _ghost_lines.size() > targets.size():
-		var line: ConnectionLine = _ghost_lines.pop_back()
+	while ghost_lines.size() > targets.size():
+		var line: ConnectionLine = ghost_lines.pop_back()
 		grid_manager.return_connection_line_to_pool(line)
 
 	# Update the visible lines.
 	for i in range(targets.size()):
-		var line: ConnectionLine = _ghost_lines[i]
+		var line: ConnectionLine = ghost_lines[i]
 		var target = targets[i]
 		line.setup_preview_connections(global_position, target.global_position, is_valid)
 
 
 # Frees the Line2D nodes and clears the line array.
 func _clear_ghost_lines() -> void:
-	for line in _ghost_lines:
+	for line in ghost_lines:
 		grid_manager.return_connection_line_to_pool(line)
-	_ghost_lines.clear()
+	ghost_lines.clear()
