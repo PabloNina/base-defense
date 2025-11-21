@@ -15,13 +15,13 @@ class_name OozeEmitter extends Node2D
 # -----------------------------------------
 # --- Private Variables -------------------
 # -----------------------------------------
-var enemy_manager: FlowManager
+var flow_manager: FlowManager
 # -----------------------------------------
 # --- Engine Callbacks --------------------
 # -----------------------------------------
 func _ready() -> void:
 	# Get the FlowManager.
-	enemy_manager = get_tree().get_first_node_in_group("enemy_manager")
+	flow_manager = get_tree().get_first_node_in_group("flow_manager")
 	# Timer Setup
 	_config_emission_timer()
 
@@ -36,7 +36,7 @@ func _config_emission_timer() -> void:
 
 func _on_emission_timer_tick() -> void:
 	# Ensure both the FlowManager and the TileMapLayer are valid before proceeding.
-	if not is_instance_valid(enemy_manager) or not is_instance_valid(ooze_tilemap_layer):
+	if not is_instance_valid(flow_manager) or not is_instance_valid(ooze_tilemap_layer):
 		return
 
 	# Convert the emitter's global position to a tile coordinate.
@@ -45,4 +45,4 @@ func _on_emission_timer_tick() -> void:
 	var amount_to_emit: float = emission_amount
 	
 	# Add the calculated ooze amount to the FlowManager's map.
-	enemy_manager.add_ooze(tile_coord, amount_to_emit)
+	flow_manager.add_ooze(tile_coord, amount_to_emit)

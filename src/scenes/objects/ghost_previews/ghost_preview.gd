@@ -74,7 +74,7 @@ func _draw() -> void:
 		rect.size = texture.get_size()
 		rect.position = -rect.size / 2
 		var color = GlobalData.BOX_VALID_COLOR if is_valid else GlobalData.BOX_INVALID_COLOR
-		draw_rect(rect.grow(4), color, false, 2.0)
+		draw_rect(rect, color, false, 2.0) # use rect.grow(2) if needed
 
 # --------------------------------------------
 # --- Public Methods -------------------------
@@ -95,7 +95,7 @@ func initialize_ghost_preview(p_building_type: GlobalData.BUILDING_TYPE, p_grid_
 	show_visual_feedback = p_show_feedback
 	
 	# Get a reference to the FlowManager to check for ooze.
-	flow_manager = get_tree().get_first_node_in_group("enemy_manager")
+	flow_manager = get_tree().get_first_node_in_group("flow_manager")
 	
 	# Return if texture is not valid
 	if not sprite.texture:

@@ -63,7 +63,7 @@ func _ready():
 	# group adding
 	add_to_group("movable_weapons")
 	# Get manager references to enable communication with the ooze simulation.
-	flow_manager = get_tree().get_first_node_in_group("enemy_manager")
+	flow_manager = get_tree().get_first_node_in_group("flow_manager")
 	# Setup the weapon
 	_config_weapon_settings()
 	_config_ammo_bar()

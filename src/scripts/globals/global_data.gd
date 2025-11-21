@@ -72,11 +72,10 @@ enum BUILDING_CATEGORY {NULL, INFRASTRUCTURE, WEAPON, SPECIAL}
 enum BUILDING_ACTIONS {DESTROY, MOVE, STOP_RESSUPLY, DEACTIVATE} 
 # Weapon Targeting Rules
 enum WEAPON_TARGETING_RULE {IGNORE_HEIGHT, SAME_OR_LOWER_HEIGHT}
-
 # Enemy Structures
-# TO DO
+enum ENEMY_STRUCTURES {EMITTER}
 # Enemy types
-# TO DO
+enum ENEMY_TYPES {OOZE}
 # --------------------------------------------
 # --- Game Data Dictionaries -----------------
 # --------------------------------------------
@@ -89,6 +88,7 @@ const TERRAIN_ID_TO_HEIGHT: Dictionary = {
 	GROUND_LVL5_TERRAIN_ID: 5,
 }
 
+## Buildings metadata
 const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
 		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),

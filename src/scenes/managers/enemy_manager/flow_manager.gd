@@ -63,7 +63,7 @@ func _ready() -> void:
 	wall_terrain_id = GlobalData.WALL_TERRAIN_ID
 	buildable_tile_id = GlobalData.BUILDABLE_TILE_ID
 	# Add to group for easy access from other nodes (like emitters).
-	add_to_group("enemy_manager")
+	add_to_group("flow_manager")
 	# Setup the terrain height map, ooze multimesh, and the simulation timer.
 	_create_terrain_height_map()
 	_config_ooze_multimesh()
