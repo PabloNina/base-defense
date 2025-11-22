@@ -76,6 +76,8 @@ enum WEAPON_TARGETING_RULE {IGNORE_HEIGHT, SAME_OR_LOWER_HEIGHT}
 enum ENEMY_STRUCTURES {EMITTER}
 # Enemy types
 enum ENEMY_TYPES {OOZE}
+
+
 # --------------------------------------------
 # --- Game Data Dictionaries -----------------
 # --------------------------------------------
@@ -117,6 +119,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"building_category": BUILDING_CATEGORY.INFRASTRUCTURE,
 		"building_actions": [BUILDING_ACTIONS.DESTROY]
 		# Relay class only
+		# packet bonus speed 
 	},
 	BUILDING_TYPE.REACTOR: {
 		"packed_scene": preload("res://src/scenes/buildings/reactor.tscn"),
@@ -129,7 +132,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"optimal_building_distance_tiles": 1,
 		"building_category": BUILDING_CATEGORY.INFRASTRUCTURE,
 		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE],
-		# Generator class only
+		# Reactor class only
 		"packet_production_bonus": 5.0
 	},
 	BUILDING_TYPE.CANNON: {
