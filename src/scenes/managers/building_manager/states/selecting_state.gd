@@ -44,7 +44,9 @@ func _on_exit() -> void:
 	if not building_manager.double_click_timer.is_stopped():
 		building_manager.double_click_timer.stop()
 	last_clicked_building = null
-
+	
+	# clear selected buildings
+	building_manager.clear_selection()
 
 # This is a virtual Godot function that is called by the engine via the BuildingManager
 func _draw() -> void:
