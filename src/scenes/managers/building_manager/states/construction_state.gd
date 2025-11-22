@@ -109,6 +109,16 @@ func _place_building() -> void:
 
 # Places a line of buildings based on the final positions of the construction previews.
 func _place_building_line() -> void:
+	# Do not allow line construction if the Command Center hasn't been placed.
+	if not building_manager.is_command_center_placed:
+		print("Build Command Center First!")
+		return
+
+	# Prevent line-building Command Centers.
+	if building_to_build_type == GlobalData.BUILDING_TYPE.COMMAND_CENTER:
+		print("You can only have 1 Command Center!")
+		return
+		
 	var building_scene: PackedScene = GlobalData.get_packed_scene(building_to_build_type)
 	if not building_scene:
 		return

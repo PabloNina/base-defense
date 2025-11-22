@@ -102,7 +102,11 @@ func register_building(new_building: Building) -> void:
 func unregister_building(destroyed_building: Building) -> void:
 	if destroyed_building not in buildings:
 		return
-	
+
+	# If it is the CC reset the flag
+	if destroyed_building is Command_Center:
+		is_command_center_placed = false
+		
 	# Erase from buildings list
 	buildings.erase(destroyed_building)
 
