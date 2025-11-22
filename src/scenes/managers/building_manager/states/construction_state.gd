@@ -173,17 +173,11 @@ func _update_construction_line_previews() -> void:
 	# Get the optimal distance between buildings for the current building type.
 	var optimal_dist_pixels = GlobalData.get_optimal_building_distance(building_to_build_type)
 
-	var start_tile = line_construction_start_pos
-	var end_tile = building_manager.tile_position
-	# Adjust optimal distance for relays if placing diagonally.
-	# This is a workaround to help ensure connections on diagonals due to grid snapping.
-	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY:
-		if start_tile.x != end_tile.x and start_tile.y != end_tile.y:
-			optimal_dist_pixels *= 0.95
-
-	# --- Handle cases where only one preview or very close previews are needed ---
-	# If the optimal distance is zero (shouldn't happen) or the total drag distance
-	# is less than the optimal distance for one building, only show a single preview.
+	# This block handles scenarios where the total drag distance (distance_pixels)
+	# is less than the optimal spacing required for even a single additional
+	# building (optimal_dist_pixels). In such cases, it ensures that only a
+	# single ghost preview is displayed. It also acts as a safeguard if the
+	# optimal distance is zero or negative, defaulting to a single preview.
 	if optimal_dist_pixels <= 0 or distance_pixels < optimal_dist_pixels:
 		# If there are already multiple previews, return all but the first one to the pool.
 		while construction_line_previews.size() > 1:

@@ -113,7 +113,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"connection_range_tiles": 8,
 		"is_relay": true,
 		"upkeep_cost": 0.5,
-		"optimal_building_distance_tiles": 8,
+		"optimal_building_distance_tiles": 7,
 		"building_category": BUILDING_CATEGORY.INFRASTRUCTURE,
 		"building_actions": [BUILDING_ACTIONS.DESTROY]
 		# Relay class only
