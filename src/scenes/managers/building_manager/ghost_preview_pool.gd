@@ -24,7 +24,7 @@ class_name GhostPreviewPool extends Node
 # --- Editor Exports ----------------------
 # -----------------------------------------
 ## The initial size of the pool.
-@export var pool_size: int = 20
+@export var pool_size: int = 40
 ## The value to increment pool_size each time the pool goes empty.
 @export var pool_grow_value: int = 5
 # -----------------------------------------

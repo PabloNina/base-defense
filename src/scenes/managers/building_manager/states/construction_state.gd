@@ -64,11 +64,13 @@ func _on_InputManager_map_left_clicked(_click_position: Vector2i) -> void:
 func _on_InputManager_map_left_released(_release_position: Vector2i) -> void:
 	if is_line_construction_state:
 		is_line_construction_state = false
-		if is_building_placeable:
-			if line_construction_start_pos == building_manager.tile_position:
+		if line_construction_start_pos == building_manager.tile_position:
+			# For single building placement, check overall validity.
+			if is_building_placeable:
 				_place_building()
-			else:
-				_place_building_line()
+		else:
+			# For line construction, attempt to place all valid buildings.
+			_place_building_line()
 		
 		_clear_construction_line_previews()
 		
@@ -158,31 +160,43 @@ func _on_ghost_preview_is_placeable(is_valid: bool, preview: GhostPreview) -> vo
 # --- Line Construction Preview and Placement ------
 # --------------------------------------------------
 # Calculates and updates the positions of previews in a construction line.
+# This function dynamically creates or removes GhostPreview instances to visualize a line of buildings
+# between a starting point (where the mouse was clicked) and the current mouse position.
+# It also handles the visualization of connection lines for Relays.
 func _update_construction_line_previews() -> void:
+	# Convert tile positions to pixel coordinates for calculations.
 	var start_pos_pixels = building_manager.ground_layer.map_to_local(line_construction_start_pos)
 	var end_pos_pixels = building_manager.local_tile_position
 	
+	# Calculate the distance between the start and end points in pixels.
 	var distance_pixels = start_pos_pixels.distance_to(end_pos_pixels)
+	# Get the optimal distance between buildings for the current building type.
 	var optimal_dist_pixels = GlobalData.get_optimal_building_distance(building_to_build_type)
 
 	var start_tile = line_construction_start_pos
 	var end_tile = building_manager.tile_position
+	# Adjust optimal distance for relays if placing diagonally.
 	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY:
 		if start_tile.x != end_tile.x and start_tile.y != end_tile.y:
-			optimal_dist_pixels *= 0.95
+			optimal_dist_pixels *= 0.95 # Slightly reduce distance for diagonal placement
 
+	# --- Handle cases where only one preview or very close previews are needed ---
 	if optimal_dist_pixels <= 0 or distance_pixels < optimal_dist_pixels:
+		# If more than one preview exists, return all but one to the pool.
 		while construction_line_previews.size() > 1:
 			var p = construction_line_previews.pop_back()
 			if is_instance_valid(p): 
 				building_manager.return_placement_preview_to_pool(p)
+		# If no previews exist, get one from the pool and initialize it.
 		if construction_line_previews.is_empty():
 			var preview = building_manager.get_placement_preview_from_pool()
 			building_manager.add_child(preview)
 			construction_line_previews.append(preview)
+			# Connect the signal for placement validity feedback.
 			if not preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
 				preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 		
+		# Update the single existing preview's position.
 		var _preview = construction_line_previews[0]
 		if not _preview.is_ghost_preview_initialized():
 			_preview.initialize_ghost_preview(
@@ -193,8 +207,11 @@ func _update_construction_line_previews() -> void:
 		_preview.update_ghost_preview_position(start_pos_pixels)
 		return
 
+	# --- Handle line construction with multiple previews ---
+	# Calculate the number of buildings that fit in the line.
 	var num_buildings = int(distance_pixels / optimal_dist_pixels) + 1
 
+	# Add new previews if needed (when extending the line).
 	while construction_line_previews.size() < num_buildings:
 		var new_preview = building_manager.get_placement_preview_from_pool()
 		building_manager.add_child(new_preview)
@@ -202,45 +219,80 @@ func _update_construction_line_previews() -> void:
 		if not new_preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
 			new_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 	
+	# Remove excess previews if needed (when shortening the line).
 	while construction_line_previews.size() > num_buildings:
 		var p = construction_line_previews.pop_back()
 		if is_instance_valid(p): 
 			building_manager.return_placement_preview_to_pool(p)
 
+	# Calculate direction vector for even spacing.
 	var direction = (end_pos_pixels - start_pos_pixels).normalized()
+	# Keep track of tiles that are already occupied by a preview in the line.
+	var occupied_tiles: Dictionary = {}
+
+	# Update positions for all previews in the line.
 	for i in range(num_buildings):
 		var preview = construction_line_previews[i]
+		# Calculate ideal position along the line.
 		var ideal_pos = start_pos_pixels + direction * optimal_dist_pixels * i
-		var current_snapped_pos = building_manager.ground_layer.map_to_local(building_manager.ground_layer.local_to_map(ideal_pos))
+		# Snap the ideal position to the tile grid.
+		var tile_coord = building_manager.ground_layer.local_to_map(ideal_pos)
+		
+		# Check if a preview already exists at this tile coordinate.
+		if occupied_tiles.has(tile_coord):
+			# If it's a duplicate, make it invisible and skip to the next one.
+			preview.visible = false
+			continue
+		
+		# Mark the tile as occupied and ensure the preview is visible.
+		occupied_tiles[tile_coord] = true
+		preview.visible = true
+		
+		var current_snapped_pos = building_manager.ground_layer.map_to_local(tile_coord)
 
+		# Initialize preview if not already initialized.
 		if not preview.is_ghost_preview_initialized():
 			preview.initialize_ghost_preview(
 				building_to_build_type, building_manager.grid_manager,
 				GlobalData.get_ghost_texture(building_to_build_type),
 				building_manager.ground_layer, building_manager.buildable_tile_id
 			)
+		# Update the preview's visual position.
 		preview.update_ghost_preview_position(current_snapped_pos)
 
+	# --- Handle connection lines for Relays ---
+	# Return existing relay connection lines to the pool.
 	for line in relay_line_previews:
 		building_manager.grid_manager.return_connection_line_to_pool(line)
 	relay_line_previews.clear()
 
+	# If the building is a Relay and there are multiple previews, draw connection lines.
 	if building_to_build_type == GlobalData.BUILDING_TYPE.RELAY and construction_line_previews.size() > 1:
-		for i in range(construction_line_previews.size() - 1):
-			var preview_a = construction_line_previews[i]
-			var preview_b = construction_line_previews[i+1]
-			var from_pos = preview_a.global_position
-			var to_pos = preview_b.global_position
-			
-			var dist = from_pos.distance_to(to_pos)
-			var connection_range = GlobalData.get_connection_range(GlobalData.BUILDING_TYPE.RELAY)
-			
-			if dist <= connection_range:
-				var line: ConnectionLine = building_manager.grid_manager.get_connection_line_from_pool()
-				building_manager.add_child(line)
-				var is_line_valid = construction_previews_validity.get(preview_a, false) and construction_previews_validity.get(preview_b, false)
-				line.setup_preview_connections(from_pos, to_pos, is_line_valid)
-				relay_line_previews.append(line)
+		# First, create a list of only the visible previews to avoid connecting to hidden duplicates.
+		var visible_previews: Array[GhostPreview] = []
+		for p in construction_line_previews:
+			if p.visible:
+				visible_previews.append(p)
+		
+		# Now, iterate through the visible previews to create connection lines.
+		if visible_previews.size() > 1:
+			for i in range(visible_previews.size() - 1):
+				var preview_a = visible_previews[i]
+				var preview_b = visible_previews[i+1]
+				var from_pos = preview_a.global_position
+				var to_pos = preview_b.global_position
+				
+				var dist = from_pos.distance_to(to_pos)
+				var connection_range = GlobalData.get_connection_range(GlobalData.BUILDING_TYPE.RELAY)
+				
+				# Only draw a connection line if previews are within connection range.
+				if dist <= connection_range:
+					var line: ConnectionLine = building_manager.grid_manager.get_connection_line_from_pool()
+					building_manager.add_child(line)
+					# Determine line validity based on the validity of connected previews.
+					var is_line_valid = construction_previews_validity.get(preview_a, false) and construction_previews_validity.get(preview_b, false)
+					line.setup_preview_connections(from_pos, to_pos, is_line_valid)
+					relay_line_previews.append(line)
 
 # Clears and frees all previews used in line construction.
 func _clear_construction_line_previews() -> void:
