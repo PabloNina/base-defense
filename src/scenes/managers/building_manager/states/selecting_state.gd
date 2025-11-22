@@ -136,6 +136,7 @@ func _select_buildings_in_box() -> void:
 	var buildings_in_scene = building_manager.buildings
 	for building in buildings_in_scene:
 		if selection_box.has_point(building.global_position):
-			building_manager.selected_buildings.append(building)
+			if building is MovableWeapon:
+				building_manager.selected_buildings.append(building)
 	
 	building_manager.update_selection()

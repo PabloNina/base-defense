@@ -173,43 +173,20 @@ func _update_construction_line_previews() -> void:
 	# Get the optimal distance between buildings for the current building type.
 	var optimal_dist_pixels = GlobalData.get_optimal_building_distance(building_to_build_type)
 
-	# This block handles scenarios where the total drag distance (distance_pixels)
-	# is less than the optimal spacing required for even a single additional
-	# building (optimal_dist_pixels). In such cases, it ensures that only a
-	# single ghost preview is displayed. It also acts as a safeguard if the
-	# optimal distance is zero or negative, defaulting to a single preview.
-	if optimal_dist_pixels <= 0 or distance_pixels < optimal_dist_pixels:
-		# If there are already multiple previews, return all but the first one to the pool.
-		while construction_line_previews.size() > 1:
-			var p = construction_line_previews.pop_back()
-			if is_instance_valid(p): 
-				building_manager.return_placement_preview_to_pool(p)
-		# If no previews exist, get one from the pool and initialize it.
-		if construction_line_previews.is_empty():
-			var preview = building_manager.get_placement_preview_from_pool()
-			building_manager.add_child(preview)
-			construction_line_previews.append(preview)
-			# Connect the signal for placement validity feedback.
-			if not preview.is_placeable.is_connected(_on_ghost_preview_is_placeable):
-				preview.is_placeable.connect(_on_ghost_preview_is_placeable)
-		
-		# Update the single existing preview's position.
-		var _preview = construction_line_previews[0]
-		if not _preview.is_ghost_preview_initialized():
-			_preview.initialize_ghost_preview(
-				building_to_build_type, building_manager.grid_manager,
-				GlobalData.get_ghost_texture(building_to_build_type),
-				building_manager.ground_layer, building_manager.buildable_tile_id
-			)
-		_preview.update_ghost_preview_position(start_pos_pixels)
+	# --- Handle dynamic line construction ---
+	# Safeguard against invalid optimal distance.
+	if optimal_dist_pixels <= 0:
+		_clear_construction_line_previews() # Clear any existing previews
 		return
+		
+	# Calculate the number of "fixed" previews based on the drag distance.
+	var num_fixed_segments = floor(distance_pixels / optimal_dist_pixels)
+	# Total previews: start preview + fixed previews + one "floating" preview at the mouse cursor.
+	var num_total_previews = num_fixed_segments + 2
 
-	# --- Handle line construction with multiple previews ---
-	# Calculate the number of buildings that can fit along the dragged line, including the first one.
-	var num_buildings = int(distance_pixels / optimal_dist_pixels) + 1
-
+	# --- Adjust the number of previews in the scene ---
 	# Add new previews to the list if the line has expanded.
-	while construction_line_previews.size() < num_buildings:
+	while construction_line_previews.size() < num_total_previews:
 		var new_preview = building_manager.get_placement_preview_from_pool()
 		building_manager.add_child(new_preview)
 		construction_line_previews.append(new_preview)
@@ -218,18 +195,20 @@ func _update_construction_line_previews() -> void:
 			new_preview.is_placeable.connect(_on_ghost_preview_is_placeable)
 	
 	# Remove excess previews from the end of the list if the line has shrunk.
-	while construction_line_previews.size() > num_buildings:
+	while construction_line_previews.size() > num_total_previews:
 		var p = construction_line_previews.pop_back()
 		if is_instance_valid(p): 
 			building_manager.return_placement_preview_to_pool(p)
 
-	# Calculate the normalized direction vector from the start point to the end point.
-	var direction = (end_pos_pixels - start_pos_pixels).normalized()
+	# --- Position the previews ---
 	# A dictionary to track which tiles are already occupied by a preview in this line.
 	var occupied_tiles: Dictionary = {}
+	var direction = Vector2.RIGHT # Default direction if start and end are the same
+	if distance_pixels > 0:
+		direction = (end_pos_pixels - start_pos_pixels).normalized()
 
-	# Update the position of each preview along the calculated line.
-	for i in range(num_buildings):
+	# Update the position of each "fixed" preview along the calculated line.
+	for i in range(num_fixed_segments + 1): # +1 to include the starting preview
 		var preview = construction_line_previews[i]
 		# Calculate the ideal position for the current preview, spaced evenly along the line.
 		var ideal_pos = start_pos_pixels + direction * optimal_dist_pixels * i
@@ -248,7 +227,7 @@ func _update_construction_line_previews() -> void:
 		# Snap the ideal position to the center of the nearest tile on the ground layer.
 		var current_snapped_pos = building_manager.ground_layer.map_to_local(tile_coord)
 
-		# Initialize the ghost preview if it hasn't been already (e.g., if it's a newly added one from the pool).
+		# Initialize the ghost preview if it hasn't been already.
 		if not preview.is_ghost_preview_initialized():
 			preview.initialize_ghost_preview(
 				building_to_build_type, building_manager.grid_manager,
@@ -257,6 +236,23 @@ func _update_construction_line_previews() -> void:
 			)
 		# Update the visual position of the preview.
 		preview.update_ghost_preview_position(current_snapped_pos)
+
+	# --- Position the final "floating" preview at the mouse cursor ---
+	var floating_preview = construction_line_previews[num_fixed_segments + 1]
+	var floating_tile_coord = building_manager.ground_layer.local_to_map(end_pos_pixels)
+	
+	if occupied_tiles.has(floating_tile_coord):
+		floating_preview.visible = false
+	else:
+		floating_preview.visible = true
+		var floating_snapped_pos = building_manager.ground_layer.map_to_local(floating_tile_coord)
+		if not floating_preview.is_ghost_preview_initialized():
+			floating_preview.initialize_ghost_preview(
+				building_to_build_type, building_manager.grid_manager,
+				GlobalData.get_ghost_texture(building_to_build_type),
+				building_manager.ground_layer, building_manager.buildable_tile_id
+			)
+		floating_preview.update_ghost_preview_position(floating_snapped_pos)
 
 	# --- Handle connection lines for Relays ---
 	# First, return any existing connection lines to the pool to be redrawn.
@@ -269,6 +265,10 @@ func _update_construction_line_previews() -> void:
 		for i in range(construction_line_previews.size() - 1):
 			var preview_a = construction_line_previews[i]
 			var preview_b = construction_line_previews[i+1]
+			
+			if not preview_a.visible or not preview_b.visible:
+				continue
+			
 			var from_pos = preview_a.global_position
 			var to_pos = preview_b.global_position
 			
