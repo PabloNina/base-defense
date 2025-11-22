@@ -37,6 +37,8 @@ func _on_next_transitions() -> void:
 
 func _on_enter() -> void:
 	super()
+	# clear selected buildings
+	building_manager.clear_selection()
 	# When entering the state, create a single preview for the selected building
 	update_ghost_preview()
 
