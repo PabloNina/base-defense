@@ -5,7 +5,10 @@ class_name BuildingActionsAndInfoPanel extends PanelContainer
 @onready var actions_buttons_container: VBoxContainer = $MainMarginContainer/MainHBoxContainer/ActionsButtonsContainer
 @onready var name_label: Label = $MainMarginContainer/MainHBoxContainer/InfoLabelsContainer/NameLabel
 @onready var health_label: Label = $MainMarginContainer/MainHBoxContainer/InfoLabelsContainer/HealthLabel
+@onready var health_v_separator: VSeparator = $MainMarginContainer/MainHBoxContainer/InfoLabelsContainer/HealthVSeparator
 @onready var ammo_label: Label = $MainMarginContainer/MainHBoxContainer/InfoLabelsContainer/AmmoLabel
+@onready var ammo_v_separator: VSeparator = $MainMarginContainer/MainHBoxContainer/InfoLabelsContainer/AmmoVSeparator
+
 # -----------------------------------------
 # --- Signals -----------------------------
 # -----------------------------------------
@@ -109,28 +112,44 @@ func _update_name_label(building: Building) -> void:
 	if current_selection.size() == 1:
 		name_label.text = (display_name + ":")
 	else:
-		name_label.text = str(current_selection.size()) + " " + display_name + "s:"
+		name_label.text = str(current_selection.size()) + " " + display_name + "s Selected:"
 
 func _update_health_label(building: Building) -> void:
-	var max_health: int = GlobalData.get_cost_to_build(building.building_type)
-	var current_health = building.construction_progress
-	health_label.text = "Health: " + str(current_health) + "/" + str(max_health)
+	if current_selection.size() == 1:
+		if not health_label.visible:
+			health_label.visible = true
+			health_v_separator.visible = true
+		var max_health: int = GlobalData.get_cost_to_build(building.building_type)
+		var current_health = building.construction_progress
+		if building.is_built:
+			health_label.text = "Health: " + str(current_health) + "/" + str(max_health)
+		else:
+			health_label.text = "Construction progress: " + str(current_health) + "/" + str(max_health)
+	else:
+		health_label.visible = false
+		health_v_separator.visible = false
 
 func _update_ammo_label(building: Building) -> void:
-	var building_category: GlobalData.BUILDING_CATEGORY 
-	building_category = GlobalData.get_building_category(building.building_type)
-	# If category is weapon
-	if building_category == GlobalData.BUILDING_CATEGORY.WEAPON:
-		# show ammo label and set text
-		var max_ammo_storage: int = GlobalData.get_max_ammo_storage(building.building_type)
-		var current_ammo: float = building.current_ammo
-		ammo_label.text = "Ammo: " + str(current_ammo) + "/" + str(max_ammo_storage)
-		if not ammo_label.visible:
-			ammo_label.visible = true
+	if current_selection.size() == 1 and building.is_built:
+		var building_category: GlobalData.BUILDING_CATEGORY 
+		building_category = GlobalData.get_building_category(building.building_type)
+		# If category is weapon
+		if building_category == GlobalData.BUILDING_CATEGORY.WEAPON:
+			# show ammo label and set text
+			if not ammo_label.visible:
+				ammo_label.visible = true
+				ammo_v_separator.visible = true
+			var max_ammo_storage: int = GlobalData.get_max_ammo_storage(building.building_type)
+			var current_ammo: float = building.current_ammo
+			ammo_label.text = "Ammo: " + str(current_ammo) + "/" + str(max_ammo_storage)
+		else:
+			# If is not a weapon hide ammo label
+			if ammo_label.visible:
+				ammo_label.visible = false
+				ammo_v_separator.visible = false
 	else:
-		# hide ammo label
-		if ammo_label.visible:
-			ammo_label.visible = false
+		ammo_label.visible = false
+		ammo_v_separator.visible = false
 
 # -----------------------------------------
 # --- Action Buttons Signal Handling ------

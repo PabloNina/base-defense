@@ -276,11 +276,13 @@ func _handle_received_building_packet() -> void:
 	if is_built:
 		return
 	construction_progress += 1
-	state_updated.emit()
+	#state_updated.emit()
 	_update_construction_progress_bar(construction_progress)
 
 	if construction_progress >= cost_to_build:
 		is_built = true
+
+	state_updated.emit()
 
 # -------------------------------
 # --- Signal / Click Handling ---

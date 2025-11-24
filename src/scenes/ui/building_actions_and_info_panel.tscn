@@ -62,7 +62,7 @@ size_flags_vertical = 0
 theme_type_variation = &"ConstructionLabel"
 text = "Building:"
 
-[node name="VSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
+[node name="HealthVSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
 layout_mode = 2
 
 [node name="HealthLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
@@ -72,7 +72,7 @@ size_flags_vertical = 0
 theme_type_variation = &"ConstructionLabel"
 text = "Health: 0/10"
 
-[node name="VSeparator2" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
+[node name="AmmoVSeparator" type="VSeparator" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
 layout_mode = 2
 
 [node name="AmmoLabel" type="Label" parent="MainMarginContainer/MainHBoxContainer/InfoLabelsContainer"]
