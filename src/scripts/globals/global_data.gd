@@ -28,10 +28,10 @@ class_name GlobalData extends Node
 # --------------------------------------------
 # --- Constants ------------------------------
 # --------------------------------------------
-const TILE_SIZE: int = 16
+const TILE_SIZE: int = 32
 const TILE_SIZE_VECTOR2: Vector2 = Vector2(TILE_SIZE, TILE_SIZE)
 
-const BUILDABLE_TILE_ID = 7
+const BUILDABLE_TILE_ID = 3
 
 const WALL_TERRAIN_ID = 0
 const GROUND_LVL1_TERRAIN_ID = 1
@@ -56,9 +56,9 @@ const GHOST_PREVIEW_SCENE: PackedScene = preload("uid://c8t5w2j2qg3j")
 const PACKET_SCENE: PackedScene = preload("uid://by7nkqhi30wjd")
 const BULLET_SCENE: PackedScene = preload("uid://b0pme20rpv8x4")
 #Textures2D
-const GREEN_PACKET_TEXTURE: Texture2D = preload("uid://bxdghtbrpoc1r")
-const RED_PACKET_TEXTURE:Texture2D = preload("uid://dumwgtbqb3ci8")
-const BLUE_PACKET_TEXTURE:Texture2D = preload("uid://dbuicd3klgwq1")
+const GREEN_PACKET_TEXTURE: Texture2D = preload("uid://ck80v5cly3tjh")
+const RED_PACKET_TEXTURE:Texture2D = preload("uid://bi68r0ds7bvtb")
+const BLUE_PACKET_TEXTURE:Texture2D = preload("uid://bxnbkocf52y3e")
 # --------------------------------------------
 # --- Enumerations ---------------------------
 # --------------------------------------------
@@ -93,8 +93,8 @@ const TERRAIN_ID_TO_HEIGHT: Dictionary = {
 ## Buildings metadata
 const BUILDINGS_DATA: Dictionary = {
 	BUILDING_TYPE.COMMAND_CENTER: {
-		"packed_scene": preload("res://src/scenes/buildings/command_center.tscn"),
-		"ghost_texture": preload("res://assets/sprites/buildings/command_center.png"),
+		"packed_scene": preload("uid://dx23kdocknrqt"),
+		"ghost_texture": preload("uid://b82wdxhg10hsp"),
 		"display_name": "Base",
 		"cost_to_build": 0,
 		"connection_range_tiles": 8,
@@ -108,8 +108,8 @@ const BUILDINGS_DATA: Dictionary = {
 		# default max storage
 	},
 	BUILDING_TYPE.RELAY: {
-		"packed_scene": preload("res://src/scenes/buildings/relay.tscn"),
-		"ghost_texture": preload("res://assets/sprites/buildings/energy_relay.png"),
+		"packed_scene": preload("uid://73yv02e6ghqj"),
+		"ghost_texture": preload("uid://b63a6cddcsuc3"),
 		"display_name": "Relay",
 		"cost_to_build": 2,
 		"connection_range_tiles": 8,
@@ -122,8 +122,8 @@ const BUILDINGS_DATA: Dictionary = {
 		# packet bonus speed 
 	},
 	BUILDING_TYPE.REACTOR: {
-		"packed_scene": preload("res://src/scenes/buildings/reactor.tscn"),
-		"ghost_texture": preload("res://assets/sprites/buildings/energy_generator.png"),
+		"packed_scene": preload("uid://cpoaqe645mbpq"),
+		"ghost_texture": preload("uid://dnth60cso44ij"),
 		"display_name": "Reactor",
 		"cost_to_build": 5,
 		"connection_range_tiles": 5,
@@ -136,8 +136,8 @@ const BUILDINGS_DATA: Dictionary = {
 		"packet_production_bonus": 5.0
 	},
 	BUILDING_TYPE.CANNON: {
-		"packed_scene": preload("res://src/scenes/buildings/cannon.tscn"),
-		"ghost_texture": preload("res://assets/sprites/buildings/cannon_base.png"),
+		"packed_scene": preload("uid://bmwseob8yf20s"),
+		"ghost_texture": preload("uid://wnkabff7t0kl"),
 		"display_name": "Cannon",
 		"cost_to_build": 3,
 		"connection_range_tiles": 6,
@@ -147,7 +147,7 @@ const BUILDINGS_DATA: Dictionary = {
 		"building_category": BUILDING_CATEGORY.WEAPON,
 		"building_actions": [BUILDING_ACTIONS.DESTROY, BUILDING_ACTIONS.DEACTIVATE, BUILDING_ACTIONS.MOVE],
 		# MovableBuilding class only
-		"landing_marker_texture": preload("res://assets/sprites/buildings/landing_marker.png"),
+		"landing_marker_texture": preload("uid://6ijd802lstqr"),
 		# MovableWeapon class only
 		"max_ammo_storage": 10,
 		"cost_per_shot": 0.25,

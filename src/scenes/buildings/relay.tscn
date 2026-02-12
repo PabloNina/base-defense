@@ -1,28 +1,25 @@
-[gd_scene load_steps=10 format=3 uid="uid://73yv02e6ghqj"]
+[gd_scene load_steps=9 format=3 uid="uid://73yv02e6ghqj"]
 
-[ext_resource type="Texture2D" uid="uid://cegj3a117b1o0" path="res://assets/sprites/buildings/energy_relay.png" id="1_2cyx4"]
 [ext_resource type="Script" uid="uid://bmteaistl3cx7" path="res://src/scenes/buildings/relay.gd" id="1_mk7m4"]
+[ext_resource type="Texture2D" uid="uid://b63a6cddcsuc3" path="res://assets/sprites/buildings/relay.png" id="2_gnmwp"]
 [ext_resource type="PackedScene" uid="uid://youcdqrug5xc" path="res://src/scenes/components/hurt&hit_boxes/building_hurt_box.tscn" id="2_oxjp3"]
 [ext_resource type="Texture2D" uid="uid://c8e1wx4o47i3l" path="res://assets/sprites/icons/exclamation_mark.png" id="3_nvwo5"]
 [ext_resource type="PackedScene" uid="uid://byoxxaj5dc11u" path="res://src/scenes/components/progress_bars/construction_progress_bar.tscn" id="4_kufgs"]
-[ext_resource type="Texture2D" uid="uid://chxeokbk07rlu" path="res://assets/sprites/icons/disabled_icon.png" id="4_x077y"]
-[ext_resource type="Texture2D" uid="uid://cptw35ufyg47x" path="res://assets/sprites/icons/small_selection_box.png" id="5_gnmwp"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_2cyx4"]
-atlas = ExtResource("1_2cyx4")
+[ext_resource type="Texture2D" uid="uid://d3guklp81g8ow" path="res://assets/sprites/icons/disabled_icon.png" id="4_x077y"]
+[ext_resource type="Texture2D" uid="uid://bmeskskqx2kj1" path="res://assets/sprites/icons/small_selection_box.png" id="5_gnmwp"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_oxjp3"]
-size = Vector2(14, 14)
+size = Vector2(28, 28)
 
 [node name="Relay" type="Node2D"]
 script = ExtResource("1_mk7m4")
 building_type = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = SubResource("AtlasTexture_2cyx4")
+texture = ExtResource("2_gnmwp")
 
 [node name="ExclamationMarkSprite" type="Sprite2D" parent="."]
-position = Vector2(-9, -14)
+position = Vector2(-13, -22)
 texture = ExtResource("3_nvwo5")
 
 [node name="DeactivatedSprite" type="Sprite2D" parent="."]
@@ -38,4 +35,6 @@ shape = SubResource("RectangleShape2D_oxjp3")
 
 [node name="ConstructionProgressBar" parent="." instance=ExtResource("4_kufgs")]
 offset_left = -8.0
+offset_top = 15.0
 offset_right = 8.0
+offset_bottom = 19.0
